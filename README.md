@@ -11,62 +11,63 @@ Sistema web integral, moderno y ligero para la gestión diaria de una barbería 
 
 ---
 
+## 🔐 Sistema de Sesiones & Cuentas por Rol
+
+La plataforma cuenta con un sistema de autenticación para separar la información financiera de la agenda de los barberos:
+
+### 1. 💼 Sesión de Caja / Administrador
+- **Usuario:** `caja` (o `admin`) | **Contraseña:** `123`
+- **Acceso:** Acceso total a toda la plataforma:
+  - Tablero general con ingresos del día y tickets promedio.
+  - Agenda global de todos los barberos.
+  - Punto de Venta (POS) para cobrar servicios y productos.
+  - Corte de Caja diario con arqueo de dinero en efectivo y registro de gastos.
+  - Gestión de comisiones y credenciales de acceso de cada barbero.
+  - Catálogo de servicios y control de stock de productos.
+  - Directorio de clientes.
+
+### 2. ✂️ Sesiones Individuales para Barberos
+- Cada barbero tiene su propio usuario y contraseña personal:
+  - **Carlos Mendoza:** Usuario `carlos` | Contraseña `123`
+  - **Mateo Silva:** Usuario `mateo` | Contraseña `123`
+  - **David Romero:** Usuario `david` | Contraseña `123`
+- *(El administrador puede crear nuevos barberos o cambiar sus contraseñas en cualquier momento).*
+- **Acceso exclusivo del barbero:**
+  - **Mi Agenda & Citas:** Vista privada de sus clientes y turnos asignados en tiempo real.
+  - **Acciones Rápidas:** Marcar cliente en sillón (`✂️ En Sillón`) o terminado (`✅ Terminado`), y enviar recordatorios por WhatsApp.
+  - **Mis Ganancias del Día:** Reporte transparente con sus cortes realizados, comisiones ganadas y propinas recibidas hoy.
+  - **Seguridad:** No pueden ver la caja general ni las finanzas privadas de la barbería.
+
+---
+
 ## 🌟 Módulos y Funcionalidades Incluidas
 
-### 1. 📅 Agenda de Citas & Turnos
-- **Control de estados:** *Pendiente*, *En Sillón (Atendiendo)*, *Completada*, *Cancelada*.
-- **Integración con WhatsApp:** Envío de recordatorios y confirmaciones con un solo clic hacia el WhatsApp del cliente con el texto ya redactado.
-- **Cobro Express:** Botón directo **"Cobrar en Caja"** que transfiere la cita y su precio al Punto de Venta al terminar el servicio.
-- **Filtros rápidos:** Visualiza las citas por día o filtra por barbero específico.
+### 1. ✂️ Selección Múltiple de Servicios al Agendar
+- Ahora se pueden elegir **múltiples servicios en la misma cita** (ej. *Corte Fade* + *Perfilado de Barba* + *Perfilado de Cejas*).
+- Cálculo dinámico del precio total y de la duración estimada combinada.
+- Transferencia automática de todos los servicios al Punto de Venta al momento de cobrar.
 
-### 2. 💵 Corte de Caja & Arqueo Diario (Cash Cut)
-- **Fondo Inicial de Caja:** Control del efectivo inicial para dar cambio.
-- **Seguimiento en Vivo:** Monitorea en tiempo real las ventas separadas por:
-  - 💵 Efectivo
-  - 💳 Terminal Tarjeta (Débito/Crédito)
-  - 📲 Transferencias / QR (SPEI / Bizum / etc.)
-- **Registro de Gastos Menores:** Permite registrar salidas de dinero de caja chica (ej. garrafones de agua, insumos de limpieza, adelantos).
-- **Arqueo y Cierre de Turno:**
-  - El cajero ingresa el efectivo físico contado en el cajón.
-  - El sistema calcula al instante la diferencia: **Caja Cuadrada**, **Faltante** (alerta roja) o **Sobrante**.
-  - Muestra el cálculo acumulado de las **comisiones devengadas por cada barbero** en el turno.
-  - Genera un resumen imprimible con firma de conformidad para el dueño o administrador.
+### 2. 📅 Calendario Interactivo & Selectores Visuales Premium
+- **Calendario Integrado:** Navegación por meses con días interactivos, diseño oscuro con acentos dorados y detección del día de hoy.
+- **Selector de Barberos:** Tarjetas visuales con avatar, especialidad y estado en sillón.
+- **Selector de Horarios:** Cuadrícula de turnos (mañana y tarde) que deshabilita automáticamente los horarios ya reservados.
 
-### 3. 💳 Punto de Venta (POS) & Cobro
-- **Cobro mixto:** Agrega servicios del corte y productos de cuidado personal al mismo ticket.
-- **Asignación de Barbero:** Para acreditar la comisión correspondiente de la venta.
-- **Propinas & Descuentos:** Registro de propinas voluntarias y promociones.
-- **Control de Stock automático:** Descuenta del inventario los productos vendidos.
-- **Impresión de Tickets Térmicos:** Formato listo para impresoras de 58mm y 80mm o para guardar en PDF.
+### 3. 💵 Corte de Caja & Arqueo Diario (Cash Cut)
+- Fondo inicial de apertura de caja.
+- Ventas desglosadas por Efectivo, Tarjeta y Transferencia.
+- Registro de gastos menores de caja chica.
+- Arqueo inteligente: compara el efectivo en sistema contra el dinero físico contado por el cajero (detecta caja cuadrada, faltantes o sobrantes).
+- Resumen imprimible de cierre con comisiones de barberos.
 
-### 4. ✂️ Barberos & Comisiones
-- Configuración personalizada de porcentaje de comisión en servicios (ej. 50%, 60%) y en productos (ej. 15%).
-- Resumen financiero individual en tiempo real:
-  - Número de cortes realizados hoy.
-  - Total facturado.
-  - Comisiones acumuladas a liquidar.
-  - Propinas recibidas.
+### 4. 💳 Punto de Venta (POS) & Cobro
+- Venta combinada de servicios y productos de cuidado personal.
+- Asignación de barbero y cálculo de comisiones.
+- Propinas voluntarias y descuentos.
+- Generación e impresión de ticket térmico para impresoras de 58mm y 80mm.
 
-### 5. 🧴 Inventario & Catálogo de Servicios
-- Catálogo de servicios con duración estimada (minutos) y precio.
-- Control de inventario de productos con precio de costo, precio de venta y alerta visual cuando el stock está bajo (menor o igual a 3 unidades).
-
-### 6. 👥 Directorio de Clientes (CRM)
-- Registro de clientes recurrentes.
-- Historial con número de visitas y dinero total gastado.
-- **Notas de estilo y preferencias:** Guarda especificaciones clave (ej. *"Fade medio con 0.5, navaja en patillas, tijera arriba"*).
-- Botón rápido para agendar cita directamente a ese cliente.
-
-### 7. 🌐 Portal de Reservas Online para Clientes
-- Vista que el cliente puede utilizar desde su teléfono o computadora:
-  1. Elige el servicio deseado.
-  2. Selecciona a su barbero preferido con su avatar y especialidad.
-  3. Selecciona la fecha y visualiza solo los horarios que realmente están disponibles (evita choques de citas).
-  4. Ingresa sus datos y confirma mediante WhatsApp directo a la barbería.
-
-### 8. 💾 Copia de Seguridad & Persistencia
-- Todos los datos se guardan de forma permanente y automática en `localStorage`.
-- Botón **"Exportar Datos"** en la barra superior para descargar un archivo `.json` de respaldo en cualquier momento.
+### 5. 👥 Clientes & Reservas Online
+- Directorio de clientes con historial de visitas y notas de corte preferido.
+- Portal público para clientes con reserva online y confirmación directa por WhatsApp.
 
 ---
 
@@ -74,9 +75,10 @@ Sistema web integral, moderno y ligero para la gestión diaria de una barbería 
 
 ```
 barbershop-system/
-├── index.html          # Interfaz principal, navegación y modales
-├── styles.css          # Estilos premium oscuros, animaciones y formato térmico de ticket
-├── app.js              # Lógica de negocio, base de datos local y cálculos
+├── index.html          # Interfaz principal, pantalla de login y modales
+├── styles.css          # Estilos premium, calendario oscuro y diseño térmico
+├── app.js              # Lógica de sesiones, comisiones, citas múltiples y arqueo
 ├── abrir_barberia.bat  # Acceso directo para ejecutar en Windows con doble clic
+├── subir_a_github.bat  # Asistente para futuras actualizaciones en Git
 └── README.md           # Documentación completa del sistema
 ```

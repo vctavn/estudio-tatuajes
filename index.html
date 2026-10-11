@@ -9,6 +9,49 @@
 </head>
 <body>
 
+<!-- ================= PANTALLA DE LOGIN CON SESIONES ================= -->
+<div class="login-screen" id="login-screen">
+  <div class="login-container">
+    <div class="login-header">
+      <div class="login-brand-icon">💈</div>
+      <h2>BARBER CLUB & CO.</h2>
+      <p>Selecciona tu sesión o ingresa tus credenciales</p>
+    </div>
+
+    <form id="login-form">
+      <div class="form-group">
+        <label class="form-label">Usuario</label>
+        <input type="text" id="login-username" class="form-control" placeholder="Ej. caja, carlos, mateo..." required autocomplete="username">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Contraseña</label>
+        <input type="password" id="login-password" class="form-control" placeholder="••••••••" required autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 8px;">
+        🔐 Iniciar Sesión
+      </button>
+    </form>
+
+    <div class="quick-accounts-box">
+      <h4>⚡ Acceso Rápido por Rol (Demostración)</h4>
+      <div class="quick-accounts-grid">
+        <button type="button" class="quick-btn" onclick="quickLogin('caja', '123')">
+          <span>💼</span> <b>Caja / Admin</b>
+        </button>
+        <button type="button" class="quick-btn" onclick="quickLogin('carlos', '123')">
+          <span>💈</span> <b>Carlos Fade</b>
+        </button>
+        <button type="button" class="quick-btn" onclick="quickLogin('mateo', '123')">
+          <span>🧔</span> <b>Mateo Silva</b>
+        </button>
+        <button type="button" class="quick-btn" onclick="quickLogin('david', '123')">
+          <span>✂️</span> <b>David Romero</b>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="app-layout">
   <!-- SIDEBAR DE NAVEGACIÓN -->
   <aside class="sidebar" id="sidebar">
@@ -16,42 +59,55 @@
       <div class="brand-icon">💈</div>
       <div class="brand-info">
         <h1>BARBER CLUB</h1>
-        <p>Management Pro</p>
+        <p id="sidebar-role-label">Management Pro</p>
       </div>
     </div>
 
-    <nav class="nav-menu">
-      <div class="nav-category">Principal</div>
-      <a class="nav-item active" data-view="dashboard">
+    <nav class="nav-menu" id="nav-menu-container">
+      <!-- Ítems para Admin / Caja -->
+      <div class="nav-category nav-admin-only">Principal</div>
+      <a class="nav-item active nav-admin-only" data-view="dashboard">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
         Tablero
       </a>
-      <a class="nav-item" data-view="appointments">
+      <a class="nav-item nav-admin-only" data-view="appointments">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
         Agenda de Citas
         <span class="badge-counter" id="badge-appointments-count">0</span>
       </a>
 
-      <div class="nav-category">Operaciones & Dinero</div>
-      <a class="nav-item" data-view="pos">
+      <!-- Ítems para Barbero -->
+      <div class="nav-category nav-barber-only" style="display:none;">Mi Portal de Barbero</div>
+      <a class="nav-item nav-barber-only" data-view="barber-portal" style="display:none;">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+        Mi Agenda & Citas
+      </a>
+      <a class="nav-item nav-barber-only" data-view="barber-earnings" style="display:none;">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+        Mis Ganancias Hoy
+      </a>
+
+      <!-- Ítems Financieros de Admin -->
+      <div class="nav-category nav-admin-only">Operaciones & Dinero</div>
+      <a class="nav-item nav-admin-only" data-view="pos">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
         Punto de Venta (POS)
       </a>
-      <a class="nav-item" data-view="cash-register">
+      <a class="nav-item nav-admin-only" data-view="cash-register">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"></rect><circle cx="12" cy="12" r="3"></circle><line x1="2" y1="10" x2="6" y2="10"></line><line x1="18" y1="14" x2="22" y2="14"></line></svg>
         Corte de Caja
       </a>
 
-      <div class="nav-category">Administración</div>
-      <a class="nav-item" data-view="barbers">
+      <div class="nav-category nav-admin-only">Administración</div>
+      <a class="nav-item nav-admin-only" data-view="barbers">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-        Barberos & Comisiones
+        Barberos & Cuentas
       </a>
-      <a class="nav-item" data-view="catalog">
+      <a class="nav-item nav-admin-only" data-view="catalog">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-2z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
         Servicios & Productos
       </a>
-      <a class="nav-item" data-view="clients">
+      <a class="nav-item nav-admin-only" data-view="clients">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
         Clientes
       </a>
@@ -63,7 +119,7 @@
       </a>
     </nav>
 
-    <div class="sidebar-footer">
+    <div class="sidebar-footer nav-admin-only">
       <div class="cash-status-pill">
         <div class="cash-indicator">
           <span class="status-dot open" id="sidebar-cash-dot"></span>
@@ -86,9 +142,21 @@
         </div>
       </div>
       <div class="header-actions">
-        <button class="btn btn-secondary btn-sm" id="btn-export-backup" title="Guardar copia de seguridad en JSON">
+        <!-- Badge de Usuario Logueado -->
+        <div class="user-session-badge">
+          <div class="user-session-avatar" id="header-user-avatar">💼</div>
+          <div class="user-session-info">
+            <span class="user-session-name" id="header-user-name">Caja General</span>
+            <span class="user-session-role" id="header-user-role">ADMINISTRADOR</span>
+          </div>
+          <button class="btn btn-secondary btn-sm" id="btn-logout" title="Cerrar sesión" style="padding: 4px 8px; margin-left: 4px;">
+            🚪 Salir
+          </button>
+        </div>
+
+        <button class="btn btn-secondary btn-sm nav-admin-only" id="btn-export-backup" title="Guardar copia de seguridad en JSON">
           <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-          Exportar Datos
+          Exportar
         </button>
         <button class="btn btn-primary btn-sm" id="btn-header-new-appointment">
           + Nueva Cita
@@ -98,7 +166,7 @@
 
     <div class="content-area">
 
-      <!-- ================= 1. TABLERO / DASHBOARD ================= -->
+      <!-- ================= 1. TABLERO / DASHBOARD (ADMIN) ================= -->
       <section class="view-section active" id="view-dashboard">
         <div class="grid-stats">
           <div class="stat-card green">
@@ -148,7 +216,7 @@
                   <tr>
                     <th>Hora</th>
                     <th>Cliente</th>
-                    <th>Servicio</th>
+                    <th>Servicios</th>
                     <th>Barbero</th>
                     <th>Estado</th>
                     <th>Acción</th>
@@ -173,38 +241,151 @@
         </div>
       </section>
 
-      <!-- ================= 2. AGENDA DE CITAS ================= -->
-      <section class="view-section" id="view-appointments">
-        <div class="panel-card">
-          <div class="panel-header">
-            <h3>Calendario & Lista de Citas</h3>
-            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-              <input type="date" id="filter-appointment-date" class="form-control" style="width: auto;">
-              <select id="filter-appointment-barber" class="form-select" style="width: auto;">
-                <option value="all">Todos los barberos</option>
-              </select>
-              <button class="btn btn-primary" id="btn-modal-open-appointment">+ Agendar Cita</button>
+      <!-- ================= PORTAL EXCLUSIVO DE BARBERO: AGENDA Y CITAS ================= -->
+      <section class="view-section" id="view-barber-portal">
+        <div class="barber-metrics-banner">
+          <div class="stat-card blue">
+            <div class="stat-details">
+              <span>Mis Citas de Hoy</span>
+              <h3 id="barber-portal-stat-apps">0</h3>
+              <small>Citas en tu agenda</small>
+            </div>
+            <div class="stat-icon">📅</div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-details">
+              <span>Clientes Atendidos</span>
+              <h3 id="barber-portal-stat-done">0</h3>
+              <small>Cortes completados hoy</small>
+            </div>
+            <div class="stat-icon">✂️</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-details">
+              <span>Mi Comisión a Cobrar Hoy</span>
+              <h3 id="barber-portal-stat-comm" style="color: var(--gold-primary);">$0.00</h3>
+              <small>Porcentaje ganado hoy</small>
+            </div>
+            <div class="stat-icon">💵</div>
+          </div>
+          <div class="stat-card purple">
+            <div class="stat-details">
+              <span>Mis Propinas Hoy</span>
+              <h3 id="barber-portal-stat-tips">$0.00</h3>
+              <small>Directo para ti</small>
+            </div>
+            <div class="stat-icon">💰</div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 320px 1fr; gap: 24px; align-items: start;">
+          <!-- Calendario Elegante del Barbero -->
+          <div class="panel-card">
+            <div class="panel-header">
+              <h3>📅 Mi Calendario</h3>
+            </div>
+            <div id="barber-calendar-widget-container">
+              <!-- Calendario interactivo montado por JS -->
+            </div>
+            <div style="margin-top: 14px; text-align: center;">
+              <span style="font-size: 0.82rem; color: var(--text-secondary);">Fecha seleccionada:</span>
+              <div id="barber-selected-date-label" style="font-size: 1rem; font-weight: bold; color: var(--gold-primary); margin-top: 2px;">Hoy</div>
             </div>
           </div>
 
-          <div class="table-responsive">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Hora</th>
-                  <th>Cliente</th>
-                  <th>Teléfono / WhatsApp</th>
-                  <th>Servicio</th>
-                  <th>Barbero</th>
-                  <th>Precio</th>
-                  <th>Estado</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody id="appointments-tbody">
-                <!-- Citas del día/filtro -->
-              </tbody>
-            </table>
+          <!-- Lista de Citas del Barbero -->
+          <div class="panel-card">
+            <div class="panel-header">
+              <div>
+                <h3 id="barber-citas-header-title">Mis Citas para Hoy</h3>
+                <p style="font-size: 0.8rem; color: var(--text-muted);">En cuanto se agende una cita contigo aparecerá aquí automáticamente</p>
+              </div>
+              <button class="btn btn-primary btn-sm" onclick="openNewAppointmentModal()">+ Agendar Cita</button>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Hora</th>
+                    <th>Cliente</th>
+                    <th>Teléfono</th>
+                    <th>Servicios Solicitados</th>
+                    <th>Total</th>
+                    <th>Estado</th>
+                    <th>Acciones Rápidas</th>
+                  </tr>
+                </thead>
+                <tbody id="barber-my-appointments-tbody">
+                  <!-- Citas del barbero -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= PORTAL EXCLUSIVO DE BARBERO: GANANCIAS ================= -->
+      <section class="view-section" id="view-barber-earnings">
+        <div class="panel-card" style="max-width: 800px; margin: 0 auto;">
+          <div class="panel-header">
+            <h3>💰 Resumen de Mis Ganancias & Comisiones</h3>
+          </div>
+          <div id="barber-earnings-content" style="display: flex; flex-direction: column; gap: 16px;">
+            <!-- Desglose inyectado por JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 2. AGENDA DE CITAS (ADMIN) ================= -->
+      <section class="view-section" id="view-appointments">
+        <div style="display: grid; grid-template-columns: 320px 1fr; gap: 24px; align-items: start;">
+          <!-- Calendario Interactivo Lateral para Filtrar -->
+          <div class="panel-card">
+            <div class="panel-header">
+              <h3>📅 Filtrar por Fecha</h3>
+            </div>
+            <div id="admin-calendar-widget-container">
+              <!-- Calendario interactivo admin montado por JS -->
+            </div>
+            <div class="form-group" style="margin-top: 16px;">
+              <label class="form-label">Filtrar por Barbero</label>
+              <select id="filter-appointment-barber" class="form-select">
+                <option value="all">Todos los barberos</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" id="btn-modal-open-appointment" style="width: 100%; margin-top: 10px;">
+              + Agendar Cita
+            </button>
+          </div>
+
+          <!-- Tabla de Citas -->
+          <div class="panel-card">
+            <div class="panel-header">
+              <div>
+                <h3 id="admin-citas-header-title">Citas Agendadas</h3>
+                <span id="admin-citas-subtitle" style="font-size: 0.8rem; color: var(--text-muted);">Mostrando citas de la fecha seleccionada</span>
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Hora</th>
+                    <th>Cliente</th>
+                    <th>Tel / WhatsApp</th>
+                    <th>Servicios</th>
+                    <th>Barbero</th>
+                    <th>Total</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="appointments-tbody">
+                  <!-- Citas del día/filtro -->
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </section>
@@ -244,7 +425,6 @@
 
             <label class="form-label" style="margin-top: 4px;">Detalle del Ticket</label>
             <div class="ticket-items-list" id="pos-cart-list">
-              <!-- Ítems del carrito -->
               <p style="text-align: center; color: var(--text-muted); font-size: 0.85rem; padding: 20px 0;">
                 Haz clic en un servicio o producto para agregarlo.
               </p>
@@ -405,17 +585,17 @@
         </div>
       </section>
 
-      <!-- ================= 5. BARBEROS & COMISIONES ================= -->
+      <!-- ================= 5. BARBEROS & CUENTAS ================= -->
       <section class="view-section" id="view-barbers">
         <div class="panel-header">
           <div>
-            <h3>Equipo de Barberos & Comisiones</h3>
-            <p style="color: var(--text-secondary); font-size: 0.85rem;">Configura porcentajes de comisión y revisa ganancias individuales.</p>
+            <h3>Equipo de Barberos & Cuentas de Acceso</h3>
+            <p style="color: var(--text-secondary); font-size: 0.85rem;">Configura comisiones y credenciales de usuario/contraseña para cada barbero.</p>
           </div>
           <button class="btn btn-primary" id="btn-modal-open-barber">+ Nuevo Barbero</button>
         </div>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin-top: 16px;" id="barbers-cards-container">
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; margin-top: 16px;" id="barbers-cards-container">
           <!-- Tarjetas de barberos inyectadas -->
         </div>
       </section>
@@ -509,42 +689,50 @@
             <div style="font-size: 3rem; margin-bottom: 8px;">💈</div>
             <h2 style="font-size: 1.8rem; font-weight: 800; color: #fff;">Agenda tu Cita en Barber Club</h2>
             <p style="color: var(--text-secondary); max-width: 500px; margin: 0 auto; font-size: 0.95rem;">
-              Elige tu servicio favorito, selecciona a tu barbero de confianza y aparta tu horario en segundos.
+              Selecciona uno o más servicios, tu barbero favorito y reserva tu turno en segundos.
             </p>
           </div>
 
-          <!-- Paso 1: Servicio -->
+          <!-- Paso 1: Servicios Múltiples -->
           <div class="form-group">
-            <label class="form-label">1. Selecciona el Servicio</label>
-            <select id="public-book-service" class="form-select">
-              <!-- Servicios -->
-            </select>
+            <label class="form-label" style="font-size: 1rem; color: #fff;">1. Selecciona tus Servicios (Puedes elegir más de uno)</label>
+            <div class="multi-services-container" id="public-services-picker">
+              <!-- Tarjetas de selección múltiple de servicios -->
+            </div>
+            <div class="multi-services-summary-pill" id="public-services-summary" style="display: none;">
+              <span id="public-services-summary-text">0 servicios seleccionados</span>
+              <b style="color: var(--gold-primary); font-size: 1.05rem;" id="public-services-summary-price">$0.00</b>
+            </div>
           </div>
 
-          <!-- Paso 2: Barbero -->
-          <div class="form-group" style="margin-top: 18px;">
-            <label class="form-label">2. Elige a tu Barbero</label>
-            <div class="barber-selection-grid" id="public-book-barbers-grid">
+          <!-- Paso 2: Barbero Visual -->
+          <div class="form-group" style="margin-top: 24px;">
+            <label class="form-label" style="font-size: 1rem; color: #fff;">2. Elige a tu Barbero</label>
+            <div class="barber-picker-container" id="public-book-barbers-grid">
               <!-- Tarjetas seleccionables de barbero -->
             </div>
           </div>
 
-          <!-- Paso 3: Fecha y Hora -->
-          <div class="form-row" style="margin-top: 18px;">
-            <div class="form-group">
-              <label class="form-label">3. Fecha deseada</label>
-              <input type="date" id="public-book-date" class="form-control">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Horario Disponible</label>
-              <div class="time-slots-grid" id="public-book-slots-grid">
-                <!-- Horarios dinámicos -->
+          <!-- Paso 3: Calendario Interactivo y Horarios -->
+          <div style="margin-top: 24px; border-top: 1px solid var(--border-color); padding-top: 20px;">
+            <label class="form-label" style="font-size: 1rem; color: #fff;">3. Elige Fecha y Horario</label>
+            <div style="display: grid; grid-template-columns: 320px 1fr; gap: 20px; align-items: start;">
+              <!-- Calendario interactivo -->
+              <div>
+                <span class="form-label">Fecha deseada</span>
+                <div id="public-calendar-widget-container"></div>
+              </div>
+
+              <!-- Horarios disponibles -->
+              <div>
+                <span class="form-label">Horario Disponible</span>
+                <div class="time-picker-container" id="public-time-picker-container"></div>
               </div>
             </div>
           </div>
 
           <!-- Paso 4: Datos del Cliente -->
-          <div style="border-top: 1px solid var(--border-color); padding-top: 20px; margin-top: 20px;">
+          <div style="border-top: 1px solid var(--border-color); padding-top: 20px; margin-top: 24px;">
             <label class="form-label" style="font-size: 1rem; color: #fff; margin-bottom: 12px;">4. Tus Datos de Contacto</label>
             <div class="form-row">
               <div class="form-group">
@@ -564,7 +752,7 @@
 
           <div style="margin-top: 24px; text-align: center;">
             <button class="btn btn-primary btn-lg" id="btn-public-submit-booking" style="width: 100%;">
-              ✂️ Confirmar y Agendar mi Cita
+              ✂️ Confirmar y Agendar Cita por WhatsApp
             </button>
           </div>
         </div>
@@ -576,50 +764,65 @@
 
 <!-- ================= MODALES DEL SISTEMA ================= -->
 
-<!-- Modal: Nueva Cita (Interna) -->
+<!-- Modal: Agendar Nueva Cita (Con selección múltiple, calendario y horarios visuales) -->
 <div class="modal-overlay" id="modal-appointment">
-  <div class="modal-container">
+  <div class="modal-container" style="max-width: 680px;">
     <div class="modal-header">
       <h3 id="modal-appointment-title">Agendar Nueva Cita</h3>
       <button class="modal-close" onclick="closeModal('modal-appointment')">&times;</button>
     </div>
     <div class="modal-body">
-      <div class="form-group">
-        <label class="form-label">Cliente *</label>
-        <input type="text" id="app-form-client" class="form-control" placeholder="Nombre completo">
-      </div>
       <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Cliente *</label>
+          <input type="text" id="app-form-client" class="form-control" placeholder="Nombre completo">
+        </div>
         <div class="form-group">
           <label class="form-label">Teléfono / WhatsApp</label>
           <input type="tel" id="app-form-phone" class="form-control" placeholder="10 dígitos">
         </div>
-        <div class="form-group">
-          <label class="form-label">Servicio *</label>
-          <select id="app-form-service" class="form-select"></select>
-        </div>
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Barbero *</label>
-          <select id="app-form-barber" class="form-select"></select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Fecha *</label>
-          <input type="date" id="app-form-date" class="form-control">
-        </div>
-      </div>
+
+      <!-- Selector Múltiple de Servicios -->
       <div class="form-group">
-        <label class="form-label">Hora *</label>
-        <input type="time" id="app-form-time" class="form-control" step="900">
+        <label class="form-label">Servicios Solicitados (Selecciona uno o varios) *</label>
+        <div class="multi-services-container" id="modal-services-picker">
+          <!-- Servicios clickeables -->
+        </div>
+        <div class="multi-services-summary-pill" id="modal-services-summary">
+          <span id="modal-services-summary-text">0 servicios seleccionados</span>
+          <b style="color: var(--gold-primary); font-size: 1.05rem;" id="modal-services-summary-price">$0.00</b>
+        </div>
       </div>
-      <div class="form-group">
-        <label class="form-label">Notas del Corte</label>
-        <textarea id="app-form-notes" class="form-control" rows="2" placeholder="Detalles de estilo, preferencias..."></textarea>
+
+      <!-- Selector Visual de Barbero -->
+      <div class="form-group" style="margin-top: 14px;">
+        <label class="form-label">Barbero Asignado *</label>
+        <div class="barber-picker-container" id="modal-barber-picker">
+          <!-- Barberos clickeables -->
+        </div>
+      </div>
+
+      <!-- Calendario Interactivo y Horarios -->
+      <div style="display: grid; grid-template-columns: 280px 1fr; gap: 16px; margin-top: 16px; align-items: start;">
+        <div>
+          <label class="form-label">Fecha de la Cita *</label>
+          <div id="modal-calendar-widget-container"></div>
+        </div>
+        <div>
+          <label class="form-label">Horario Disponible *</label>
+          <div class="time-picker-container" id="modal-time-picker-container"></div>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-top: 16px;">
+        <label class="form-label">Notas del Estilo / Preferencias</label>
+        <textarea id="app-form-notes" class="form-control" rows="2" placeholder="Detalles de estilo, especificaciones del corte..."></textarea>
       </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal('modal-appointment')">Cancelar</button>
-      <button class="btn btn-primary" id="btn-save-appointment">Guardar Cita</button>
+      <button class="btn btn-primary" id="btn-save-appointment">Guardar y Agendar Cita</button>
     </div>
   </div>
 </div>
@@ -712,7 +915,7 @@
   </div>
 </div>
 
-<!-- Modal: Nuevo Barbero -->
+<!-- Modal: Nuevo / Editar Barbero con Credenciales de Acceso -->
 <div class="modal-overlay" id="modal-barber">
   <div class="modal-container">
     <div class="modal-header">
@@ -742,6 +945,21 @@
         <div class="form-group">
           <label class="form-label">Comisión en Productos (%) *</label>
           <input type="number" id="barber-form-commission-product" class="form-control" value="15" min="0" max="100">
+        </div>
+      </div>
+
+      <!-- Credenciales de Inicio de Sesión -->
+      <div style="background-color: var(--bg-secondary); padding: 14px; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-top: 10px;">
+        <h4 style="font-size: 0.82rem; color: var(--gold-primary); text-transform: uppercase; margin-bottom: 10px;">🔑 Credenciales para que el Barbero inicie sesión</h4>
+        <div class="form-row">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">Usuario *</label>
+            <input type="text" id="barber-form-username" class="form-control" placeholder="ej. carlos">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">Contraseña *</label>
+            <input type="text" id="barber-form-password" class="form-control" placeholder="ej. 123">
+          </div>
         </div>
       </div>
     </div>
