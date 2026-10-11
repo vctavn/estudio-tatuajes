@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Barber Club & Co. - Sistema de Gestión</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💈</text></svg>">
+</head>
+<body>
+
+<div class="app-layout">
+  <!-- SIDEBAR DE NAVEGACIÓN -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-icon">💈</div>
+      <div class="brand-info">
+        <h1>BARBER CLUB</h1>
+        <p>Management Pro</p>
+      </div>
+    </div>
+
+    <nav class="nav-menu">
+      <div class="nav-category">Principal</div>
+      <a class="nav-item active" data-view="dashboard">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+        Tablero
+      </a>
+      <a class="nav-item" data-view="appointments">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+        Agenda de Citas
+        <span class="badge-counter" id="badge-appointments-count">0</span>
+      </a>
+
+      <div class="nav-category">Operaciones & Dinero</div>
+      <a class="nav-item" data-view="pos">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+        Punto de Venta (POS)
+      </a>
+      <a class="nav-item" data-view="cash-register">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"></rect><circle cx="12" cy="12" r="3"></circle><line x1="2" y1="10" x2="6" y2="10"></line><line x1="18" y1="14" x2="22" y2="14"></line></svg>
+        Corte de Caja
+      </a>
+
+      <div class="nav-category">Administración</div>
+      <a class="nav-item" data-view="barbers">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+        Barberos & Comisiones
+      </a>
+      <a class="nav-item" data-view="catalog">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-2z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+        Servicios & Productos
+      </a>
+      <a class="nav-item" data-view="clients">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+        Clientes
+      </a>
+
+      <div class="nav-category">Canales</div>
+      <a class="nav-item" data-view="public-booking">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+        Vista Reserva Online
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="cash-status-pill">
+        <div class="cash-indicator">
+          <span class="status-dot open" id="sidebar-cash-dot"></span>
+          <span id="sidebar-cash-text">Caja Abierta</span>
+        </div>
+        <button class="btn btn-secondary btn-sm" id="btn-quick-cash" title="Ir a corte de caja">$</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="main-wrapper">
+    <!-- TOP HEADER -->
+    <header class="top-header">
+      <div style="display: flex; align-items: center; gap: 14px;">
+        <button class="mobile-toggle" id="btn-toggle-sidebar" aria-label="Abrir menú">☰</button>
+        <div class="header-title-box">
+          <h2 id="view-title">Tablero Principal</h2>
+          <p id="view-subtitle">Resumen y métricas de la barbería hoy</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-secondary btn-sm" id="btn-export-backup" title="Guardar copia de seguridad en JSON">
+          <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          Exportar Datos
+        </button>
+        <button class="btn btn-primary btn-sm" id="btn-header-new-appointment">
+          + Nueva Cita
+        </button>
+      </div>
+    </header>
+
+    <div class="content-area">
+
+      <!-- ================= 1. TABLERO / DASHBOARD ================= -->
+      <section class="view-section active" id="view-dashboard">
+        <div class="grid-stats">
+          <div class="stat-card green">
+            <div class="stat-details">
+              <span>Ingresos Hoy</span>
+              <h3 id="dash-stat-revenue">$0.00</h3>
+              <small id="dash-stat-revenue-subs">En efectivo, tarjeta y transf.</small>
+            </div>
+            <div class="stat-icon">💵</div>
+          </div>
+          <div class="stat-card blue">
+            <div class="stat-details">
+              <span>Citas Agendadas</span>
+              <h3 id="dash-stat-appointments">0</h3>
+              <small id="dash-stat-appointments-today">Para la jornada de hoy</small>
+            </div>
+            <div class="stat-icon">📅</div>
+          </div>
+          <div class="stat-card purple">
+            <div class="stat-details">
+              <span>Servicios Atendidos</span>
+              <h3 id="dash-stat-completed">0</h3>
+              <small>Cortes y servicios cobrados</small>
+            </div>
+            <div class="stat-icon">✂️</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-details">
+              <span>Ticket Promedio</span>
+              <h3 id="dash-stat-avg-ticket">$0.00</h3>
+              <small>Consumo medio por cliente</small>
+            </div>
+            <div class="stat-icon">📊</div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-top: 6px;">
+          <!-- Citas de hoy prioritarias -->
+          <div class="panel-card">
+            <div class="panel-header">
+              <h3>Agenda del Día (En Vivo)</h3>
+              <button class="btn btn-secondary btn-sm" onclick="switchView('appointments')">Ver Toda la Agenda</button>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Hora</th>
+                    <th>Cliente</th>
+                    <th>Servicio</th>
+                    <th>Barbero</th>
+                    <th>Estado</th>
+                    <th>Acción</th>
+                  </tr>
+                </thead>
+                <tbody id="dash-today-appointments-tbody">
+                  <!-- Citas inyectadas con JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Estado de sillones / Barberos disponibles -->
+          <div class="panel-card">
+            <div class="panel-header">
+              <h3>Sillones & Barberos</h3>
+            </div>
+            <div id="dash-barbers-status-list" style="display: flex; flex-direction: column; gap: 12px;">
+              <!-- Lista de barberos -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 2. AGENDA DE CITAS ================= -->
+      <section class="view-section" id="view-appointments">
+        <div class="panel-card">
+          <div class="panel-header">
+            <h3>Calendario & Lista de Citas</h3>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+              <input type="date" id="filter-appointment-date" class="form-control" style="width: auto;">
+              <select id="filter-appointment-barber" class="form-select" style="width: auto;">
+                <option value="all">Todos los barberos</option>
+              </select>
+              <button class="btn btn-primary" id="btn-modal-open-appointment">+ Agendar Cita</button>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Hora</th>
+                  <th>Cliente</th>
+                  <th>Teléfono / WhatsApp</th>
+                  <th>Servicio</th>
+                  <th>Barbero</th>
+                  <th>Precio</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="appointments-tbody">
+                <!-- Citas del día/filtro -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 3. PUNTO DE VENTA (POS) ================= -->
+      <section class="view-section" id="view-pos">
+        <div class="pos-layout">
+          <!-- Catálogo de cobro -->
+          <div>
+            <div class="pos-catalog-tabs">
+              <button class="tab-btn active" data-pos-tab="services">✂️ Servicios de Barbería</button>
+              <button class="tab-btn" data-pos-tab="products">🧴 Productos & Cuidado</button>
+            </div>
+            
+            <div class="pos-items-grid" id="pos-items-grid">
+              <!-- Ítems inyectados -->
+            </div>
+          </div>
+
+          <!-- Panel de Carrito de Cobro -->
+          <div class="pos-ticket-panel">
+            <h3 style="font-size: 1.1rem; color: #fff; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+              Cobro en Sillón / Mostrador
+            </h3>
+
+            <div class="form-group" style="margin-bottom: 10px;">
+              <label class="form-label">Cliente</label>
+              <input type="text" id="pos-client-name" class="form-control" placeholder="Nombre del cliente o 'Cliente General'">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 10px;">
+              <label class="form-label">Barbero Responsable</label>
+              <select id="pos-barber-select" class="form-select">
+                <!-- Barberos disponibles -->
+              </select>
+            </div>
+
+            <label class="form-label" style="margin-top: 4px;">Detalle del Ticket</label>
+            <div class="ticket-items-list" id="pos-cart-list">
+              <!-- Ítems del carrito -->
+              <p style="text-align: center; color: var(--text-muted); font-size: 0.85rem; padding: 20px 0;">
+                Haz clic en un servicio o producto para agregarlo.
+              </p>
+            </div>
+
+            <div class="ticket-summary">
+              <div class="summary-row">
+                <span>Subtotal</span>
+                <span id="pos-subtotal">$0.00</span>
+              </div>
+              <div class="summary-row">
+                <span>Propina Barbero</span>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <span>$</span>
+                  <input type="number" id="pos-tip-input" class="form-control" value="0" min="0" step="5" style="width: 80px; padding: 4px 8px; text-align: right;">
+                </div>
+              </div>
+              <div class="summary-row">
+                <span>Descuento</span>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <span>$</span>
+                  <input type="number" id="pos-discount-input" class="form-control" value="0" min="0" step="5" style="width: 80px; padding: 4px 8px; text-align: right;">
+                </div>
+              </div>
+              <div class="summary-row total">
+                <span>Total a Cobrar</span>
+                <span class="price" id="pos-total">$0.00</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Método de Pago</label>
+              <select id="pos-payment-method" class="form-select">
+                <option value="efectivo">💵 Efectivo</option>
+                <option value="tarjeta">💳 Tarjeta (Terminal Débito/Crédito)</option>
+                <option value="transferencia">📲 Transferencia Bancaria / QR</option>
+              </select>
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+              <button class="btn btn-secondary" id="btn-pos-clear" style="flex: 1;">Vaciar</button>
+              <button class="btn btn-primary" id="btn-pos-checkout" style="flex: 2;">Completar Cobro</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 4. CORTE DE CAJA ================= -->
+      <section class="view-section" id="view-cash-register">
+        <div class="panel-header">
+          <div>
+            <h3 style="font-size: 1.3rem;">Control & Corte de Caja (Arqueo Diario)</h3>
+            <p style="color: var(--text-secondary); font-size: 0.85rem;">Monitorea ingresos reales, salidas de dinero y arqueo de turnos.</p>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button class="btn btn-danger btn-sm" id="btn-modal-open-expense">- Registrar Gasto / Salida</button>
+            <button class="btn btn-success btn-sm" id="btn-modal-open-cashcut">🏁 Realizar Arqueo / Cierre de Caja</button>
+          </div>
+        </div>
+
+        <div class="cash-cut-grid" style="margin-top: 16px;">
+          <!-- Estado Actual de Caja -->
+          <div class="cash-box">
+            <h4 style="color: var(--text-secondary); font-size: 0.85rem; text-transform: uppercase; margin-bottom: 8px;">Fondo de Caja & Estado</h4>
+            <div style="display: flex; align-items: baseline; gap: 8px;">
+              <h2 style="font-size: 2rem; color: #fff;" id="cash-current-fondo">$0.00</h2>
+              <span style="font-size: 0.8rem; color: var(--gold-primary);">Fondo Inicial</span>
+            </div>
+            <div style="margin-top: 14px; font-size: 0.85rem; color: var(--text-secondary); display: flex; flex-direction: column; gap: 6px;">
+              <div style="display: flex; justify-content: space-between;">
+                <span>Ventas en Efectivo:</span>
+                <b id="cash-sales-cash" style="color: #fff;">$0.00</b>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span>Ventas en Tarjeta:</span>
+                <b id="cash-sales-card" style="color: #fff;">$0.00</b>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span>Ventas en Transferencia:</span>
+                <b id="cash-sales-transf" style="color: #fff;">$0.00</b>
+              </div>
+              <div style="display: flex; justify-content: space-between; color: #ff6b6b; border-top: 1px solid var(--border-color); padding-top: 6px;">
+                <span>Gastos / Salidas registradas:</span>
+                <b id="cash-expenses-total">-$0.00</b>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-weight: bold; border-top: 1px solid var(--border-color); padding-top: 6px; font-size: 1rem; color: #4ade80;">
+                <span>Efectivo Físico Esperado en Cajón:</span>
+                <span id="cash-expected-drawer">$0.00</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Total de Comisiones Pendientes de Barberos -->
+          <div class="cash-box">
+            <h4 style="color: var(--text-secondary); font-size: 0.85rem; text-transform: uppercase; margin-bottom: 8px;">Liquidación de Barberos Hoy</h4>
+            <div style="display: flex; align-items: baseline; gap: 8px;">
+              <h2 style="font-size: 2rem; color: var(--gold-primary);" id="cash-barber-commissions-total">$0.00</h2>
+              <span style="font-size: 0.8rem; color: var(--text-secondary);">Comisiones acumuladas</span>
+            </div>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 6px;">
+              Monto a liquidar a los barberos según su porcentaje pactado por servicios y productos.
+            </p>
+            <div id="cash-barbers-commissions-breakdown" style="margin-top: 14px; display: flex; flex-direction: column; gap: 8px; font-size: 0.85rem;">
+              <!-- Desglose por barbero -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabla de Movimientos del Día -->
+        <div class="panel-card" style="margin-top: 24px;">
+          <div class="panel-header">
+            <h3>Movimientos de Dinero Registrados Hoy</h3>
+            <span style="font-size: 0.8rem; color: var(--text-muted);" id="cash-movements-count">0 movimientos</span>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Hora</th>
+                  <th>Tipo</th>
+                  <th>Concepto / Cliente</th>
+                  <th>Método</th>
+                  <th>Atendió</th>
+                  <th>Monto</th>
+                </tr>
+              </thead>
+              <tbody id="cash-movements-tbody">
+                <!-- Movimientos inyectados -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Historial de Cortes de Caja Anteriores -->
+        <div class="panel-card" style="margin-top: 24px;">
+          <div class="panel-header">
+            <h3>Historial de Cierres de Caja Anteriores</h3>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Fecha y Hora</th>
+                  <th>Fondo Inicial</th>
+                  <th>Ventas Totales</th>
+                  <th>Efectivo Esperado</th>
+                  <th>Efectivo Contado</th>
+                  <th>Diferencia</th>
+                  <th>Comisiones Barberos</th>
+                  <th>Responsable</th>
+                </tr>
+              </thead>
+              <tbody id="cash-history-tbody">
+                <!-- Cierres pasados -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 5. BARBEROS & COMISIONES ================= -->
+      <section class="view-section" id="view-barbers">
+        <div class="panel-header">
+          <div>
+            <h3>Equipo de Barberos & Comisiones</h3>
+            <p style="color: var(--text-secondary); font-size: 0.85rem;">Configura porcentajes de comisión y revisa ganancias individuales.</p>
+          </div>
+          <button class="btn btn-primary" id="btn-modal-open-barber">+ Nuevo Barbero</button>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin-top: 16px;" id="barbers-cards-container">
+          <!-- Tarjetas de barberos inyectadas -->
+        </div>
+      </section>
+
+      <!-- ================= 6. SERVICIOS & PRODUCTOS ================= -->
+      <section class="view-section" id="view-catalog">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+          <!-- Servicios -->
+          <div class="panel-card">
+            <div class="panel-header">
+              <h3>✂️ Catálogo de Servicios</h3>
+              <button class="btn btn-primary btn-sm" id="btn-modal-open-service">+ Nuevo Servicio</button>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Servicio</th>
+                    <th>Duración</th>
+                    <th>Precio</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="services-tbody">
+                  <!-- Servicios -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Productos -->
+          <div class="panel-card">
+            <div class="panel-header">
+              <h3>🧴 Inventario de Productos</h3>
+              <button class="btn btn-primary btn-sm" id="btn-modal-open-product">+ Nuevo Producto</button>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Producto</th>
+                    <th>Stock</th>
+                    <th>Costo</th>
+                    <th>Venta</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="products-tbody">
+                  <!-- Productos -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 7. CLIENTES ================= -->
+      <section class="view-section" id="view-clients">
+        <div class="panel-card">
+          <div class="panel-header">
+            <h3>Directorio de Clientes</h3>
+            <div style="display: flex; gap: 10px;">
+              <input type="text" id="filter-clients-search" class="form-control" placeholder="Buscar por nombre o teléfono..." style="width: 260px;">
+              <button class="btn btn-primary btn-sm" id="btn-modal-open-client">+ Nuevo Cliente</button>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Cliente</th>
+                  <th>Teléfono</th>
+                  <th>Visitas</th>
+                  <th>Total Gastado</th>
+                  <th>Preferencia de Corte / Notas</th>
+                  <th>Acción</th>
+                </tr>
+              </thead>
+              <tbody id="clients-tbody">
+                <!-- Clientes inyectados -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 8. RESERVA PÚBLICA / MODO CLIENTE ================= -->
+      <section class="view-section" id="view-public-booking">
+        <div class="public-booking-container">
+          <div style="text-align: center; margin-bottom: 28px;">
+            <div style="font-size: 3rem; margin-bottom: 8px;">💈</div>
+            <h2 style="font-size: 1.8rem; font-weight: 800; color: #fff;">Agenda tu Cita en Barber Club</h2>
+            <p style="color: var(--text-secondary); max-width: 500px; margin: 0 auto; font-size: 0.95rem;">
+              Elige tu servicio favorito, selecciona a tu barbero de confianza y aparta tu horario en segundos.
+            </p>
+          </div>
+
+          <!-- Paso 1: Servicio -->
+          <div class="form-group">
+            <label class="form-label">1. Selecciona el Servicio</label>
+            <select id="public-book-service" class="form-select">
+              <!-- Servicios -->
+            </select>
+          </div>
+
+          <!-- Paso 2: Barbero -->
+          <div class="form-group" style="margin-top: 18px;">
+            <label class="form-label">2. Elige a tu Barbero</label>
+            <div class="barber-selection-grid" id="public-book-barbers-grid">
+              <!-- Tarjetas seleccionables de barbero -->
+            </div>
+          </div>
+
+          <!-- Paso 3: Fecha y Hora -->
+          <div class="form-row" style="margin-top: 18px;">
+            <div class="form-group">
+              <label class="form-label">3. Fecha deseada</label>
+              <input type="date" id="public-book-date" class="form-control">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Horario Disponible</label>
+              <div class="time-slots-grid" id="public-book-slots-grid">
+                <!-- Horarios dinámicos -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Paso 4: Datos del Cliente -->
+          <div style="border-top: 1px solid var(--border-color); padding-top: 20px; margin-top: 20px;">
+            <label class="form-label" style="font-size: 1rem; color: #fff; margin-bottom: 12px;">4. Tus Datos de Contacto</label>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Nombre Completo *</label>
+                <input type="text" id="public-book-client-name" class="form-control" placeholder="Ej. Juan Pérez">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Teléfono / WhatsApp *</label>
+                <input type="tel" id="public-book-client-phone" class="form-control" placeholder="Ej. +52 55 1234 5678">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Notas Adicionales (Opcional)</label>
+              <input type="text" id="public-book-client-notes" class="form-control" placeholder="Ej. Fade con la 0.5, perfilado de cejas...">
+            </div>
+          </div>
+
+          <div style="margin-top: 24px; text-align: center;">
+            <button class="btn btn-primary btn-lg" id="btn-public-submit-booking" style="width: 100%;">
+              ✂️ Confirmar y Agendar mi Cita
+            </button>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<!-- ================= MODALES DEL SISTEMA ================= -->
+
+<!-- Modal: Nueva Cita (Interna) -->
+<div class="modal-overlay" id="modal-appointment">
+  <div class="modal-container">
+    <div class="modal-header">
+      <h3 id="modal-appointment-title">Agendar Nueva Cita</h3>
+      <button class="modal-close" onclick="closeModal('modal-appointment')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Cliente *</label>
+        <input type="text" id="app-form-client" class="form-control" placeholder="Nombre completo">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Teléfono / WhatsApp</label>
+          <input type="tel" id="app-form-phone" class="form-control" placeholder="10 dígitos">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Servicio *</label>
+          <select id="app-form-service" class="form-select"></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Barbero *</label>
+          <select id="app-form-barber" class="form-select"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fecha *</label>
+          <input type="date" id="app-form-date" class="form-control">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Hora *</label>
+        <input type="time" id="app-form-time" class="form-control" step="900">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notas del Corte</label>
+        <textarea id="app-form-notes" class="form-control" rows="2" placeholder="Detalles de estilo, preferencias..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-appointment')">Cancelar</button>
+      <button class="btn btn-primary" id="btn-save-appointment">Guardar Cita</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Registrar Gasto de Caja -->
+<div class="modal-overlay" id="modal-expense">
+  <div class="modal-container">
+    <div class="modal-header">
+      <h3>Registrar Gasto / Salida de Efectivo</h3>
+      <button class="modal-close" onclick="closeModal('modal-expense')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Concepto / Motivo de Salida *</label>
+        <input type="text" id="expense-concept" class="form-control" placeholder="Ej. Botellón de agua, café, navajas, adelanto...">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Monto ($) *</label>
+          <input type="number" id="expense-amount" class="form-control" min="1" step="0.50" placeholder="0.00">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Autorizado / Solicitado por</label>
+          <select id="expense-barber" class="form-select">
+            <option value="Caja General">Caja General / Dueño</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-expense')">Cancelar</button>
+      <button class="btn btn-danger" id="btn-save-expense">Registrar Salida de Efectivo</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Realizar Corte / Cierre de Caja -->
+<div class="modal-overlay" id="modal-cashcut">
+  <div class="modal-container">
+    <div class="modal-header">
+      <h3>🏁 Arqueo y Cierre de Caja del Turno</h3>
+      <button class="modal-close" onclick="closeModal('modal-cashcut')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p style="color: var(--text-secondary); font-size: 0.88rem; margin-bottom: 16px;">
+        Ingresa el efectivo físico contado en el cajón para verificar si la caja está cuadrada, tiene sobrante o faltante.
+      </p>
+
+      <div class="balance-comparison">
+        <div style="display: flex; justify-content: space-between; font-size: 0.9rem;">
+          <span>Fondo Inicial:</span>
+          <b id="cut-modal-fondo">$0.00</b>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.9rem;">
+          <span>+ Ventas en Efectivo:</span>
+          <b id="cut-modal-sales-cash">$0.00</b>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.9rem; color: #f87171;">
+          <span>- Gastos / Salidas en Efectivo:</span>
+          <b id="cut-modal-expenses">-$0.00</b>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 1.05rem; font-weight: bold; border-top: 1px dashed var(--border-color); padding-top: 8px;">
+          <span>Efectivo Esperado en Sistema:</span>
+          <span style="color: var(--gold-primary);" id="cut-modal-expected">$0.00</span>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-top: 16px;">
+        <label class="form-label" style="font-size: 0.95rem; color: #fff;">Efectivo Físico Contado en Mano ($) *</label>
+        <input type="number" id="cut-counted-cash" class="form-control" style="font-size: 1.2rem; font-weight: bold;" placeholder="0.00" step="1">
+      </div>
+
+      <div class="diff-badge balanced" id="cut-diff-badge" style="margin-top: 12px; display: none;">
+        Diferencia: $0.00 (Caja Cuadrada)
+      </div>
+
+      <div class="form-group" style="margin-top: 16px;">
+        <label class="form-label">Responsable del Cierre</label>
+        <input type="text" id="cut-responsible" class="form-control" value="Administrador General">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notas / Observaciones del Cierre</label>
+        <input type="text" id="cut-notes" class="form-control" placeholder="Ej. Todo en orden, turno tarde finalizado sin incidencias...">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-cashcut')">Cancelar</button>
+      <button class="btn btn-success" id="btn-confirm-cashcut">Confirmar y Cerrar Caja</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Nuevo Barbero -->
+<div class="modal-overlay" id="modal-barber">
+  <div class="modal-container">
+    <div class="modal-header">
+      <h3 id="modal-barber-title">Registrar Barbero</h3>
+      <button class="modal-close" onclick="closeModal('modal-barber')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Nombre del Barbero *</label>
+        <input type="text" id="barber-form-name" class="form-control" placeholder="Ej. Carlos 'Fade' Mendoza">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Teléfono / WhatsApp</label>
+          <input type="tel" id="barber-form-phone" class="form-control" placeholder="10 dígitos">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Especialidad</label>
+          <input type="text" id="barber-form-specialty" class="form-control" placeholder="Ej. Master Fade & Barba Spa">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Comisión en Servicios (%) *</label>
+          <input type="number" id="barber-form-commission-service" class="form-control" value="50" min="0" max="100">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Comisión en Productos (%) *</label>
+          <input type="number" id="barber-form-commission-product" class="form-control" value="15" min="0" max="100">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-barber')">Cancelar</button>
+      <button class="btn btn-primary" id="btn-save-barber">Guardar Barbero</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Nuevo Servicio -->
+<div class="modal-overlay" id="modal-service">
+  <div class="modal-container">
+    <div class="modal-header">
+      <h3>Crear Servicio</h3>
+      <button class="modal-close" onclick="closeModal('modal-service')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Nombre del Servicio *</label>
+        <input type="text" id="service-form-name" class="form-control" placeholder="Ej. Corte Clásico / Fade Degradado">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Precio ($) *</label>
+          <input type="number" id="service-form-price" class="form-control" min="0" step="5" placeholder="180">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Duración Estimada (min)</label>
+          <input type="number" id="service-form-duration" class="form-control" value="35" min="10" step="5">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-service')">Cancelar</button>
+      <button class="btn btn-primary" id="btn-save-service">Guardar Servicio</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Nuevo Producto -->
+<div class="modal-overlay" id="modal-product">
+  <div class="modal-container">
+    <div class="modal-header">
+      <h3>Agregar Producto a Inventario</h3>
+      <button class="modal-close" onclick="closeModal('modal-product')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Nombre del Producto *</label>
+        <input type="text" id="product-form-name" class="form-control" placeholder="Ej. Cera Mate Fijación Fuerte 100g">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Precio de Venta ($) *</label>
+          <input type="number" id="product-form-price" class="form-control" min="0" step="5" placeholder="220">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Costo de Compra ($)</label>
+          <input type="number" id="product-form-cost" class="form-control" min="0" step="5" placeholder="110">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Unidades en Stock *</label>
+        <input type="number" id="product-form-stock" class="form-control" value="10" min="0">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-product')">Cancelar</button>
+      <button class="btn btn-primary" id="btn-save-product">Guardar Producto</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Nuevo Cliente -->
+<div class="modal-overlay" id="modal-client">
+  <div class="modal-container">
+    <div class="modal-header">
+      <h3>Registrar Cliente</h3>
+      <button class="modal-close" onclick="closeModal('modal-client')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Nombre Completo *</label>
+        <input type="text" id="client-form-name" class="form-control" placeholder="Nombre y Apellidos">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Teléfono / WhatsApp *</label>
+        <input type="tel" id="client-form-phone" class="form-control" placeholder="10 dígitos">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notas de Estilo / Preferencias</label>
+        <textarea id="client-form-notes" class="form-control" rows="2" placeholder="Ej. Fade bajo, no tocar largo de arriba, peinado hacia la derecha..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-client')">Cancelar</button>
+      <button class="btn btn-primary" id="btn-save-client">Guardar Cliente</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Ticket de Venta / Recibo -->
+<div class="modal-overlay" id="modal-receipt">
+  <div class="modal-container" style="max-width: 400px;">
+    <div class="modal-header">
+      <h3>Recibo / Ticket de Cobro</h3>
+      <button class="modal-close" onclick="closeModal('modal-receipt')">&times;</button>
+    </div>
+    <div class="modal-body" style="background-color: #262a36; padding: 16px;">
+      <div class="receipt-box" id="printable-receipt-content">
+        <!-- Contenido generado dinámicamente -->
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-receipt')">Cerrar</button>
+      <button class="btn btn-primary" id="btn-print-receipt">🖨️ Imprimir Ticket</button>
+    </div>
+  </div>
+</div>
+
+<!-- ÁREA OCULTA PARA IMPRESIÓN DIRECTA -->
+<div id="receipt-print-area"></div>
+
+<!-- CONTENEDOR DE TOASTS -->
+<div class="toast-container" id="toast-container"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
