@@ -80,11 +80,11 @@
       <div class="nav-category nav-barber-only" style="display:none;">Mi Portal de Barbero</div>
       <a class="nav-item nav-barber-only" data-view="barber-portal" style="display:none;">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-        Mi Agenda & Citas
+        Mi Agenda de Citas
       </a>
-      <a class="nav-item nav-barber-only" data-view="barber-earnings" style="display:none;">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-        Mis Ganancias Hoy
+      <a class="nav-item nav-barber-only" data-view="barber-tips" style="display:none;">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path><path d="M12 6v2m0 8v2"></path></svg>
+        Mis Propinas Recibidas
       </a>
 
       <!-- Ítems Financieros de Admin -->
@@ -260,21 +260,21 @@
             </div>
             <div class="stat-icon">✂️</div>
           </div>
-          <div class="stat-card">
-            <div class="stat-details">
-              <span>Mi Comisión a Cobrar Hoy</span>
-              <h3 id="barber-portal-stat-comm" style="color: var(--gold-primary);">$0.00</h3>
-              <small>Porcentaje ganado hoy</small>
-            </div>
-            <div class="stat-icon">💵</div>
-          </div>
           <div class="stat-card purple">
             <div class="stat-details">
               <span>Mis Propinas Hoy</span>
               <h3 id="barber-portal-stat-tips">$0.00</h3>
-              <small>Directo para ti</small>
+              <small>Propinas registradas</small>
             </div>
             <div class="stat-icon">💰</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-details">
+              <span>Modalidad de Pago</span>
+              <h3 style="font-size: 1.25rem; color: var(--gold-primary); margin-top: 6px;">Sueldo Semanal</h3>
+              <small>Liquidación fija cada semana</small>
+            </div>
+            <div class="stat-icon">💼</div>
           </div>
         </div>
 
@@ -284,23 +284,23 @@
             <div class="panel-header">
               <h3>📅 Mi Calendario</h3>
             </div>
-            <div id="barber-calendar-widget-container">
-              <!-- Calendario interactivo montado por JS -->
-            </div>
+            <div id="barber-calendar-widget-container"></div>
             <div style="margin-top: 14px; text-align: center;">
               <span style="font-size: 0.82rem; color: var(--text-secondary);">Fecha seleccionada:</span>
               <div id="barber-selected-date-label" style="font-size: 1rem; font-weight: bold; color: var(--gold-primary); margin-top: 2px;">Hoy</div>
             </div>
           </div>
 
-          <!-- Lista de Citas del Barbero -->
+          <!-- Lista de Citas del Barbero (Solo Lectura de Estado) -->
           <div class="panel-card">
             <div class="panel-header">
               <div>
                 <h3 id="barber-citas-header-title">Mis Citas para Hoy</h3>
-                <p style="font-size: 0.8rem; color: var(--text-muted);">En cuanto se agende una cita contigo aparecerá aquí automáticamente</p>
+                <p style="font-size: 0.8rem; color: var(--text-muted);">
+                  ℹ️ El estado de cada cliente es gestionado por la cajera en recepción.
+                </p>
               </div>
-              <button class="btn btn-primary btn-sm" onclick="openNewAppointmentModal()">+ Agendar Cita</button>
+              <button class="btn btn-primary btn-sm" onclick="openBarberTipModal()">+ Registrar Propina</button>
             </div>
             <div class="table-responsive">
               <table class="data-table">
@@ -311,8 +311,8 @@
                     <th>Teléfono</th>
                     <th>Servicios Solicitados</th>
                     <th>Total</th>
-                    <th>Estado</th>
-                    <th>Acciones Rápidas</th>
+                    <th>Estado (Caja)</th>
+                    <th>Mi Propina</th>
                   </tr>
                 </thead>
                 <tbody id="barber-my-appointments-tbody">
@@ -324,19 +324,56 @@
         </div>
       </section>
 
-      <!-- ================= PORTAL EXCLUSIVO DE BARBERO: GANANCIAS ================= -->
-      <section class="view-section" id="view-barber-earnings">
-        <div class="panel-card" style="max-width: 800px; margin: 0 auto;">
+      <!-- ================= PORTAL EXCLUSIVO DE BARBERO: PROPINAS RECIBIDAS ================= -->
+      <section class="view-section" id="view-barber-tips">
+        <div class="panel-card" style="max-width: 900px; margin: 0 auto;">
           <div class="panel-header">
-            <h3>💰 Resumen de Mis Ganancias & Comisiones</h3>
+            <div>
+              <h3>💰 Mis Propinas Recibidas</h3>
+              <p style="font-size: 0.85rem; color: var(--text-secondary);">Lleva el control de todas las propinas en efectivo o directas que te dejan tus clientes.</p>
+            </div>
+            <button class="btn btn-primary" onclick="openBarberTipModal()">+ Registrar Nueva Propina</button>
           </div>
-          <div id="barber-earnings-content" style="display: flex; flex-direction: column; gap: 16px;">
-            <!-- Desglose inyectado por JS -->
+
+          <div class="grid-stats" style="margin-bottom: 20px;">
+            <div class="stat-card purple">
+              <div class="stat-details">
+                <span>Total Propinas Hoy</span>
+                <h3 id="barber-tips-today-total">$0.00</h3>
+                <small>Recibidas en esta jornada</small>
+              </div>
+              <div class="stat-icon">💵</div>
+            </div>
+            <div class="stat-card blue">
+              <div class="stat-details">
+                <span>Total Propinas Acumuladas</span>
+                <h3 id="barber-tips-all-total">$0.00</h3>
+                <small>Historial total registrado</small>
+              </div>
+              <div class="stat-icon">💰</div>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Fecha y Hora</th>
+                  <th>Cliente</th>
+                  <th>Monto de Propina</th>
+                  <th>Notas / Detalle</th>
+                  <th>Acción</th>
+                </tr>
+              </thead>
+              <tbody id="barber-tips-history-tbody">
+                <!-- Historial de propinas inyectadas -->
+              </tbody>
+            </table>
           </div>
         </div>
       </section>
 
-      <!-- ================= 2. AGENDA DE CITAS (ADMIN) ================= -->
+      <!-- ================= 2. AGENDA DE CITAS (ADMIN / CAJA) ================= -->
       <section class="view-section" id="view-appointments">
         <div style="display: grid; grid-template-columns: 320px 1fr; gap: 24px; align-items: start;">
           <!-- Calendario Interactivo Lateral para Filtrar -->
@@ -344,9 +381,7 @@
             <div class="panel-header">
               <h3>📅 Filtrar por Fecha</h3>
             </div>
-            <div id="admin-calendar-widget-container">
-              <!-- Calendario interactivo admin montado por JS -->
-            </div>
+            <div id="admin-calendar-widget-container"></div>
             <div class="form-group" style="margin-top: 16px;">
               <label class="form-label">Filtrar por Barbero</label>
               <select id="filter-appointment-barber" class="form-select">
@@ -363,7 +398,9 @@
             <div class="panel-header">
               <div>
                 <h3 id="admin-citas-header-title">Citas Agendadas</h3>
-                <span id="admin-citas-subtitle" style="font-size: 0.8rem; color: var(--text-muted);">Mostrando citas de la fecha seleccionada</span>
+                <span id="admin-citas-subtitle" style="font-size: 0.8rem; color: var(--text-muted);">
+                  Al cambiar el estado a "Completada" o hacer clic en "Cobrar", se abre el cobro en caja inmediatamente.
+                </span>
               </div>
             </div>
 
@@ -405,7 +442,7 @@
             </div>
           </div>
 
-          <!-- Panel de Carrito de Cobro -->
+          <!-- Panel de Carrito de Cobro (Sin apartado de propinas) -->
           <div class="pos-ticket-panel">
             <h3 style="font-size: 1.1rem; color: #fff; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
               Cobro en Sillón / Mostrador
@@ -436,14 +473,7 @@
                 <span id="pos-subtotal">$0.00</span>
               </div>
               <div class="summary-row">
-                <span>Propina Barbero</span>
-                <div style="display: flex; align-items: center; gap: 6px;">
-                  <span>$</span>
-                  <input type="number" id="pos-tip-input" class="form-control" value="0" min="0" step="5" style="width: 80px; padding: 4px 8px; text-align: right;">
-                </div>
-              </div>
-              <div class="summary-row">
-                <span>Descuento</span>
+                <span>Descuento Promoción</span>
                 <div style="display: flex; align-items: center; gap: 6px;">
                   <span>$</span>
                   <input type="number" id="pos-discount-input" class="form-control" value="0" min="0" step="5" style="width: 80px; padding: 4px 8px; text-align: right;">
@@ -472,12 +502,12 @@
         </div>
       </section>
 
-      <!-- ================= 4. CORTE DE CAJA ================= -->
+      <!-- ================= 4. CORTE DE CAJA (SIN LIQUIDACIÓN POR COMISIONES) ================= -->
       <section class="view-section" id="view-cash-register">
         <div class="panel-header">
           <div>
             <h3 style="font-size: 1.3rem;">Control & Corte de Caja (Arqueo Diario)</h3>
-            <p style="color: var(--text-secondary); font-size: 0.85rem;">Monitorea ingresos reales, salidas de dinero y arqueo de turnos.</p>
+            <p style="color: var(--text-secondary); font-size: 0.85rem;">Monitorea ingresos reales del negocio, salidas de dinero y arqueo de turnos.</p>
           </div>
           <div style="display: flex; gap: 10px;">
             <button class="btn btn-danger btn-sm" id="btn-modal-open-expense">- Registrar Gasto / Salida</button>
@@ -488,7 +518,7 @@
         <div class="cash-cut-grid" style="margin-top: 16px;">
           <!-- Estado Actual de Caja -->
           <div class="cash-box">
-            <h4 style="color: var(--text-secondary); font-size: 0.85rem; text-transform: uppercase; margin-bottom: 8px;">Fondo de Caja & Estado</h4>
+            <h4 style="color: var(--text-secondary); font-size: 0.85rem; text-transform: uppercase; margin-bottom: 8px;">Fondo de Caja & Desglose</h4>
             <div style="display: flex; align-items: baseline; gap: 8px;">
               <h2 style="font-size: 2rem; color: #fff;" id="cash-current-fondo">$0.00</h2>
               <span style="font-size: 0.8rem; color: var(--gold-primary);">Fondo Inicial</span>
@@ -507,7 +537,7 @@
                 <b id="cash-sales-transf" style="color: #fff;">$0.00</b>
               </div>
               <div style="display: flex; justify-content: space-between; color: #ff6b6b; border-top: 1px solid var(--border-color); padding-top: 6px;">
-                <span>Gastos / Salidas registradas:</span>
+                <span>Gastos / Salidas de caja chica:</span>
                 <b id="cash-expenses-total">-$0.00</b>
               </div>
               <div style="display: flex; justify-content: space-between; font-weight: bold; border-top: 1px solid var(--border-color); padding-top: 6px; font-size: 1rem; color: #4ade80;">
@@ -517,18 +547,25 @@
             </div>
           </div>
 
-          <!-- Total de Comisiones Pendientes de Barberos -->
+          <!-- Resumen Operativo del Turno -->
           <div class="cash-box">
-            <h4 style="color: var(--text-secondary); font-size: 0.85rem; text-transform: uppercase; margin-bottom: 8px;">Liquidación de Barberos Hoy</h4>
+            <h4 style="color: var(--text-secondary); font-size: 0.85rem; text-transform: uppercase; margin-bottom: 8px;">Resumen del Turno</h4>
             <div style="display: flex; align-items: baseline; gap: 8px;">
-              <h2 style="font-size: 2rem; color: var(--gold-primary);" id="cash-barber-commissions-total">$0.00</h2>
-              <span style="font-size: 0.8rem; color: var(--text-secondary);">Comisiones acumuladas</span>
+              <h2 style="font-size: 2rem; color: var(--gold-primary);" id="cash-total-sales-badge">$0.00</h2>
+              <span style="font-size: 0.8rem; color: var(--text-secondary);">Facturación total hoy</span>
             </div>
             <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 6px;">
-              Monto a liquidar a los barberos según su porcentaje pactado por servicios y productos.
+              Modalidad de barbería con sueldos semanales fijados. No se deducen comisiones diarias de la caja.
             </p>
-            <div id="cash-barbers-commissions-breakdown" style="margin-top: 14px; display: flex; flex-direction: column; gap: 8px; font-size: 0.85rem;">
-              <!-- Desglose por barbero -->
+            <div style="margin-top: 16px; display: flex; flex-direction: column; gap: 8px; font-size: 0.85rem;">
+              <div style="display: flex; justify-content: space-between; border-bottom: 1px dashed var(--border-color); padding-bottom: 4px;">
+                <span>Total de Transacciones:</span>
+                <b id="cash-total-tx-count" style="color: #fff;">0 ventas</b>
+              </div>
+              <div style="display: flex; justify-content: space-between; border-bottom: 1px dashed var(--border-color); padding-bottom: 4px;">
+                <span>Total Gastos de Caja Chica:</span>
+                <b id="cash-total-expenses-count" style="color: #ff6b6b;">$0.00</b>
+              </div>
             </div>
           </div>
         </div>
@@ -558,7 +595,7 @@
           </div>
         </div>
 
-        <!-- Historial de Cortes de Caja Anteriores -->
+        <!-- Historial de Cortes de Caja Anteriores (Sin comisiones) -->
         <div class="panel-card" style="margin-top: 24px;">
           <div class="panel-header">
             <h3>Historial de Cierres de Caja Anteriores</h3>
@@ -573,7 +610,6 @@
                   <th>Efectivo Esperado</th>
                   <th>Efectivo Contado</th>
                   <th>Diferencia</th>
-                  <th>Comisiones Barberos</th>
                   <th>Responsable</th>
                 </tr>
               </thead>
@@ -585,12 +621,14 @@
         </div>
       </section>
 
-      <!-- ================= 5. BARBEROS & CUENTAS ================= -->
+      <!-- ================= 5. BARBEROS & CUENTAS (SUELDO SEMANAL) ================= -->
       <section class="view-section" id="view-barbers">
         <div class="panel-header">
           <div>
             <h3>Equipo de Barberos & Cuentas de Acceso</h3>
-            <p style="color: var(--text-secondary); font-size: 0.85rem;">Configura comisiones y credenciales de usuario/contraseña para cada barbero.</p>
+            <p style="color: var(--text-secondary); font-size: 0.85rem;">
+              Gestión de personal y credenciales de usuario/contraseña. (Modalidad: Pago Semanal).
+            </p>
           </div>
           <button class="btn btn-primary" id="btn-modal-open-barber">+ Nuevo Barbero</button>
         </div>
@@ -696,9 +734,7 @@
           <!-- Paso 1: Servicios Múltiples -->
           <div class="form-group">
             <label class="form-label" style="font-size: 1rem; color: #fff;">1. Selecciona tus Servicios (Puedes elegir más de uno)</label>
-            <div class="multi-services-container" id="public-services-picker">
-              <!-- Tarjetas de selección múltiple de servicios -->
-            </div>
+            <div class="multi-services-container" id="public-services-picker"></div>
             <div class="multi-services-summary-pill" id="public-services-summary" style="display: none;">
               <span id="public-services-summary-text">0 servicios seleccionados</span>
               <b style="color: var(--gold-primary); font-size: 1.05rem;" id="public-services-summary-price">$0.00</b>
@@ -708,22 +744,17 @@
           <!-- Paso 2: Barbero Visual -->
           <div class="form-group" style="margin-top: 24px;">
             <label class="form-label" style="font-size: 1rem; color: #fff;">2. Elige a tu Barbero</label>
-            <div class="barber-picker-container" id="public-book-barbers-grid">
-              <!-- Tarjetas seleccionables de barbero -->
-            </div>
+            <div class="barber-picker-container" id="public-book-barbers-grid"></div>
           </div>
 
           <!-- Paso 3: Calendario Interactivo y Horarios -->
           <div style="margin-top: 24px; border-top: 1px solid var(--border-color); padding-top: 20px;">
             <label class="form-label" style="font-size: 1rem; color: #fff;">3. Elige Fecha y Horario</label>
             <div style="display: grid; grid-template-columns: 320px 1fr; gap: 20px; align-items: start;">
-              <!-- Calendario interactivo -->
               <div>
                 <span class="form-label">Fecha deseada</span>
                 <div id="public-calendar-widget-container"></div>
               </div>
-
-              <!-- Horarios disponibles -->
               <div>
                 <span class="form-label">Horario Disponible</span>
                 <div class="time-picker-container" id="public-time-picker-container"></div>
@@ -764,7 +795,7 @@
 
 <!-- ================= MODALES DEL SISTEMA ================= -->
 
-<!-- Modal: Agendar Nueva Cita (Con selección múltiple, calendario y horarios visuales) -->
+<!-- Modal: Agendar Nueva Cita -->
 <div class="modal-overlay" id="modal-appointment">
   <div class="modal-container" style="max-width: 680px;">
     <div class="modal-header">
@@ -786,9 +817,7 @@
       <!-- Selector Múltiple de Servicios -->
       <div class="form-group">
         <label class="form-label">Servicios Solicitados (Selecciona uno o varios) *</label>
-        <div class="multi-services-container" id="modal-services-picker">
-          <!-- Servicios clickeables -->
-        </div>
+        <div class="multi-services-container" id="modal-services-picker"></div>
         <div class="multi-services-summary-pill" id="modal-services-summary">
           <span id="modal-services-summary-text">0 servicios seleccionados</span>
           <b style="color: var(--gold-primary); font-size: 1.05rem;" id="modal-services-summary-price">$0.00</b>
@@ -798,9 +827,7 @@
       <!-- Selector Visual de Barbero -->
       <div class="form-group" style="margin-top: 14px;">
         <label class="form-label">Barbero Asignado *</label>
-        <div class="barber-picker-container" id="modal-barber-picker">
-          <!-- Barberos clickeables -->
-        </div>
+        <div class="barber-picker-container" id="modal-barber-picker"></div>
       </div>
 
       <!-- Calendario Interactivo y Horarios -->
@@ -823,6 +850,34 @@
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal('modal-appointment')">Cancelar</button>
       <button class="btn btn-primary" id="btn-save-appointment">Guardar y Agendar Cita</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Capturar Propina para el Barbero -->
+<div class="modal-overlay" id="modal-barber-tip">
+  <div class="modal-container" style="max-width: 440px;">
+    <div class="modal-header">
+      <h3>💵 Registrar Propina Recibida</h3>
+      <button class="modal-close" onclick="closeModal('modal-barber-tip')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Monto de la Propina ($) *</label>
+        <input type="number" id="tip-form-amount" class="form-control" style="font-size: 1.3rem; font-weight: bold; color: var(--gold-primary);" placeholder="50.00" min="1" step="5">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Nombre del Cliente / Cita</label>
+        <input type="text" id="tip-form-client" class="form-control" placeholder="Ej. Roberto Gómez o Cliente de las 11:30">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notas Adicionales (Opcional)</label>
+        <input type="text" id="tip-form-notes" class="form-control" placeholder="Ej. Propina en efectivo, muy agradecido">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-barber-tip')">Cancelar</button>
+      <button class="btn btn-primary" id="btn-save-barber-tip">Guardar Mi Propina</button>
     </div>
   </div>
 </div>
@@ -859,7 +914,7 @@
   </div>
 </div>
 
-<!-- Modal: Realizar Corte / Cierre de Caja -->
+<!-- Modal: Realizar Corte / Cierre de Caja (Sin comisiones) -->
 <div class="modal-overlay" id="modal-cashcut">
   <div class="modal-container">
     <div class="modal-header">
@@ -905,7 +960,7 @@
       </div>
       <div class="form-group">
         <label class="form-label">Notas / Observaciones del Cierre</label>
-        <input type="text" id="cut-notes" class="form-control" placeholder="Ej. Todo en orden, turno tarde finalizado sin incidencias...">
+        <input type="text" id="cut-notes" class="form-control" placeholder="Ej. Todo en orden, turno finalizado...">
       </div>
     </div>
     <div class="modal-footer">
@@ -915,7 +970,7 @@
   </div>
 </div>
 
-<!-- Modal: Nuevo / Editar Barbero con Credenciales de Acceso -->
+<!-- Modal: Nuevo / Editar Barbero con Cuenta de Acceso (Sin comisiones) -->
 <div class="modal-overlay" id="modal-barber">
   <div class="modal-container">
     <div class="modal-header">
@@ -935,16 +990,6 @@
         <div class="form-group">
           <label class="form-label">Especialidad</label>
           <input type="text" id="barber-form-specialty" class="form-control" placeholder="Ej. Master Fade & Barba Spa">
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Comisión en Servicios (%) *</label>
-          <input type="number" id="barber-form-commission-service" class="form-control" value="50" min="0" max="100">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Comisión en Productos (%) *</label>
-          <input type="number" id="barber-form-commission-product" class="form-control" value="15" min="0" max="100">
         </div>
       </div>
 
@@ -1070,9 +1115,7 @@
       <button class="modal-close" onclick="closeModal('modal-receipt')">&times;</button>
     </div>
     <div class="modal-body" style="background-color: #262a36; padding: 16px;">
-      <div class="receipt-box" id="printable-receipt-content">
-        <!-- Contenido generado dinámicamente -->
-      </div>
+      <div class="receipt-box" id="printable-receipt-content"></div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal('modal-receipt')">Cerrar</button>

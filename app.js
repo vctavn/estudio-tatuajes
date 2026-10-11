@@ -1,12 +1,13 @@
 /**
  * BARBERSHOP SYSTEM - THE BARBER CLUB & CO.
  * Lógica Completa de la Aplicación en JavaScript
- * Con soporte para Sesiones (Caja vs Barberos), Selección Múltiple y Calendario Personalizado
+ * Con soporte para Sesiones, Cobro Directo al Completar,
+ * Registro de Propinas por Barbero y Sueldo Semanal (Sin comisiones).
  */
 
 // ================= ESTADO INICIAL Y PERSISTENCIA =================
-const STORAGE_KEY = 'barbershop_system_data_v2';
-const SESSION_KEY = 'barbershop_system_session_v2';
+const STORAGE_KEY = 'barbershop_system_data_v3';
+const SESSION_KEY = 'barbershop_system_session_v3';
 
 const DEFAULT_DATA = {
   config: {
@@ -28,8 +29,7 @@ const DEFAULT_DATA = {
       password: "123",
       phone: "5512345678",
       specialty: "Degradados, Skin Fade & Diseños",
-      serviceCommission: 50, // 50%
-      productCommission: 15, // 15%
+      payType: "Sueldo Semanal",
       avatar: "💈"
     },
     {
@@ -39,8 +39,7 @@ const DEFAULT_DATA = {
       password: "123",
       phone: "5587654321",
       specialty: "Barba Spa & Ritual Tradicional",
-      serviceCommission: 55,
-      productCommission: 15,
+      payType: "Sueldo Semanal",
       avatar: "🧔"
     },
     {
@@ -50,8 +49,7 @@ const DEFAULT_DATA = {
       password: "123",
       phone: "5599887766",
       specialty: "Cortes Clásicos & Tijera",
-      serviceCommission: 50,
-      productCommission: 10,
+      payType: "Sueldo Semanal",
       avatar: "✂️"
     }
   ],
@@ -77,10 +75,11 @@ const DEFAULT_DATA = {
   ],
   appointments: [],
   cashMovements: [],
-  cashClosures: []
+  cashClosures: [],
+  barberTips: [] // Propinas capturadas directamente por los barberos
 };
 
-// Generar citas y movimientos de muestra para hoy
+// Generar citas, movimientos y propinas de muestra
 (function seedInitialData() {
   const todayStr = new Date().toISOString().split('T')[0];
   
@@ -168,13 +167,11 @@ const DEFAULT_DATA = {
       barberId: "b1",
       barberName: "Carlos 'Fade' Mendoza",
       amount: 520,
-      tip: 30,
       items: [
         { name: "Corte Clásico", price: 180, qty: 1, type: "service", id: "s1" },
         { name: "Perfilado de Barba", price: 140, qty: 1, type: "service", id: "s2" },
         { name: "Cera Pomada Mate", price: 200, qty: 1, type: "product", id: "p1" }
-      ],
-      commissions: { b1: 190 } // (320*0.5) + (200*0.15)
+      ]
     },
     {
       id: "mov-2",
@@ -186,8 +183,19 @@ const DEFAULT_DATA = {
       barberId: "admin",
       barberName: "Caja General",
       amount: 65,
-      tip: 0,
       items: []
+    }
+  ];
+
+  DEFAULT_DATA.barberTips = [
+    {
+      id: "tip-1",
+      barberId: "b1",
+      barberName: "Carlos 'Fade' Mendoza",
+      amount: 50,
+      client: "Roberto Gómez",
+      notes: "Propina en efectivo entregada en el sillón",
+      timestamp: new Date(Date.now() - 3 * 3600 * 1000).toISOString()
     }
   ];
 })();
@@ -201,6 +209,7 @@ function loadStore() {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed.barbers && parsed.services && parsed.config) {
+        if (!parsed.barberTips) parsed.barberTips = [];
         return parsed;
       }
     }
@@ -243,7 +252,7 @@ function handleLogin() {
   const userVal = document.getElementById('login-username').value.trim().toLowerCase();
   const passVal = document.getElementById('login-password').value.trim();
 
-  // Validar si es admin/caja
+  // Validar si es caja/admin
   if ((userVal === 'caja' || userVal === 'admin') && passVal === (store.config.adminPass || '123')) {
     saveSession({
       role: 'admin',
@@ -252,11 +261,11 @@ function handleLogin() {
       avatar: '💼'
     });
     applyUserSession();
-    showToast("¡Bienvenido! Sesión iniciada como Caja Principal", "success");
+    showToast("¡Bienvenida! Sesión iniciada como Caja", "success");
     return;
   }
 
-  // Validar si es un barbero
+  // Validar si es barbero
   const barber = store.barbers.find(b => (b.username && b.username.toLowerCase() === userVal) || b.id === userVal);
   if (barber && (barber.password === passVal || passVal === '123')) {
     saveSession({
@@ -268,7 +277,7 @@ function handleLogin() {
       specialty: barber.specialty
     });
     applyUserSession();
-    showToast(`¡Hola ${barber.name}! Bienvenido a tu portal de barbero`, "success");
+    showToast(`¡Hola ${barber.name}! Bienvenido a tu sesión`, "success");
     return;
   }
 
@@ -299,13 +308,11 @@ function applyUserSession() {
 
   loginScreen.classList.add('hidden');
 
-  // Actualizar badge en header
   document.getElementById('header-user-name').textContent = currentUser.name;
   document.getElementById('header-user-avatar').textContent = currentUser.avatar || '👤';
   document.getElementById('header-user-role').textContent = currentUser.role === 'admin' ? 'CAJA / ADMIN' : 'BARBERO';
   document.getElementById('sidebar-role-label').textContent = currentUser.role === 'admin' ? 'CAJA & CONTROL' : `BARBERO: ${currentUser.name.split(' ')[0]}`;
 
-  // Ajustar visibilidad de ítems en Sidebar
   const adminElements = document.querySelectorAll('.nav-admin-only');
   const barberElements = document.querySelectorAll('.nav-barber-only');
 
@@ -314,7 +321,6 @@ function applyUserSession() {
     barberElements.forEach(el => el.style.display = 'none');
     switchView('dashboard');
   } else {
-    // Es barbero
     adminElements.forEach(el => el.style.display = 'none');
     barberElements.forEach(el => el.style.display = '');
     switchView('barber-portal');
@@ -328,17 +334,14 @@ let currentView = 'dashboard';
 let currentPosCart = [];
 let currentPosTab = 'services';
 
-// Filtro de fechas
 let adminSelectedDate = new Date().toISOString().split('T')[0];
 let barberSelectedDate = new Date().toISOString().split('T')[0];
 
-// Estado de selección de Modal Cita
 let modalSelectedServices = [];
 let modalSelectedBarberId = null;
 let modalSelectedDate = new Date().toISOString().split('T')[0];
 let modalSelectedTime = null;
 
-// Estado de selección de Reserva Pública
 let publicSelectedServices = [];
 let publicSelectedBarberId = null;
 let publicSelectedDate = new Date().toISOString().split('T')[0];
@@ -350,7 +353,7 @@ document.addEventListener('DOMContentLoaded', () => {
   applyUserSession();
 });
 
-// ================= NAVEGACIÓN ENTRE VISTAS =================
+// ================= NAVEGACIÓN =================
 function switchView(viewName) {
   currentView = viewName;
   document.querySelectorAll('.view-section').forEach(sec => sec.classList.remove('active'));
@@ -365,13 +368,13 @@ function switchView(viewName) {
   const titles = {
     'dashboard': { t: 'Tablero Principal', s: 'Resumen y métricas de la barbería hoy' },
     'appointments': { t: 'Agenda de Citas', s: 'Control de citas, turnos y clientes en espera' },
-    'barber-portal': { t: 'Mi Portal de Barbero', s: 'Tu calendario de citas y clientes asignados' },
-    'barber-earnings': { t: 'Mis Ganancias', s: 'Desglose de cortes realizados, comisiones y propinas' },
-    'pos': { t: 'Punto de Venta (POS)', s: 'Cobro rápido de cortes, productos y propinas' },
+    'barber-portal': { t: 'Mi Agenda de Citas', s: 'Tus clientes asignados hoy (Estado controlado en caja)' },
+    'barber-tips': { t: 'Mis Propinas Recibidas', s: 'Registro personal de propinas recibidas de clientes' },
+    'pos': { t: 'Punto de Venta (POS)', s: 'Cobro rápido de servicios y productos' },
     'cash-register': { t: 'Corte de Caja', s: 'Arqueo de turno, control de efectivo y gastos' },
-    'barbers': { t: 'Barberos & Cuentas', s: 'Control de personal y credenciales de acceso' },
+    'barbers': { t: 'Barberos & Cuentas', s: 'Gestión de personal y credenciales (Pago Semanal)' },
     'catalog': { t: 'Servicios & Productos', s: 'Catálogo de cortes, tratamientos y stock' },
-    'clients': { t: 'Directorio de Clientes', s: 'Historial de visitas y preferencias de estilo' },
+    'clients': { t: 'Directorio de Clientes', s: 'Historial de visitas y notas de corte' },
     'public-booking': { t: 'Reserva Online', s: 'Portal para clientes y confirmación vía WhatsApp' }
   };
 
@@ -389,7 +392,7 @@ function switchView(viewName) {
 function renderAllViews() {
   if (currentUser && currentUser.role === 'barber') {
     renderBarberPortal();
-    renderBarberEarnings();
+    renderBarberTips();
   } else {
     renderDashboard();
     renderAppointments();
@@ -407,7 +410,7 @@ function renderView(viewName) {
     case 'dashboard': renderDashboard(); break;
     case 'appointments': renderAppointments(); break;
     case 'barber-portal': renderBarberPortal(); break;
-    case 'barber-earnings': renderBarberEarnings(); break;
+    case 'barber-tips': renderBarberTips(); break;
     case 'pos': renderPOS(); break;
     case 'cash-register': renderCashRegister(); break;
     case 'barbers': renderBarbers(); break;
@@ -431,9 +434,8 @@ function renderCustomCalendar(containerId, activeDateStr, onSelectCallback) {
     "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
   ];
 
-  const firstDayIndex = new Date(year, month, 1).getDay(); // 0: Dom, 1: Lun...
+  const firstDayIndex = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-
   const todayStr = new Date().toISOString().split('T')[0];
 
   container.innerHTML = `
@@ -452,14 +454,12 @@ function renderCustomCalendar(containerId, activeDateStr, onSelectCallback) {
 
   const daysGrid = document.getElementById(`${containerId}-days`);
 
-  // Días vacíos al inicio
   for (let i = 0; i < firstDayIndex; i++) {
     const empty = document.createElement('div');
     empty.className = 'cal-day-cell empty';
     daysGrid.appendChild(empty);
   }
 
-  // Días del mes
   for (let d = 1; d <= daysInMonth; d++) {
     const dayStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     const cell = document.createElement('div');
@@ -469,14 +469,10 @@ function renderCustomCalendar(containerId, activeDateStr, onSelectCallback) {
     if (dayStr === todayStr) cell.classList.add('today');
     if (dayStr === activeDateStr) cell.classList.add('selected');
 
-    cell.onclick = () => {
-      onSelectCallback(dayStr);
-    };
-
+    cell.onclick = () => onSelectCallback(dayStr);
     daysGrid.appendChild(cell);
   }
 
-  // Botones anterior y siguiente
   document.getElementById(`${containerId}-prev`).onclick = () => {
     const prevMonthDate = new Date(year, month - 1, 1).toISOString().split('T')[0];
     renderCustomCalendar(containerId, prevMonthDate, onSelectCallback);
@@ -496,7 +492,6 @@ function renderTimeSlotsWidget(containerId, barberId, selectedDate, selectedTime
   const morningSlots = ["10:00", "10:45", "11:30", "12:15", "13:00"];
   const afternoonSlots = ["14:00", "14:45", "15:30", "16:15", "17:00", "17:45", "18:30", "19:15"];
 
-  // Citas agendadas para este barbero en esta fecha
   const bookedApps = store.appointments.filter(a => a.date === selectedDate && a.barberId === barberId && a.status !== 'cancelada');
   const bookedTimes = bookedApps.map(a => a.time);
 
@@ -549,7 +544,6 @@ function renderDashboard() {
   const badgeEl = document.getElementById('badge-appointments-count');
   if (badgeEl) badgeEl.textContent = pendingCount;
 
-  // Citas de hoy
   const tbody = document.getElementById('dash-today-appointments-tbody');
   tbody.innerHTML = '';
 
@@ -579,7 +573,6 @@ function renderDashboard() {
     });
   }
 
-  // Estado de barberos
   const barbersList = document.getElementById('dash-barbers-status-list');
   barbersList.innerHTML = '';
   store.barbers.forEach(barber => {
@@ -606,165 +599,7 @@ function renderDashboard() {
   });
 }
 
-// ================= RENDERIZADO: PORTAL EXCLUSIVO DE BARBERO =================
-function renderBarberPortal() {
-  if (!currentUser || currentUser.role !== 'barber') return;
-
-  const barberId = currentUser.barberId;
-  const todayStr = new Date().toISOString().split('T')[0];
-
-  // Métricas del barbero para hoy
-  const todayApps = store.appointments.filter(a => a.barberId === barberId && a.date === todayStr);
-  const doneApps = todayApps.filter(a => a.status === 'completada');
-
-  // Ganancias del barbero hoy
-  const todaySales = store.cashMovements.filter(m => m.timestamp.startsWith(todayStr) && m.type === 'venta' && m.barberId === barberId);
-  let earnedComm = 0;
-  let earnedTips = 0;
-
-  todaySales.forEach(s => {
-    if (s.commissions && s.commissions[barberId]) earnedComm += s.commissions[barberId];
-    earnedTips += (s.tip || 0);
-  });
-
-  document.getElementById('barber-portal-stat-apps').textContent = todayApps.length;
-  document.getElementById('barber-portal-stat-done').textContent = doneApps.length;
-  document.getElementById('barber-portal-stat-comm').textContent = formatMoney(earnedComm);
-  document.getElementById('barber-portal-stat-tips').textContent = formatMoney(earnedTips);
-
-  // Renderizar Calendario del Barbero
-  renderCustomCalendar('barber-calendar-widget-container', barberSelectedDate, (newDate) => {
-    barberSelectedDate = newDate;
-    document.getElementById('barber-selected-date-label').textContent = (newDate === todayStr) ? "Hoy (" + newDate + ")" : newDate;
-    renderBarberPortal();
-  });
-
-  document.getElementById('barber-citas-header-title').textContent = (barberSelectedDate === todayStr)
-    ? `Mis Citas para Hoy (${barberSelectedDate})`
-    : `Mis Citas para el ${barberSelectedDate}`;
-
-  // Lista de Citas del Barbero para la fecha seleccionada
-  const dateApps = store.appointments.filter(a => a.barberId === barberId && a.date === barberSelectedDate);
-  const tbody = document.getElementById('barber-my-appointments-tbody');
-  tbody.innerHTML = '';
-
-  if (dateApps.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color: var(--text-muted); padding: 32px;">No tienes citas programadas para esta fecha.</td></tr>`;
-    return;
-  }
-
-  dateApps.sort((a,b) => a.time.localeCompare(b.time)).forEach(app => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td><strong style="color: var(--gold-primary); font-size: 1.05rem;">${app.time}</strong></td>
-      <td>
-        <b>${escapeHtml(app.clientName)}</b>
-        ${app.notes ? `<div style="font-size: 0.75rem; color: var(--text-muted);">${escapeHtml(app.notes)}</div>` : ''}
-      </td>
-      <td>
-        <span>${escapeHtml(app.clientPhone || 'Sin tel')}</span>
-        ${app.clientPhone ? `
-          <button class="btn btn-secondary btn-sm" style="padding: 2px 6px; margin-left: 6px; font-size: 0.7rem;" onclick="sendWhatsAppReminder('${app.id}')">📲 WhatsApp</button>
-        ` : ''}
-      </td>
-      <td><span style="font-size: 0.88rem; color: #fff;">${escapeHtml(app.serviceName)}</span></td>
-      <td><strong>${formatMoney(app.price)}</strong></td>
-      <td>${renderStatusBadge(app.status)}</td>
-      <td>
-        <div style="display:flex; gap:6px;">
-          ${app.status === 'pendiente' ? `
-            <button class="btn btn-primary btn-sm" onclick="updateAppointmentStatus('${app.id}', 'en_proceso')">✂️ En Sillón</button>
-          ` : ''}
-          ${app.status === 'en_proceso' ? `
-            <button class="btn btn-success btn-sm" onclick="updateAppointmentStatus('${app.id}', 'completada')">✅ Terminado</button>
-          ` : ''}
-          ${app.status === 'completada' ? `
-            <span style="color:#4ade80; font-size:0.8rem; font-weight:600;">Listo para Caja</span>
-          ` : ''}
-        </div>
-      </td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-
-function renderBarberEarnings() {
-  if (!currentUser || currentUser.role !== 'barber') return;
-
-  const barberId = currentUser.barberId;
-  const todayStr = new Date().toISOString().split('T')[0];
-  const mySales = store.cashMovements.filter(m => m.timestamp.startsWith(todayStr) && m.type === 'venta' && m.barberId === barberId);
-
-  let totalSalesAmount = 0;
-  let totalCommissions = 0;
-  let totalTips = 0;
-
-  mySales.forEach(s => {
-    totalSalesAmount += s.amount;
-    if (s.commissions && s.commissions[barberId]) totalCommissions += s.commissions[barberId];
-    totalTips += (s.tip || 0);
-  });
-
-  const content = document.getElementById('barber-earnings-content');
-  content.innerHTML = `
-    <div class="grid-stats">
-      <div class="stat-card green">
-        <div class="stat-details">
-          <span>Total Facturado por Ti</span>
-          <h3>${formatMoney(totalSalesAmount)}</h3>
-          <small>En servicios y productos hoy</small>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-details">
-          <span>Tu Comisión a Cobrar</span>
-          <h3 style="color: var(--gold-primary);">${formatMoney(totalCommissions)}</h3>
-          <small>Tu porcentaje del día</small>
-        </div>
-      </div>
-      <div class="stat-card purple">
-        <div class="stat-details">
-          <span>Tus Propinas Acumuladas</span>
-          <h3 style="color: #c084fc;">+${formatMoney(totalTips)}</h3>
-          <small>100% tuyas</small>
-        </div>
-      </div>
-    </div>
-
-    <div class="panel-card" style="margin-top: 14px;">
-      <h4 style="color:#fff; margin-bottom: 12px;">Desglose de Clientes Atendidos Hoy</h4>
-      <div class="table-responsive">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Hora</th>
-              <th>Cliente</th>
-              <th>Concepto / Servicios</th>
-              <th>Total Cobrado</th>
-              <th>Tu Comisión</th>
-              <th>Propina</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${mySales.length === 0 ? `<tr><td colspan="6" style="text-align:center; padding: 20px; color: var(--text-muted);">No has generado cobros el día de hoy.</td></tr>` : ''}
-            ${mySales.map(s => `
-              <tr>
-                <td><strong>${new Date(s.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</strong></td>
-                <td><b>${escapeHtml(s.client)}</b></td>
-                <td>${escapeHtml(s.concept)}</td>
-                <td>${formatMoney(s.amount)}</td>
-                <td><strong style="color: var(--gold-primary);">${formatMoney((s.commissions && s.commissions[barberId]) || 0)}</strong></td>
-                <td><strong style="color: #4ade80;">+${formatMoney(s.tip || 0)}</strong></td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  `;
-}
-
-// ================= RENDERIZADO: AGENDA DE CITAS (ADMIN) =================
+// ================= RENDERIZADO: AGENDA DE CITAS (CAJERA / ADMIN) =================
 function renderAppointments() {
   const barberSelect = document.getElementById('filter-appointment-barber');
   const selectedBarber = barberSelect ? barberSelect.value : 'all';
@@ -778,7 +613,6 @@ function renderAppointments() {
     if (curVal) barberSelect.value = curVal;
   }
 
-  // Renderizar Calendario Interactivo de Admin
   renderCustomCalendar('admin-calendar-widget-container', adminSelectedDate, (newDate) => {
     adminSelectedDate = newDate;
     renderAppointments();
@@ -818,10 +652,10 @@ function renderAppointments() {
       <td>${escapeHtml(barber.name)}</td>
       <td><strong>${formatMoney(app.price)}</strong></td>
       <td>
-        <select class="form-select" style="padding: 4px 8px; font-size: 0.8rem; width: auto;" onchange="updateAppointmentStatus('${app.id}', this.value)">
+        <select class="form-select" style="padding: 4px 8px; font-size: 0.8rem; width: auto;" onchange="handleAdminStatusChange('${app.id}', this.value)">
           <option value="pendiente" ${app.status === 'pendiente' ? 'selected' : ''}>⏳ Pendiente</option>
           <option value="en_proceso" ${app.status === 'en_proceso' ? 'selected' : ''}>✂️ En Sillón</option>
-          <option value="completada" ${app.status === 'completada' ? 'selected' : ''}>✅ Completada</option>
+          <option value="completada" ${app.status === 'completada' ? 'selected' : ''}>💳 Completar y Cobrar</option>
           <option value="cancelada" ${app.status === 'cancelada' ? 'selected' : ''}>❌ Cancelada</option>
         </select>
       </td>
@@ -829,7 +663,7 @@ function renderAppointments() {
         <div style="display: flex; gap: 6px;">
           ${app.status !== 'completada' ? `
             <button class="btn btn-primary btn-sm" onclick="directPayAppointment('${app.id}')">Cobrar</button>
-          ` : ''}
+          ` : `<span style="color:#4ade80; font-size:0.75rem; font-weight:bold;">Cobrado</span>`}
           <button class="btn btn-danger btn-sm" onclick="deleteAppointment('${app.id}')" title="Eliminar cita">🗑️</button>
         </div>
       </td>
@@ -838,17 +672,25 @@ function renderAppointments() {
   });
 }
 
+// Cuando la cajera cambia el estado de la cita
+function handleAdminStatusChange(appId, newStatus) {
+  if (newStatus === 'completada') {
+    // REQUERIMIENTO: Si selecciona completada, mandar directo a cobrar
+    directPayAppointment(appId);
+    showToast("Cita marcada como completada. Redirigiendo a cobrar en caja...", "info");
+  } else {
+    updateAppointmentStatus(appId, newStatus);
+  }
+}
+
 function updateAppointmentStatus(appId, newStatus) {
   const app = store.appointments.find(a => a.id === appId);
   if (app) {
     app.status = newStatus;
     saveStore();
-    if (currentUser && currentUser.role === 'barber') {
-      renderBarberPortal();
-    } else {
-      renderDashboard();
-      renderAppointments();
-    }
+    renderDashboard();
+    renderAppointments();
+    if (currentUser && currentUser.role === 'barber') renderBarberPortal();
     showToast(`Estado actualizado: ${newStatus}`, 'info');
   }
 }
@@ -874,6 +716,169 @@ function sendWhatsAppReminder(appId) {
   window.open(`https://wa.me/${cleanPhone}?text=${msg}`, '_blank');
 }
 
+// ================= RENDERIZADO: PORTAL EXCLUSIVO DE BARBERO =================
+function renderBarberPortal() {
+  if (!currentUser || currentUser.role !== 'barber') return;
+
+  const barberId = currentUser.barberId;
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  const todayApps = store.appointments.filter(a => a.barberId === barberId && a.date === todayStr);
+  const doneApps = todayApps.filter(a => a.status === 'completada');
+
+  // Calcular total de propinas que el barbero ha capturado hoy
+  const myTipsToday = (store.barberTips || [])
+    .filter(t => t.barberId === barberId && t.timestamp && t.timestamp.startsWith(todayStr))
+    .reduce((sum, t) => sum + (t.amount || 0), 0);
+
+  document.getElementById('barber-portal-stat-apps').textContent = todayApps.length;
+  document.getElementById('barber-portal-stat-done').textContent = doneApps.length;
+  document.getElementById('barber-portal-stat-tips').textContent = formatMoney(myTipsToday);
+
+  // Calendario del Barbero
+  renderCustomCalendar('barber-calendar-widget-container', barberSelectedDate, (newDate) => {
+    barberSelectedDate = newDate;
+    document.getElementById('barber-selected-date-label').textContent = (newDate === todayStr) ? "Hoy (" + newDate + ")" : newDate;
+    renderBarberPortal();
+  });
+
+  document.getElementById('barber-citas-header-title').textContent = (barberSelectedDate === todayStr)
+    ? `Mis Citas para Hoy (${barberSelectedDate})`
+    : `Mis Citas para el ${barberSelectedDate}`;
+
+  // Citas del Barbero: SOLO LECTURA DEL ESTADO (Sin opción de editar el estado)
+  const dateApps = store.appointments.filter(a => a.barberId === barberId && a.date === barberSelectedDate);
+  const tbody = document.getElementById('barber-my-appointments-tbody');
+  tbody.innerHTML = '';
+
+  if (dateApps.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color: var(--text-muted); padding: 32px;">No tienes citas registradas para esta fecha.</td></tr>`;
+    return;
+  }
+
+  dateApps.sort((a,b) => a.time.localeCompare(b.time)).forEach(app => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><strong style="color: var(--gold-primary); font-size: 1.05rem;">${app.time}</strong></td>
+      <td>
+        <b>${escapeHtml(app.clientName)}</b>
+        ${app.notes ? `<div style="font-size: 0.75rem; color: var(--text-muted);">${escapeHtml(app.notes)}</div>` : ''}
+      </td>
+      <td>
+        <span>${escapeHtml(app.clientPhone || 'Sin tel')}</span>
+        ${app.clientPhone ? `
+          <button class="btn btn-secondary btn-sm" style="padding: 2px 6px; margin-left: 6px; font-size: 0.7rem;" onclick="sendWhatsAppReminder('${app.id}')">📲 Recordatorio</button>
+        ` : ''}
+      </td>
+      <td><span style="font-size: 0.88rem; color: #fff;">${escapeHtml(app.serviceName)}</span></td>
+      <td><strong>${formatMoney(app.price)}</strong></td>
+      <td>
+        <!-- SOLO LECTURA DEL ESTADO ASIGNADO POR LA CAJERA -->
+        ${renderStatusBadge(app.status)}
+      </td>
+      <td>
+        <!-- BOTÓN PARA REGISTRAR PROPINA DE ESTE CLIENTE -->
+        <button class="btn btn-secondary btn-sm" onclick="openBarberTipModal('${escapeHtml(app.clientName)}')">
+          💵 + Propina
+        </button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// ================= RENDERIZADO: PROPINAS DEL BARBERO =================
+function renderBarberTips() {
+  if (!currentUser || currentUser.role !== 'barber') return;
+
+  const barberId = currentUser.barberId;
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  const myTips = (store.barberTips || []).filter(t => t.barberId === barberId);
+  const myTipsToday = myTips.filter(t => t.timestamp && t.timestamp.startsWith(todayStr));
+
+  const totalToday = myTipsToday.reduce((sum, t) => sum + (t.amount || 0), 0);
+  const totalAll = myTips.reduce((sum, t) => sum + (t.amount || 0), 0);
+
+  document.getElementById('barber-tips-today-total').textContent = formatMoney(totalToday);
+  document.getElementById('barber-tips-all-total').textContent = formatMoney(totalAll);
+
+  const tbody = document.getElementById('barber-tips-history-tbody');
+  tbody.innerHTML = '';
+
+  if (myTips.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 24px; color: var(--text-muted);">Aún no has registrado propinas. Haz clic en '+ Registrar Nueva Propina'.</td></tr>`;
+    return;
+  }
+
+  myTips.slice().reverse().forEach(tip => {
+    const timeFormatted = new Date(tip.timestamp).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' });
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><strong>${timeFormatted}</strong></td>
+      <td><b>${escapeHtml(tip.client || 'Cliente')}</b></td>
+      <td><strong style="color: #4ade80; font-size: 1.05rem;">+${formatMoney(tip.amount)}</strong></td>
+      <td style="color: var(--text-secondary);">${escapeHtml(tip.notes || '-')}</td>
+      <td>
+        <button class="btn btn-danger btn-sm" onclick="deleteBarberTip('${tip.id}')">🗑️</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function openBarberTipModal(clientName = '') {
+  document.getElementById('tip-form-amount').value = '';
+  document.getElementById('tip-form-client').value = clientName || '';
+  document.getElementById('tip-form-notes').value = '';
+  openModal('modal-barber-tip');
+}
+
+function saveBarberTipFromModal() {
+  const amount = parseFloat(document.getElementById('tip-form-amount').value);
+  const client = document.getElementById('tip-form-client').value.trim() || 'Cliente';
+  const notes = document.getElementById('tip-form-notes').value.trim();
+
+  if (isNaN(amount) || amount <= 0) {
+    showToast("Por favor ingresa un monto de propina válido", "error");
+    return;
+  }
+
+  if (!currentUser || currentUser.role !== 'barber') {
+    showToast("Solo los barberos pueden capturar sus propinas personales", "error");
+    return;
+  }
+
+  const newTip = {
+    id: `tip-${Date.now()}`,
+    barberId: currentUser.barberId,
+    barberName: currentUser.name,
+    amount: amount,
+    client: client,
+    notes: notes,
+    timestamp: new Date().toISOString()
+  };
+
+  if (!store.barberTips) store.barberTips = [];
+  store.barberTips.push(newTip);
+
+  saveStore();
+  closeModal('modal-barber-tip');
+  renderBarberPortal();
+  renderBarberTips();
+  showToast(`¡Propina de ${formatMoney(amount)} registrada con éxito!`, "success");
+}
+
+function deleteBarberTip(tipId) {
+  if (confirm("¿Deseas eliminar este registro de propina?")) {
+    store.barberTips = store.barberTips.filter(t => t.id !== tipId);
+    saveStore();
+    renderBarberPortal();
+    renderBarberTips();
+    showToast("Propina eliminada", "info");
+  }
+}
+
 // ================= COMPONENTE DE SELECCIÓN MÚLTIPLE DE SERVICIOS =================
 function renderMultiServicesPicker(containerId, summaryTextId, summaryPriceId, selectedServicesArray, onToggleCallback) {
   const container = document.getElementById(containerId);
@@ -895,14 +900,10 @@ function renderMultiServicesPicker(containerId, summaryTextId, summaryPriceId, s
       </div>
     `;
 
-    item.onclick = () => {
-      onToggleCallback(srv);
-    };
-
+    item.onclick = () => onToggleCallback(srv);
     container.appendChild(item);
   });
 
-  // Actualizar resumen
   const totalCount = selectedServicesArray.length;
   const totalPrice = selectedServicesArray.reduce((acc, s) => acc + s.price, 0);
   const totalDuration = selectedServicesArray.reduce((acc, s) => acc + s.duration, 0);
@@ -921,7 +922,7 @@ function renderMultiServicesPicker(containerId, summaryTextId, summaryPriceId, s
   }
 }
 
-// ================= MODAL DE CITAS (NUEVA CITA CON MÚLTIPLES SERVICIOS) =================
+// ================= MODAL DE CITAS =================
 function openNewAppointmentModal(prefillClient = null) {
   document.getElementById('modal-appointment-title').textContent = "Agendar Nueva Cita";
   const nameInput = document.getElementById('app-form-client');
@@ -935,14 +936,12 @@ function openNewAppointmentModal(prefillClient = null) {
     phoneInput.value = '';
   }
 
-  // Si estamos como barbero, preseleccionar al barbero actual
   if (currentUser && currentUser.role === 'barber') {
     modalSelectedBarberId = currentUser.barberId;
   } else if (!modalSelectedBarberId && store.barbers.length > 0) {
     modalSelectedBarberId = store.barbers[0].id;
   }
 
-  // Preseleccionar primer servicio si está vacío
   if (modalSelectedServices.length === 0 && store.services.length > 0) {
     modalSelectedServices = [store.services[0]];
   }
@@ -956,7 +955,6 @@ function openNewAppointmentModal(prefillClient = null) {
 }
 
 function renderModalAppointmentComponents() {
-  // 1. Selector múltiple de servicios
   renderMultiServicesPicker(
     'modal-services-picker',
     'modal-services-summary-text',
@@ -973,7 +971,6 @@ function renderModalAppointmentComponents() {
     }
   );
 
-  // 2. Selector de Barberos
   const barberContainer = document.getElementById('modal-barber-picker');
   barberContainer.innerHTML = '';
   store.barbers.forEach(b => {
@@ -992,13 +989,11 @@ function renderModalAppointmentComponents() {
     barberContainer.appendChild(card);
   });
 
-  // 3. Calendario Interactivo
   renderCustomCalendar('modal-calendar-widget-container', modalSelectedDate, (newDate) => {
     modalSelectedDate = newDate;
     renderModalAppointmentComponents();
   });
 
-  // 4. Selector de Horarios
   renderTimeSlotsWidget(
     'modal-time-picker-container',
     modalSelectedBarberId,
@@ -1017,20 +1012,17 @@ function saveAppointmentFromModal() {
   const notes = document.getElementById('app-form-notes').value.trim();
 
   if (!name) {
-    showToast("Por favor ingresa el nombre del cliente", "error");
+    showToast("Ingresa el nombre del cliente", "error");
     return;
   }
-
   if (modalSelectedServices.length === 0) {
-    showToast("Selecciona al menos un servicio para la cita", "error");
+    showToast("Selecciona al menos un servicio", "error");
     return;
   }
-
   if (!modalSelectedBarberId) {
     showToast("Selecciona al barbero asignado", "error");
     return;
   }
-
   if (!modalSelectedTime) {
     showToast("Selecciona un horario disponible", "error");
     return;
@@ -1071,7 +1063,7 @@ function saveAppointmentFromModal() {
   showToast(`Cita agendada para ${name} (${modalSelectedTime} hrs)`, "success");
 }
 
-// ================= RENDERIZADO: RESERVA ONLINE (CLIENTES) =================
+// ================= RENDERIZADO: RESERVA ONLINE =================
 function renderPublicBooking() {
   if (publicSelectedServices.length === 0 && store.services.length > 0) {
     publicSelectedServices = [store.services[0]];
@@ -1081,7 +1073,6 @@ function renderPublicBooking() {
     publicSelectedBarberId = store.barbers[0].id;
   }
 
-  // 1. Selector múltiple de servicios en vista pública
   renderMultiServicesPicker(
     'public-services-picker',
     'public-services-summary-text',
@@ -1101,7 +1092,6 @@ function renderPublicBooking() {
   const summaryPill = document.getElementById('public-services-summary');
   if (summaryPill) summaryPill.style.display = publicSelectedServices.length > 0 ? 'flex' : 'none';
 
-  // 2. Selector visual de barberos
   const barbersGrid = document.getElementById('public-book-barbers-grid');
   barbersGrid.innerHTML = '';
   store.barbers.forEach(b => {
@@ -1120,13 +1110,11 @@ function renderPublicBooking() {
     barbersGrid.appendChild(card);
   });
 
-  // 3. Calendario Interactivo
   renderCustomCalendar('public-calendar-widget-container', publicSelectedDate, (newDate) => {
     publicSelectedDate = newDate;
     renderPublicBooking();
   });
 
-  // 4. Selector de Horarios
   if (!publicSelectedTime) publicSelectedTime = "11:30";
   renderTimeSlotsWidget(
     'public-time-picker-container',
@@ -1149,12 +1137,10 @@ function submitPublicBooking() {
     showToast("Por favor ingresa tu nombre y WhatsApp", "error");
     return;
   }
-
   if (publicSelectedServices.length === 0) {
     showToast("Selecciona al menos un servicio", "error");
     return;
   }
-
   if (!publicSelectedTime) {
     showToast("Selecciona un horario disponible", "error");
     return;
@@ -1183,7 +1169,6 @@ function submitPublicBooking() {
 
   store.appointments.push(newApp);
 
-  // Registrar cliente si es nuevo
   if (!store.clients.some(c => c.phone === phone)) {
     store.clients.push({
       id: `c-${Date.now()}`,
@@ -1213,7 +1198,7 @@ function submitPublicBooking() {
   window.open(`https://wa.me/${shopPhone}?text=${msg}`, '_blank');
 }
 
-// ================= RENDERIZADO: PUNTO DE VENTA (POS) =================
+// ================= RENDERIZADO: PUNTO DE VENTA (POS - SIN PROPINAS EN CAJA) =================
 function renderPOS() {
   const barberSelect = document.getElementById('pos-barber-select');
   if (barberSelect) {
@@ -1275,7 +1260,7 @@ function addPosItemToCart(item) {
     if (item.type === 'product') {
       const prodInStore = store.products.find(p => p.id === item.id);
       if (prodInStore && existing.qty >= prodInStore.stock) {
-        showToast("No hay más stock", "error");
+        showToast("No hay más stock disponible", "error");
         return;
       }
     }
@@ -1344,14 +1329,14 @@ function renderPosCart() {
 }
 
 function updatePosTotals(subtotal) {
-  const tip = parseFloat(document.getElementById('pos-tip-input').value) || 0;
   const discount = parseFloat(document.getElementById('pos-discount-input').value) || 0;
-  const total = Math.max(0, subtotal + tip - discount);
+  const total = Math.max(0, subtotal - discount);
 
   document.getElementById('pos-subtotal').textContent = formatMoney(subtotal);
   document.getElementById('pos-total').textContent = formatMoney(total);
 }
 
+// Cargar cita en caja y cambiar vista
 function directPayAppointment(appId) {
   const app = store.appointments.find(a => a.id === appId);
   if (!app) return;
@@ -1361,7 +1346,6 @@ function directPayAppointment(appId) {
   document.getElementById('pos-client-name').value = app.clientName;
   document.getElementById('pos-barber-select').value = app.barberId;
 
-  // Si tiene servicios múltiples, agregarlos todos al carrito
   currentPosCart = [];
   if (app.services && app.services.length > 0) {
     app.services.forEach(s => {
@@ -1386,12 +1370,12 @@ function directPayAppointment(appId) {
   }
 
   renderPosCart();
-  showToast(`Cita de ${app.clientName} cargada para cobro`, 'info');
+  showToast(`Cita de ${app.clientName} cargada en caja para cobro directo`, 'info');
 }
 
 function checkoutPOS() {
   if (currentPosCart.length === 0) {
-    showToast("Agrega al menos un servicio o producto para cobrar", "error");
+    showToast("Agrega servicios o productos para cobrar", "error");
     return;
   }
 
@@ -1401,22 +1385,13 @@ function checkoutPOS() {
   const barber = store.barbers.find(b => b.id === barberId);
   const paymentMethod = document.getElementById('pos-payment-method').value;
 
-  const tip = parseFloat(document.getElementById('pos-tip-input').value) || 0;
   const discount = parseFloat(document.getElementById('pos-discount-input').value) || 0;
-
   let subtotal = 0;
-  let barberCommission = 0;
 
   currentPosCart.forEach(item => {
     subtotal += item.price * item.qty;
 
-    if (item.type === 'service') {
-      const commPct = (barber ? barber.serviceCommission : 50) / 100;
-      barberCommission += (item.price * item.qty) * commPct;
-    } else if (item.type === 'product') {
-      const commPct = (barber ? barber.productCommission : 15) / 100;
-      barberCommission += (item.price * item.qty) * commPct;
-
+    if (item.type === 'product') {
       const prodInStore = store.products.find(p => p.id === item.id);
       if (prodInStore) prodInStore.stock = Math.max(0, prodInStore.stock - item.qty);
     }
@@ -1427,7 +1402,7 @@ function checkoutPOS() {
     }
   });
 
-  const total = Math.max(0, subtotal + tip - discount);
+  const total = Math.max(0, subtotal - discount);
 
   const movement = {
     id: `mov-${Date.now()}`,
@@ -1439,13 +1414,9 @@ function checkoutPOS() {
     barberId: barberId,
     barberName: barber ? barber.name : "Sin Asignar",
     subtotal: subtotal,
-    tip: tip,
     discount: discount,
     amount: total,
-    items: JSON.parse(JSON.stringify(currentPosCart)),
-    commissions: {
-      [barberId]: barberCommission
-    }
+    items: JSON.parse(JSON.stringify(currentPosCart))
   };
 
   store.cashMovements.push(movement);
@@ -1470,7 +1441,6 @@ function checkoutPOS() {
 
   currentPosCart = [];
   document.getElementById('pos-client-name').value = '';
-  document.getElementById('pos-tip-input').value = '0';
   document.getElementById('pos-discount-input').value = '0';
   renderPosCart();
   renderDashboard();
@@ -1481,7 +1451,7 @@ function checkoutPOS() {
   showToast(`¡Cobro exitoso de ${formatMoney(total)} registrado!`, 'success');
 }
 
-// ================= RENDERIZADO: CORTE DE CAJA =================
+// ================= RENDERIZADO: CORTE DE CAJA (SIN COMISIONES) =================
 function renderCashRegister() {
   const todayStr = new Date().toISOString().split('T')[0];
   const todayMovs = store.cashMovements.filter(m => m.timestamp.startsWith(todayStr));
@@ -1493,25 +1463,16 @@ function renderCashRegister() {
   let salesCard = 0;
   let salesTransf = 0;
   let totalExpenses = 0;
-
-  const barberComms = {};
-  store.barbers.forEach(b => barberComms[b.id] = { name: b.name, totalComm: 0, totalTips: 0, servicesCount: 0 });
+  let totalSales = 0;
+  let salesCount = 0;
 
   todayMovs.forEach(mov => {
     if (mov.type === 'venta') {
+      salesCount += 1;
+      totalSales += mov.amount;
       if (mov.paymentMethod === 'efectivo') salesCash += mov.amount;
       if (mov.paymentMethod === 'tarjeta') salesCard += mov.amount;
       if (mov.paymentMethod === 'transferencia') salesTransf += mov.amount;
-
-      if (mov.commissions) {
-        for (const bId in mov.commissions) {
-          if (barberComms[bId]) {
-            barberComms[bId].totalComm += mov.commissions[bId];
-            barberComms[bId].totalTips += (mov.tip || 0);
-            barberComms[bId].servicesCount += 1;
-          }
-        }
-      }
     } else if (mov.type === 'gasto') {
       totalExpenses += mov.amount;
     }
@@ -1525,24 +1486,9 @@ function renderCashRegister() {
   document.getElementById('cash-expenses-total').textContent = `-${formatMoney(totalExpenses)}`;
   document.getElementById('cash-expected-drawer').textContent = formatMoney(expectedDrawerCash);
 
-  let grandTotalCommissions = 0;
-  const breakdownDiv = document.getElementById('cash-barbers-commissions-breakdown');
-  breakdownDiv.innerHTML = '';
-
-  for (const bId in barberComms) {
-    const bData = barberComms[bId];
-    grandTotalCommissions += bData.totalComm + bData.totalTips;
-
-    const row = document.createElement('div');
-    row.style.cssText = "display: flex; justify-content: space-between; border-bottom: 1px dashed var(--border-color); padding-bottom: 4px;";
-    row.innerHTML = `
-      <span>${escapeHtml(bData.name)} (${bData.servicesCount} cortes):</span>
-      <b>${formatMoney(bData.totalComm + bData.totalTips)} <small style="color:var(--text-muted);">(Prop: ${formatMoney(bData.totalTips)})</small></b>
-    `;
-    breakdownDiv.appendChild(row);
-  }
-
-  document.getElementById('cash-barber-commissions-total').textContent = formatMoney(grandTotalCommissions);
+  document.getElementById('cash-total-sales-badge').textContent = formatMoney(totalSales);
+  document.getElementById('cash-total-tx-count').textContent = `${salesCount} ventas cobradas`;
+  document.getElementById('cash-total-expenses-count').textContent = `-${formatMoney(totalExpenses)}`;
 
   // Tabla de movimientos
   const movsTbody = document.getElementById('cash-movements-tbody');
@@ -1572,7 +1518,7 @@ function renderCashRegister() {
   const closuresTbody = document.getElementById('cash-history-tbody');
   closuresTbody.innerHTML = '';
   if (!store.cashClosures || store.cashClosures.length === 0) {
-    closuresTbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color: var(--text-muted); padding: 24px;">No hay cierres anteriores registrados.</td></tr>`;
+    closuresTbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color: var(--text-muted); padding: 24px;">No hay cierres anteriores registrados.</td></tr>`;
   } else {
     store.cashClosures.slice().reverse().forEach(c => {
       const dateFormatted = new Date(c.closedAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' });
@@ -1585,7 +1531,6 @@ function renderCashRegister() {
         <td>${formatMoney(c.expectedCash)}</td>
         <td><b>${formatMoney(c.countedCash)}</b></td>
         <td><strong style="${diffClass}">${c.difference >= 0 ? '+' : ''}${formatMoney(c.difference)}</strong></td>
-        <td>${formatMoney(c.totalCommissions)}</td>
         <td>${escapeHtml(c.responsible)}</td>
       `;
       closuresTbody.appendChild(tr);
@@ -1653,15 +1598,11 @@ function confirmCashCut() {
   let totalSales = 0;
   let salesCash = 0;
   let totalExpenses = 0;
-  let totalCommissions = 0;
 
   todayMovs.forEach(m => {
     if (m.type === 'venta') {
       totalSales += m.amount;
       if (m.paymentMethod === 'efectivo') salesCash += m.amount;
-      if (m.commissions) {
-        for (const bId in m.commissions) totalCommissions += m.commissions[bId] + (m.tip || 0);
-      }
     } else if (m.type === 'gasto') {
       totalExpenses += m.amount;
     }
@@ -1681,8 +1622,7 @@ function confirmCashCut() {
     expenses: totalExpenses,
     expectedCash: expectedCash,
     countedCash: counted,
-    difference: difference,
-    totalCommissions: totalCommissions
+    difference: difference
   };
 
   if (!store.cashClosures) store.cashClosures = [];
@@ -1706,17 +1646,11 @@ function renderBarbers() {
   store.barbers.forEach(barber => {
     let servicesCount = 0;
     let totalGenerated = 0;
-    let commissionEarned = 0;
-    let tipsEarned = 0;
 
     todayMovs.forEach(mov => {
       if (mov.barberId === barber.id) {
         totalGenerated += mov.amount;
-        tipsEarned += (mov.tip || 0);
-        if (mov.commissions && mov.commissions[barber.id]) {
-          commissionEarned += mov.commissions[barber.id];
-          servicesCount += 1;
-        }
+        servicesCount += 1;
       }
     });
 
@@ -1742,20 +1676,16 @@ function renderBarbers() {
           <b style="color: #4ade80;">Usuario: ${escapeHtml(barber.username || barber.id)}</b>
         </div>
         <div style="display: flex; justify-content: space-between;">
-          <span style="color: var(--text-secondary);">Comisión Servicios / Productos:</span>
-          <b style="color: #fff;">${barber.serviceCommission}% / ${barber.productCommission}%</b>
+          <span style="color: var(--text-secondary);">Modalidad de Pago:</span>
+          <b style="color: #fff;">💼 Sueldo Semanal</b>
         </div>
         <div style="display: flex; justify-content: space-between;">
           <span style="color: var(--text-secondary);">Cortes Atendidos Hoy:</span>
           <b style="color: #fff;">${servicesCount}</b>
         </div>
         <div style="display: flex; justify-content: space-between;">
-          <span style="color: var(--text-secondary);">Propinas Hoy:</span>
-          <b style="color: #4ade80;">+${formatMoney(tipsEarned)}</b>
-        </div>
-        <div style="display: flex; justify-content: space-between; font-size: 1rem; border-top: 1px dashed var(--border-color); padding-top: 8px; color: var(--gold-primary);">
-          <span>Ganancia a Liquidar:</span>
-          <b>${formatMoney(commissionEarned + tipsEarned)}</b>
+          <span style="color: var(--text-secondary);">Total Facturado en Sillón:</span>
+          <b style="color: #fff;">${formatMoney(totalGenerated)}</b>
         </div>
       </div>
     `;
@@ -1771,8 +1701,6 @@ function editBarber(barberId) {
   document.getElementById('barber-form-name').value = barber.name;
   document.getElementById('barber-form-phone').value = barber.phone || '';
   document.getElementById('barber-form-specialty').value = barber.specialty || '';
-  document.getElementById('barber-form-commission-service').value = barber.serviceCommission;
-  document.getElementById('barber-form-commission-product').value = barber.productCommission;
   document.getElementById('barber-form-username').value = barber.username || '';
   document.getElementById('barber-form-password').value = barber.password || '';
 
@@ -1784,8 +1712,6 @@ function saveBarberFromModal() {
   const name = document.getElementById('barber-form-name').value.trim();
   const phone = document.getElementById('barber-form-phone').value.trim();
   const specialty = document.getElementById('barber-form-specialty').value.trim();
-  const srvComm = parseFloat(document.getElementById('barber-form-commission-service').value) || 50;
-  const prodComm = parseFloat(document.getElementById('barber-form-commission-product').value) || 15;
   const username = document.getElementById('barber-form-username').value.trim().toLowerCase();
   const password = document.getElementById('barber-form-password').value.trim();
 
@@ -1802,8 +1728,6 @@ function saveBarberFromModal() {
       existing.name = name;
       existing.phone = phone;
       existing.specialty = specialty;
-      existing.serviceCommission = srvComm;
-      existing.productCommission = prodComm;
       existing.username = username || existing.username;
       existing.password = password || existing.password;
     }
@@ -1815,8 +1739,7 @@ function saveBarberFromModal() {
       name: name,
       phone: phone,
       specialty: specialty || "Barbero Profesional",
-      serviceCommission: srvComm,
-      productCommission: prodComm,
+      payType: "Sueldo Semanal",
       username: username || name.split(' ')[0].toLowerCase(),
       password: password || '123',
       avatar: "💈"
@@ -1951,7 +1874,6 @@ function saveExpenseFromModal() {
     barberId: "admin",
     barberName: barber,
     amount: amount,
-    tip: 0,
     items: []
   });
 
@@ -2037,7 +1959,7 @@ function saveClientFromModal() {
   showToast("Cliente registrado", "success");
 }
 
-// ================= TICKETS E IMPRESIÓN =================
+// ================= TICKETS E IMPRESIÓN (SIN PROPINAS EN CAJA) =================
 function generateReceiptModal(movement) {
   const dateStr = new Date(movement.timestamp).toLocaleString();
   const printContent = `
@@ -2065,12 +1987,6 @@ function generateReceiptModal(movement) {
       <span>Subtotal:</span>
       <span>${formatMoney(movement.subtotal || movement.amount)}</span>
     </div>
-    ${movement.tip > 0 ? `
-      <div style="display:flex; justify-content:space-between; font-size:11px;">
-        <span>Propina:</span>
-        <span>${formatMoney(movement.tip)}</span>
-      </div>
-    ` : ''}
     ${movement.discount > 0 ? `
       <div style="display:flex; justify-content:space-between; font-size:11px;">
         <span>Descuento:</span>
@@ -2078,7 +1994,7 @@ function generateReceiptModal(movement) {
       </div>
     ` : ''}
     <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:14px; margin-top:4px;">
-      <span>TOTAL:</span>
+      <span>TOTAL COBRADO:</span>
       <span>${formatMoney(movement.amount)}</span>
     </div>
     <div style="display:flex; justify-content:space-between; font-size:11px; margin-top:2px;">
@@ -2117,8 +2033,6 @@ function generateCashCutPrint(cut) {
       <span>${cut.difference >= 0 ? '+' : ''}${formatMoney(cut.difference)}</span>
     </div>
     <div class="receipt-divider"></div>
-    <div style="display:flex; justify-content:space-between;"><span>Comisiones Barberos:</span> <span>${formatMoney(cut.totalCommissions)}</span></div>
-    <div class="receipt-divider"></div>
     <div class="receipt-center" style="margin-top:6px;">Firma de Conformidad: ____________</div>
   `;
   document.getElementById('printable-receipt-content').innerHTML = printContent;
@@ -2141,7 +2055,6 @@ function exportBackupData() {
 
 // ================= EVENT LISTENERS =================
 function setupEventListeners() {
-  // Login
   const loginForm = document.getElementById('login-form');
   if (loginForm) {
     loginForm.addEventListener('submit', (e) => {
@@ -2153,7 +2066,6 @@ function setupEventListeners() {
   const btnLogout = document.getElementById('btn-logout');
   if (btnLogout) btnLogout.addEventListener('click', logout);
 
-  // Navegación Sidebar
   document.querySelectorAll('.nav-item').forEach(item => {
     item.addEventListener('click', (e) => {
       e.preventDefault();
@@ -2166,7 +2078,6 @@ function setupEventListeners() {
     document.getElementById('sidebar').classList.toggle('open');
   });
 
-  // Pestañas POS
   document.querySelectorAll('[data-pos-tab]').forEach(tab => {
     tab.addEventListener('click', () => {
       document.querySelectorAll('[data-pos-tab]').forEach(t => t.classList.remove('active'));
@@ -2181,11 +2092,8 @@ function setupEventListeners() {
     renderPosCart();
   });
   document.getElementById('btn-pos-checkout').addEventListener('click', checkoutPOS);
-
-  document.getElementById('pos-tip-input').addEventListener('input', () => renderPosCart());
   document.getElementById('pos-discount-input').addEventListener('input', () => renderPosCart());
 
-  // Apertura de Modales
   document.getElementById('btn-header-new-appointment').addEventListener('click', () => openNewAppointmentModal());
   const btnOpenApp = document.getElementById('btn-modal-open-appointment');
   if (btnOpenApp) btnOpenApp.addEventListener('click', () => openNewAppointmentModal());
@@ -2225,7 +2133,6 @@ function setupEventListeners() {
     openModal('modal-client');
   });
 
-  // Guardado en Modales
   document.getElementById('btn-save-appointment').addEventListener('click', saveAppointmentFromModal);
   document.getElementById('btn-save-expense').addEventListener('click', saveExpenseFromModal);
   document.getElementById('btn-save-barber').addEventListener('click', saveBarberFromModal);
@@ -2234,17 +2141,16 @@ function setupEventListeners() {
   document.getElementById('btn-save-client').addEventListener('click', saveClientFromModal);
   document.getElementById('btn-confirm-cashcut').addEventListener('click', confirmCashCut);
 
-  // Filtros
+  const btnSaveBarberTip = document.getElementById('btn-save-barber-tip');
+  if (btnSaveBarberTip) btnSaveBarberTip.addEventListener('click', saveBarberTipFromModal);
+
   const filterBarber = document.getElementById('filter-appointment-barber');
   if (filterBarber) filterBarber.addEventListener('change', renderAppointments);
 
   const filterSearch = document.getElementById('filter-clients-search');
   if (filterSearch) filterSearch.addEventListener('input', renderClients);
 
-  // Reserva Pública
   document.getElementById('btn-public-submit-booking').addEventListener('click', submitPublicBooking);
-
-  // Impresión y Exportación
   document.getElementById('btn-print-receipt').addEventListener('click', () => window.print());
   const btnExport = document.getElementById('btn-export-backup');
   if (btnExport) btnExport.addEventListener('click', exportBackupData);
@@ -2267,9 +2173,9 @@ function escapeHtml(str) {
 
 function renderStatusBadge(status) {
   switch (status) {
-    case 'pendiente': return `<span class="badge badge-pending">⏳ Pendiente</span>`;
+    case 'pendiente': return `<span class="badge badge-pending">⏳ En Espera</span>`;
     case 'en_proceso': return `<span class="badge badge-progress">✂️ En Sillón</span>`;
-    case 'completada': return `<span class="badge badge-done">✅ Completada</span>`;
+    case 'completada': return `<span class="badge badge-done">✅ Cobrado / Completado</span>`;
     case 'cancelada': return `<span class="badge badge-cancel">❌ Cancelada</span>`;
     default: return `<span class="badge">${escapeHtml(status)}</span>`;
   }

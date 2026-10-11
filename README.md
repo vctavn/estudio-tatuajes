@@ -13,61 +13,49 @@ Sistema web integral, moderno y ligero para la gestión diaria de una barbería 
 
 ## 🔐 Sistema de Sesiones & Cuentas por Rol
 
-La plataforma cuenta con un sistema de autenticación para separar la información financiera de la agenda de los barberos:
+La plataforma cuenta con un sistema de autenticación para separar la información de la caja de la agenda de los barberos:
 
 ### 1. 💼 Sesión de Caja / Administrador
 - **Usuario:** `caja` (o `admin`) | **Contraseña:** `123`
 - **Acceso:** Acceso total a toda la plataforma:
-  - Tablero general con ingresos del día y tickets promedio.
-  - Agenda global de todos los barberos.
-  - Punto de Venta (POS) para cobrar servicios y productos.
-  - Corte de Caja diario con arqueo de dinero en efectivo y registro de gastos.
-  - Gestión de comisiones y credenciales de acceso de cada barbero.
-  - Catálogo de servicios y control de stock de productos.
-  - Directorio de clientes.
+  - Tablero general con métricas e ingresos de hoy.
+  - **Agenda de citas:** Control total de los estados de cada cita. Al seleccionar **"Completar y Cobrar"** en cualquier cita, el sistema **redirige de inmediato a la pantalla de cobro** con todos los servicios cargados en el ticket.
+  - **Punto de Venta (POS):** Cobro directo y rápido de servicios y productos sin recargo de propinas.
+  - **Corte de Caja Diario:** Control de fondo inicial, ingresos reales (efectivo, tarjeta, transferencia), salidas de caja chica y arqueo físico.
+  - Gestión de cuentas y contraseñas de cada barbero (modalidad de **Sueldo Semanal**).
+  - Catálogo de servicios, control de inventario y directorio de clientes.
 
 ### 2. ✂️ Sesiones Individuales para Barberos
-- Cada barbero tiene su propio usuario y contraseña personal:
+- Cuentas de acceso individuales:
   - **Carlos Mendoza:** Usuario `carlos` | Contraseña `123`
   - **Mateo Silva:** Usuario `mateo` | Contraseña `123`
   - **David Romero:** Usuario `david` | Contraseña `123`
-- *(El administrador puede crear nuevos barberos o cambiar sus contraseñas en cualquier momento).*
 - **Acceso exclusivo del barbero:**
-  - **Mi Agenda & Citas:** Vista privada de sus clientes y turnos asignados en tiempo real.
-  - **Acciones Rápidas:** Marcar cliente en sillón (`✂️ En Sillón`) o terminado (`✅ Terminado`), y enviar recordatorios por WhatsApp.
-  - **Mis Ganancias del Día:** Reporte transparente con sus cortes realizados, comisiones ganadas y propinas recibidas hoy.
-  - **Seguridad:** No pueden ver la caja general ni las finanzas privadas de la barbería.
+  - **Mi Agenda de Citas:** Visualiza únicamente a sus clientes y citas asignadas con su calendario interactivo.
+  - **Estado en Tiempo Real (Solo Lectura):** El barbero ve el estado de cada cliente (`⏳ En Espera`, `✂️ En Sillón`, `✅ Cobrado / Completado`) asignado por la cajera en recepción, sin opción de modificarlo.
+  - **Captura de Propinas Personales:** Apartado exclusivo para registrar las propinas directas en efectivo que le deja cada cliente, con historial y total acumulado.
+  - **Seguridad:** Los barberos no ven los ingresos de la caja general, gastos ni finanzas privadas del negocio.
 
 ---
 
-## 🌟 Módulos y Funcionalidades Incluidas
+## 🌟 Funcionalidades Destacadas
 
-### 1. ✂️ Selección Múltiple de Servicios al Agendar
-- Ahora se pueden elegir **múltiples servicios en la misma cita** (ej. *Corte Fade* + *Perfilado de Barba* + *Perfilado de Cejas*).
-- Cálculo dinámico del precio total y de la duración estimada combinada.
-- Transferencia automática de todos los servicios al Punto de Venta al momento de cobrar.
+### 1. 💳 Flujo de Cobro Express al Completar Cita
+- Tan pronto como la cajera marca una cita como completada o hace clic en "Cobrar", el sistema salta automáticamente al Punto de Venta (POS), precarga el nombre del cliente y desglosa todos los servicios solicitados para cobrar al instante.
 
-### 2. 📅 Calendario Interactivo & Selectores Visuales Premium
-- **Calendario Integrado:** Navegación por meses con días interactivos, diseño oscuro con acentos dorados y detección del día de hoy.
-- **Selector de Barberos:** Tarjetas visuales con avatar, especialidad y estado en sillón.
-- **Selector de Horarios:** Cuadrícula de turnos (mañana y tarde) que deshabilita automáticamente los horarios ya reservados.
+### 2. ✂️ Selección Múltiple de Servicios al Agendar
+- Permite seleccionar varios servicios al mismo tiempo (ej. *Corte Fade* + *Perfilado de Barba* + *Perfilado de Cejas*).
+- Suma dinámica en vivo del precio total y de los minutos combinados.
 
-### 3. 💵 Corte de Caja & Arqueo Diario (Cash Cut)
-- Fondo inicial de apertura de caja.
-- Ventas desglosadas por Efectivo, Tarjeta y Transferencia.
-- Registro de gastos menores de caja chica.
-- Arqueo inteligente: compara el efectivo en sistema contra el dinero físico contado por el cajero (detecta caja cuadrada, faltantes o sobrantes).
-- Resumen imprimible de cierre con comisiones de barberos.
+### 3. 📅 Calendario Interactivo & Selectores Visuales
+- Calendario visual mensual con diseño oscuro y dorado.
+- Selector visual de barberos con avatares y especialidad.
+- Selector de turnos divididos en mañana y tarde que bloquea automáticamente los horarios ya ocupados.
 
-### 4. 💳 Punto de Venta (POS) & Cobro
-- Venta combinada de servicios y productos de cuidado personal.
-- Asignación de barbero y cálculo de comisiones.
-- Propinas voluntarias y descuentos.
-- Generación e impresión de ticket térmico para impresoras de 58mm y 80mm.
-
-### 5. 👥 Clientes & Reservas Online
-- Directorio de clientes con historial de visitas y notas de corte preferido.
-- Portal público para clientes con reserva online y confirmación directa por WhatsApp.
+### 4. 💵 Corte de Caja Diario (Arqueo de Turno)
+- Fondo inicial de apertura.
+- Arqueo físico: compara el dinero en el sistema con el efectivo contado en el cajón (detecta caja cuadrada, faltantes o sobrantes).
+- Desglose de gastos y generación de ticket de cierre.
 
 ---
 
@@ -76,9 +64,9 @@ La plataforma cuenta con un sistema de autenticación para separar la informaci�
 ```
 barbershop-system/
 ├── index.html          # Interfaz principal, pantalla de login y modales
-├── styles.css          # Estilos premium, calendario oscuro y diseño térmico
-├── app.js              # Lógica de sesiones, comisiones, citas múltiples y arqueo
+├── styles.css          # Estilos premium oscuros, diseño térmico y calendario
+├── app.js              # Lógica de sesiones, cobro directo, propinas y arqueo
 ├── abrir_barberia.bat  # Acceso directo para ejecutar en Windows con doble clic
-├── subir_a_github.bat  # Asistente para futuras actualizaciones en Git
+├── subir_a_github.bat  # Asistente para actualizaciones en Git
 └── README.md           # Documentación completa del sistema
 ```
