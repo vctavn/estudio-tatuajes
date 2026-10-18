@@ -616,7 +616,6 @@ function renderCustomCalendar(containerId, activeDateStr, onSelectCallback, view
     html += `
       <div class="${cellClasses}" data-date="${fullDate}" title="${fullDate}${isToday ? ' (Hoy)' : ''}${isSelected ? ' (Seleccionado)' : ''}">
         <span class="cal-day-num">${day}</span>
-        ${isSelected ? '<span class="calendar-selected-x" title="Día seleccionado">✕</span>' : ''}
         ${hasApps ? '<span class="appointment-dot"></span>' : ''}
       </div>
     `;
