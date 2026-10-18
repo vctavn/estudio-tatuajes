@@ -83,7 +83,7 @@ body {
   min-height: 100vh;
 }
 
-/* Sidebar de Navegación Profesional */
+/* Sidebar de Navegación Profesional (Ubicada a la Derecha) */
 .sidebar {
   width: 240px;
   background-color: var(--bg-sidebar);
@@ -96,6 +96,8 @@ body {
   z-index: 40;
   transition: transform 0.2s ease;
   flex-shrink: 0;
+  order: 2;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .brand {
@@ -232,7 +234,7 @@ body {
   background-color: #e53e3e;
 }
 
-/* Área Principal de Contenido */
+/* Área Principal de Contenido (Ubicada a la Izquierda) */
 .main-wrapper {
   flex: 1;
   display: flex;
@@ -240,6 +242,7 @@ body {
   min-width: 0;
   overflow-y: auto;
   max-height: 100vh;
+  order: 1;
 }
 
 /* Barra Superior Profesional (Estilo HubSpot) */
@@ -1391,12 +1394,16 @@ body {
   }
   .sidebar {
     position: fixed;
-    transform: translateX(-100%);
+    right: 0;
+    left: auto;
+    top: 0;
+    transform: translateX(100%);
+    box-shadow: -4px 0 16px rgba(0, 0, 0, 0.25);
   }
   .sidebar.open {
     transform: translateX(0);
   }
   .mobile-toggle {
-    display: block;
+    display: inline-flex;
   }
 }

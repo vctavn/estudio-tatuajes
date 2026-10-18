@@ -19,10 +19,10 @@ La plataforma cuenta con un sistema de autenticación para separar la informaci�
 - **Usuario:** `caja` (o `admin`) | **Contraseña:** `123`
 - **Acceso:** Control total de la plataforma:
   - **Tablero Principal:** Métricas en tiempo real de facturación, citas agendadas, servicios atendidos y ticket promedio.
-  - **Agenda de Citas:** Control de estados de cada cliente. Al seleccionar **"Completar y Cobrar"**, el sistema redirige automáticamente al POS con los servicios precargados para cobro inmediato.
-  - **Punto de Venta (POS):** Cobro de servicios y productos, desglose de tickets, descuentos y múltiples métodos de pago (efectivo, tarjeta, transferencia).
+  - **Agenda de Citas:** Control de estados de cada cliente. Al seleccionar **"Completar y Cobrar"**, el sistema redirige automáticamente al Punto de Venta con los servicios precargados para cobro inmediato.
+  - **Punto de Venta:** Cobro de servicios y productos, desglose de tickets, descuentos y múltiples métodos de pago (efectivo, tarjeta, transferencia).
   - **Control & Corte de Caja:** Fondo inicial editable con clave de seguridad, desglose por método de pago, registro de gastos de caja chica, arqueo físico de efectivo y cálculo automático de sobrante/faltante.
-  - **Gestión de Barberos:** Administración de personal y credenciales bajo modalidad de **Sueldo Semanal**.
+  - **Gestión de Barberos:** Administración de personal y credenciales de acceso.
   - **Catálogo & Inventario:** Gestión de tarifas de corte y stock de productos de cuidado.
   - **Directorio de Clientes:** Historial de consumos, visitas y preferencias de corte.
   - **Botón Limpiar Datos Demo:** Permite vaciar citas, propinas y movimientos de prueba para iniciar una demostración limpia.
@@ -64,7 +64,7 @@ La plataforma cuenta con un sistema de autenticación para separar la informaci�
 barbershop-system/
 ├── index.html              # Interfaz principal, pantalla de acceso y modales
 ├── styles.css              # Hoja de estilos profesional SaaS (sobrio, sin emojis)
-├── app.js                  # Lógica de sesiones, POS, arqueo, propinas y reset demo
+├── app.js                  # Lógica de sesiones, ventas, arqueo, propinas y reset demo
 ├── abrir_barberia.bat      # Acceso directo rápido en Windows
 ├── actualizar_y_abrir.bat  # Script para actualizar vía git y abrir el sistema
 └── README.md               # Documentación general del sistema

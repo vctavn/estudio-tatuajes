@@ -41,7 +41,6 @@ const DEFAULT_DATA = {
       password: "123",
       phone: "5512345678",
       specialty: "Degradados, Skin Fade & Diseños",
-      payType: "Sueldo Semanal",
       avatar: "CF"
     },
     {
@@ -51,7 +50,6 @@ const DEFAULT_DATA = {
       password: "123",
       phone: "5587654321",
       specialty: "Barba Spa & Ritual Tradicional",
-      payType: "Sueldo Semanal",
       avatar: "MS"
     },
     {
@@ -61,7 +59,6 @@ const DEFAULT_DATA = {
       password: "123",
       phone: "5599887766",
       specialty: "Cortes Clásicos & Tijera",
-      payType: "Sueldo Semanal",
       avatar: "DR"
     }
   ],
@@ -222,6 +219,7 @@ function loadStore() {
       const parsed = JSON.parse(raw);
       if (parsed.barbers && parsed.services && parsed.config) {
         if (!parsed.barberTips) parsed.barberTips = [];
+        if (!parsed.clients) parsed.clients = [];
         // Limpieza de avatares con emojis si quedaron de versiones previas
         parsed.barbers.forEach(b => {
           if (!b.avatar || /[\u2600-\u27BF]|[\uD83C-\uD83E][\uDC00-\uDFFF]/.test(b.avatar)) {
@@ -407,15 +405,15 @@ function switchView(viewName) {
 
   const titles = {
     'dashboard': { title: 'Tablero Principal', sub: 'Resumen y métricas de la barbería hoy' },
-    'appointments': { title: 'Agenda General de Citas', sub: 'Control de citas del día y filtros' },
-    'barber-portal': { title: 'Mi Portal de Barbero', sub: 'Agenda y clientes asignados' },
-    'barber-tips': { title: 'Mis Propinas', sub: 'Historial y registro de propinas recibidas' },
-    'pos': { title: 'Punto de Venta (POS)', sub: 'Cobro de cortes, servicios y productos' },
-    'cash-register': { title: 'Corte & Arqueo de Caja', sub: 'Fondo de caja, balance y cierres' },
-    'barbers': { title: 'Equipo de Barberos', sub: 'Administración de cuentas y personal' },
+    'appointments': { title: 'Agenda de Citas', sub: 'Control de citas del día y filtros' },
+    'barber-portal': { title: 'Citas', sub: 'Agenda y clientes asignados' },
+    'barber-tips': { title: 'Propinas', sub: 'Historial y registro de propinas' },
+    'pos': { title: 'Punto de Venta', sub: 'Cobro de cortes, servicios y productos' },
+    'cash-register': { title: 'Corte de Caja', sub: 'Fondo de caja, balance y cierres' },
+    'barbers': { title: 'Barberos & Cuentas', sub: 'Administración de cuentas y personal' },
     'catalog': { title: 'Catálogo & Inventario', sub: 'Servicios de barbería y productos de cuidado' },
-    'clients': { title: 'Directorio de Clientes', sub: 'Historial de visitas y preferencias' },
-    'public-booking': { title: 'Vista Previa Reserva Online', sub: 'Portal público para clientes' }
+    'clients': { title: 'Clientes', sub: 'Historial de visitas y preferencias' },
+    'public-booking': { title: 'Reserva Online', sub: 'Portal público para clientes' }
   };
 
   const info = titles[viewName] || { title: 'Sistema de Barbería', sub: '' };
@@ -773,8 +771,8 @@ function renderBarberPortal() {
   });
 
   document.getElementById('barber-citas-header-title').textContent = (barberSelectedDate === todayStr)
-    ? `Mis Citas para Hoy (${barberSelectedDate})`
-    : `Mis Citas para el ${barberSelectedDate}`;
+    ? `Citas de Hoy (${barberSelectedDate})`
+    : `Citas del ${barberSelectedDate}`;
 
   const dateApps = store.appointments.filter(a => a.barberId === barberId && a.date === barberSelectedDate);
   const tbody = document.getElementById('barber-my-appointments-tbody');
@@ -1602,11 +1600,12 @@ function confirmEditFund() {
 
 // ================= RESETEAR DATOS DE DEMOSTRACIÓN =================
 function confirmResetDemo() {
-  // Limpia citas, propinas de barberos y cortes / movimientos de caja previos
+  // Limpia citas, propinas de barberos, cortes de caja y directorio de clientes
   store.appointments = [];
   store.cashMovements = [];
   store.cashClosures = [];
   store.barberTips = [];
+  store.clients = [];
 
   saveStore();
 
@@ -1614,13 +1613,14 @@ function confirmResetDemo() {
   renderAppointments();
   renderCashRegister();
   renderBarbers();
+  renderClients();
   if (currentUser && currentUser.role === 'barber') {
     renderBarberPortal();
     renderBarberTips();
   }
 
   closeModal('modal-reset-demo');
-  showToast("Datos demo eliminados. Sistema restablecido a cero.", "success");
+  showToast("Datos demo eliminados. Citas, clientes y caja restablecidos a cero.", "success");
 }
 
 function openCashCutModal() {
@@ -1761,10 +1761,6 @@ function renderBarbers() {
           <b style="color: var(--primary);">Usuario: ${escapeHtml(barber.username || barber.id)}</b>
         </div>
         <div style="display: flex; justify-content: space-between;">
-          <span style="color: var(--text-secondary);">Modalidad de Pago:</span>
-          <b style="color: var(--text-main);">Sueldo Semanal</b>
-        </div>
-        <div style="display: flex; justify-content: space-between;">
           <span style="color: var(--text-secondary);">Cortes Atendidos Hoy:</span>
           <b style="color: var(--text-main);">${servicesCount}</b>
         </div>
@@ -1825,7 +1821,6 @@ function saveBarberFromModal() {
       name: name,
       phone: phone,
       specialty: specialty || "Barbero Profesional",
-      payType: "Sueldo Semanal",
       username: username || name.split(' ')[0].toLowerCase(),
       password: password || '123',
       avatar: getInitials(name)
