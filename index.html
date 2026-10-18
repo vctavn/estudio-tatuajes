@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>The Barber Club & Co. - Sistema de Gestión</title>
   <link rel="stylesheet" href="styles.css">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💈</text></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%231f2d3d%22/><text x=%2250%22 y=%2265%22 font-family=%22sans-serif%22 font-size=%2250%22 font-weight=%22bold%22 text-anchor=%22middle%22 fill=%22%230091ae%22>BC</text></svg>">
 </head>
 <body>
 
@@ -13,7 +13,7 @@
 <div class="login-screen" id="login-screen">
   <div class="login-container">
     <div class="login-header">
-      <div class="login-brand-icon">💈</div>
+      <div class="login-brand-icon">BC</div>
       <h2>BARBER CLUB & CO.</h2>
       <p>Selecciona tu sesión o ingresa tus credenciales</p>
     </div>
@@ -28,24 +28,24 @@
         <input type="password" id="login-password" class="form-control" placeholder="••••••••" required autocomplete="current-password">
       </div>
       <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 8px;">
-        🔐 Iniciar Sesión
+        Iniciar Sesión
       </button>
     </form>
 
     <div class="quick-accounts-box">
-      <h4>⚡ Acceso Rápido por Rol (Demostración)</h4>
+      <h4>Acceso Rápido por Rol (Demostración)</h4>
       <div class="quick-accounts-grid">
         <button type="button" class="quick-btn" onclick="quickLogin('caja', '123')">
-          <span>💼</span> <b>Caja / Admin</b>
+          <span class="user-session-avatar" style="width: 20px; height: 20px; font-size: 0.65rem;">CG</span> <b>Caja / Admin</b>
         </button>
         <button type="button" class="quick-btn" onclick="quickLogin('carlos', '123')">
-          <span>💈</span> <b>Carlos Fade</b>
+          <span class="user-session-avatar" style="width: 20px; height: 20px; font-size: 0.65rem;">CF</span> <b>Carlos Fade</b>
         </button>
         <button type="button" class="quick-btn" onclick="quickLogin('mateo', '123')">
-          <span>🧔</span> <b>Mateo Silva</b>
+          <span class="user-session-avatar" style="width: 20px; height: 20px; font-size: 0.65rem;">MS</span> <b>Mateo Silva</b>
         </button>
         <button type="button" class="quick-btn" onclick="quickLogin('david', '123')">
-          <span>✂️</span> <b>David Romero</b>
+          <span class="user-session-avatar" style="width: 20px; height: 20px; font-size: 0.65rem;">DR</span> <b>David Romero</b>
         </button>
       </div>
     </div>
@@ -56,7 +56,7 @@
   <!-- SIDEBAR DE NAVEGACIÓN -->
   <aside class="sidebar" id="sidebar">
     <div class="brand">
-      <div class="brand-icon">💈</div>
+      <div class="brand-icon">BC</div>
       <div class="brand-info">
         <h1>BARBER CLUB</h1>
         <p id="sidebar-role-label">Management Pro</p>
@@ -135,7 +135,9 @@
     <!-- TOP HEADER -->
     <header class="top-header">
       <div style="display: flex; align-items: center; gap: 14px;">
-        <button class="mobile-toggle" id="btn-toggle-sidebar" aria-label="Abrir menú">☰</button>
+        <button class="mobile-toggle" id="btn-toggle-sidebar" aria-label="Abrir menú">
+          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+        </button>
         <div class="header-title-box">
           <h2 id="view-title">Tablero Principal</h2>
           <p id="view-subtitle">Resumen y métricas de la barbería hoy</p>
@@ -144,18 +146,24 @@
       <div class="header-actions">
         <!-- Badge de Usuario Logueado -->
         <div class="user-session-badge">
-          <div class="user-session-avatar" id="header-user-avatar">💼</div>
+          <div class="user-session-avatar" id="header-user-avatar">CG</div>
           <div class="user-session-info">
             <span class="user-session-name" id="header-user-name">Caja General</span>
             <span class="user-session-role" id="header-user-role">ADMINISTRADOR</span>
           </div>
           <button class="btn btn-secondary btn-sm" id="btn-logout" title="Cerrar sesión" style="padding: 4px 8px; margin-left: 4px;">
-            🚪 Salir
+            Salir
           </button>
         </div>
 
+        <!-- Botón Demo Reset (Solo Admin) -->
+        <button class="btn btn-danger btn-sm nav-admin-only" id="btn-reset-demo" title="Restablecer citas, propinas y caja a cero para demostración">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="vertical-align: -2px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+          Limpiar Datos Demo
+        </button>
+
         <button class="btn btn-secondary btn-sm nav-admin-only" id="btn-export-backup" title="Guardar copia de seguridad en JSON">
-          <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
           Exportar
         </button>
         <button class="btn btn-primary btn-sm" id="btn-header-new-appointment">
@@ -175,7 +183,9 @@
               <h3 id="dash-stat-revenue">$0.00</h3>
               <small id="dash-stat-revenue-subs">En efectivo, tarjeta y transf.</small>
             </div>
-            <div class="stat-icon">💵</div>
+            <div class="stat-icon">
+              <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+            </div>
           </div>
           <div class="stat-card blue">
             <div class="stat-details">
@@ -183,7 +193,9 @@
               <h3 id="dash-stat-appointments">0</h3>
               <small id="dash-stat-appointments-today">Para la jornada de hoy</small>
             </div>
-            <div class="stat-icon">📅</div>
+            <div class="stat-icon">
+              <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+            </div>
           </div>
           <div class="stat-card purple">
             <div class="stat-details">
@@ -191,7 +203,9 @@
               <h3 id="dash-stat-completed">0</h3>
               <small>Cortes y servicios cobrados</small>
             </div>
-            <div class="stat-icon">✂️</div>
+            <div class="stat-icon">
+              <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="6" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><line x1="20" y1="4" x2="8.12" y2="15.88"></line><line x1="14.47" y1="14.48" x2="20" y2="20"></line><line x1="8.12" y1="8.12" x2="12" y2="12"></line></svg>
+            </div>
           </div>
           <div class="stat-card">
             <div class="stat-details">
@@ -199,7 +213,9 @@
               <h3 id="dash-stat-avg-ticket">$0.00</h3>
               <small>Consumo medio por cliente</small>
             </div>
-            <div class="stat-icon">📊</div>
+            <div class="stat-icon">
+              <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+            </div>
           </div>
         </div>
 
@@ -250,7 +266,9 @@
               <h3 id="barber-portal-stat-apps">0</h3>
               <small>Citas en tu agenda</small>
             </div>
-            <div class="stat-icon">📅</div>
+            <div class="stat-icon">
+              <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+            </div>
           </div>
           <div class="stat-card green">
             <div class="stat-details">
@@ -258,7 +276,9 @@
               <h3 id="barber-portal-stat-done">0</h3>
               <small>Cortes completados hoy</small>
             </div>
-            <div class="stat-icon">✂️</div>
+            <div class="stat-icon">
+              <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="6" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><line x1="20" y1="4" x2="8.12" y2="15.88"></line><line x1="14.47" y1="14.48" x2="20" y2="20"></line><line x1="8.12" y1="8.12" x2="12" y2="12"></line></svg>
+            </div>
           </div>
           <div class="stat-card purple">
             <div class="stat-details">
@@ -266,15 +286,19 @@
               <h3 id="barber-portal-stat-tips">$0.00</h3>
               <small>Propinas registradas</small>
             </div>
-            <div class="stat-icon">💰</div>
+            <div class="stat-icon">
+              <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path><path d="M12 6v2m0 8v2"></path></svg>
+            </div>
           </div>
           <div class="stat-card">
             <div class="stat-details">
               <span>Modalidad de Pago</span>
-              <h3 style="font-size: 1.25rem; color: var(--gold-primary); margin-top: 6px;">Sueldo Semanal</h3>
+              <h3 style="font-size: 1.15rem; color: var(--primary); margin-top: 6px;">Sueldo Semanal</h3>
               <small>Liquidación fija cada semana</small>
             </div>
-            <div class="stat-icon">💼</div>
+            <div class="stat-icon">
+              <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+            </div>
           </div>
         </div>
 
@@ -282,12 +306,12 @@
           <!-- Calendario Elegante del Barbero -->
           <div class="panel-card">
             <div class="panel-header">
-              <h3>📅 Mi Calendario</h3>
+              <h3>Mi Calendario</h3>
             </div>
             <div id="barber-calendar-widget-container"></div>
             <div style="margin-top: 14px; text-align: center;">
               <span style="font-size: 0.82rem; color: var(--text-secondary);">Fecha seleccionada:</span>
-              <div id="barber-selected-date-label" style="font-size: 1rem; font-weight: bold; color: var(--gold-primary); margin-top: 2px;">Hoy</div>
+              <div id="barber-selected-date-label" style="font-size: 1rem; font-weight: bold; color: var(--primary); margin-top: 2px;">Hoy</div>
             </div>
           </div>
 
@@ -297,7 +321,7 @@
               <div>
                 <h3 id="barber-citas-header-title">Mis Citas para Hoy</h3>
                 <p style="font-size: 0.8rem; color: var(--text-muted);">
-                  ℹ️ El estado de cada cliente es gestionado por la cajera en recepción.
+                  El estado de cada cliente es gestionado por la cajera en recepción.
                 </p>
               </div>
               <button class="btn btn-primary btn-sm" onclick="openBarberTipModal()">+ Registrar Propina</button>
@@ -329,8 +353,8 @@
         <div class="panel-card" style="max-width: 900px; margin: 0 auto;">
           <div class="panel-header">
             <div>
-              <h3>💰 Mis Propinas Recibidas</h3>
-              <p style="font-size: 0.85rem; color: var(--text-secondary);">Lleva el control de todas las propinas en efectivo o directas que te dejan tus clientes.</p>
+              <h3>Mis Propinas Recibidas</h3>
+              <p style="font-size: 0.85rem; color: var(--text-secondary);">Control de propinas en efectivo o directas que te entregan tus clientes.</p>
             </div>
             <button class="btn btn-primary" onclick="openBarberTipModal()">+ Registrar Nueva Propina</button>
           </div>
@@ -342,7 +366,9 @@
                 <h3 id="barber-tips-today-total">$0.00</h3>
                 <small>Recibidas en esta jornada</small>
               </div>
-              <div class="stat-icon">💵</div>
+              <div class="stat-icon">
+                <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+              </div>
             </div>
             <div class="stat-card blue">
               <div class="stat-details">
@@ -350,7 +376,9 @@
                 <h3 id="barber-tips-all-total">$0.00</h3>
                 <small>Historial total registrado</small>
               </div>
-              <div class="stat-icon">💰</div>
+              <div class="stat-icon">
+                <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path><path d="M12 6v2m0 8v2"></path></svg>
+              </div>
             </div>
           </div>
 
@@ -379,7 +407,7 @@
           <!-- Calendario Interactivo Lateral para Filtrar -->
           <div class="panel-card">
             <div class="panel-header">
-              <h3>📅 Filtrar por Fecha</h3>
+              <h3>Filtrar por Fecha</h3>
             </div>
             <div id="admin-calendar-widget-container"></div>
             <div class="form-group" style="margin-top: 16px;">
@@ -399,7 +427,7 @@
               <div>
                 <h3 id="admin-citas-header-title">Citas Agendadas</h3>
                 <span id="admin-citas-subtitle" style="font-size: 0.8rem; color: var(--text-muted);">
-                  Al cambiar el estado a "Completada" o hacer clic en "Cobrar", se abre el cobro en caja inmediatamente.
+                  Al marcar "Completada" o pulsar "Cobrar", se abre el cobro en caja inmediatamente.
                 </span>
               </div>
             </div>
@@ -433,8 +461,8 @@
           <!-- Catálogo de cobro -->
           <div>
             <div class="pos-catalog-tabs">
-              <button class="tab-btn active" data-pos-tab="services">✂️ Servicios de Barbería</button>
-              <button class="tab-btn" data-pos-tab="products">🧴 Productos & Cuidado</button>
+              <button class="tab-btn active" data-pos-tab="services">Servicios</button>
+              <button class="tab-btn" data-pos-tab="products">Productos & Cuidado</button>
             </div>
             
             <div class="pos-items-grid" id="pos-items-grid">
@@ -442,9 +470,9 @@
             </div>
           </div>
 
-          <!-- Panel de Carrito de Cobro (Sin apartado de propinas) -->
+          <!-- Panel de Carrito de Cobro -->
           <div class="pos-ticket-panel">
-            <h3 style="font-size: 1.1rem; color: #fff; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+            <h3 style="font-size: 1.05rem; color: var(--text-main); border-bottom: 1px solid var(--border-default); padding-bottom: 10px; font-weight: 700;">
               Cobro en Sillón / Mostrador
             </h3>
 
@@ -488,9 +516,9 @@
             <div class="form-group">
               <label class="form-label">Método de Pago</label>
               <select id="pos-payment-method" class="form-select">
-                <option value="efectivo">💵 Efectivo</option>
-                <option value="tarjeta">💳 Tarjeta (Terminal Débito/Crédito)</option>
-                <option value="transferencia">📲 Transferencia Bancaria / QR</option>
+                <option value="efectivo">Efectivo</option>
+                <option value="tarjeta">Tarjeta (Terminal Débito/Crédito)</option>
+                <option value="transferencia">Transferencia Bancaria / QR</option>
               </select>
             </div>
 
@@ -502,45 +530,53 @@
         </div>
       </section>
 
-      <!-- ================= 4. CORTE DE CAJA (SIN LIQUIDACIÓN POR COMISIONES) ================= -->
+      <!-- ================= 4. CORTE DE CAJA ================= -->
       <section class="view-section" id="view-cash-register">
         <div class="panel-header">
           <div>
-            <h3 style="font-size: 1.3rem;">Control & Corte de Caja (Arqueo Diario)</h3>
+            <h3 style="font-size: 1.25rem;">Control & Corte de Caja (Arqueo Diario)</h3>
             <p style="color: var(--text-secondary); font-size: 0.85rem;">Monitorea ingresos reales del negocio, salidas de dinero y arqueo de turnos.</p>
           </div>
           <div style="display: flex; gap: 10px;">
             <button class="btn btn-danger btn-sm" id="btn-modal-open-expense">- Registrar Gasto / Salida</button>
-            <button class="btn btn-success btn-sm" id="btn-modal-open-cashcut">🏁 Realizar Arqueo / Cierre de Caja</button>
+            <button class="btn btn-success btn-sm" id="btn-modal-open-cashcut">Realizar Arqueo / Cierre de Caja</button>
           </div>
         </div>
 
         <div class="cash-cut-grid" style="margin-top: 16px;">
           <!-- Estado Actual de Caja -->
           <div class="cash-box">
-            <h4 style="color: var(--text-secondary); font-size: 0.85rem; text-transform: uppercase; margin-bottom: 8px;">Fondo de Caja & Desglose</h4>
-            <div style="display: flex; align-items: baseline; gap: 8px;">
-              <h2 style="font-size: 2rem; color: #fff;" id="cash-current-fondo">$0.00</h2>
-              <span style="font-size: 0.8rem; color: var(--gold-primary);">Fondo Inicial</span>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+              <h4 style="color: var(--text-secondary); font-size: 0.82rem; text-transform: uppercase;">Fondo de Caja & Desglose</h4>
+              <button class="btn btn-secondary btn-sm" id="btn-open-edit-fund" style="font-size: 0.72rem; padding: 3px 8px;" title="Editar fondo inicial con contraseña de dueño">
+                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="vertical-align: middle;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                Editar Fondo
+              </button>
             </div>
+
+            <div style="display: flex; align-items: baseline; gap: 8px;">
+              <h2 style="font-size: 2rem; color: var(--text-main);" id="cash-current-fondo">$0.00</h2>
+              <span style="font-size: 0.8rem; color: var(--primary); font-weight: 600;">Fondo Inicial</span>
+            </div>
+
             <div style="margin-top: 14px; font-size: 0.85rem; color: var(--text-secondary); display: flex; flex-direction: column; gap: 6px;">
               <div style="display: flex; justify-content: space-between;">
                 <span>Ventas en Efectivo:</span>
-                <b id="cash-sales-cash" style="color: #fff;">$0.00</b>
+                <b id="cash-sales-cash" style="color: var(--text-main);">$0.00</b>
               </div>
               <div style="display: flex; justify-content: space-between;">
                 <span>Ventas en Tarjeta:</span>
-                <b id="cash-sales-card" style="color: #fff;">$0.00</b>
+                <b id="cash-sales-card" style="color: var(--text-main);">$0.00</b>
               </div>
               <div style="display: flex; justify-content: space-between;">
                 <span>Ventas en Transferencia:</span>
-                <b id="cash-sales-transf" style="color: #fff;">$0.00</b>
+                <b id="cash-sales-transf" style="color: var(--text-main);">$0.00</b>
               </div>
-              <div style="display: flex; justify-content: space-between; color: #ff6b6b; border-top: 1px solid var(--border-color); padding-top: 6px;">
+              <div style="display: flex; justify-content: space-between; color: var(--badge-red-text); border-top: 1px solid var(--border-subtle); padding-top: 6px;">
                 <span>Gastos / Salidas de caja chica:</span>
                 <b id="cash-expenses-total">-$0.00</b>
               </div>
-              <div style="display: flex; justify-content: space-between; font-weight: bold; border-top: 1px solid var(--border-color); padding-top: 6px; font-size: 1rem; color: #4ade80;">
+              <div style="display: flex; justify-content: space-between; font-weight: bold; border-top: 1px solid var(--border-default); padding-top: 6px; font-size: 1rem; color: var(--badge-green-text);">
                 <span>Efectivo Físico Esperado en Cajón:</span>
                 <span id="cash-expected-drawer">$0.00</span>
               </div>
@@ -549,22 +585,22 @@
 
           <!-- Resumen Operativo del Turno -->
           <div class="cash-box">
-            <h4 style="color: var(--text-secondary); font-size: 0.85rem; text-transform: uppercase; margin-bottom: 8px;">Resumen del Turno</h4>
+            <h4 style="color: var(--text-secondary); font-size: 0.82rem; text-transform: uppercase; margin-bottom: 8px;">Resumen del Turno</h4>
             <div style="display: flex; align-items: baseline; gap: 8px;">
-              <h2 style="font-size: 2rem; color: var(--gold-primary);" id="cash-total-sales-badge">$0.00</h2>
+              <h2 style="font-size: 2rem; color: var(--primary);" id="cash-total-sales-badge">$0.00</h2>
               <span style="font-size: 0.8rem; color: var(--text-secondary);">Facturación total hoy</span>
             </div>
             <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 6px;">
               Modalidad de barbería con sueldos semanales fijados. No se deducen comisiones diarias de la caja.
             </p>
             <div style="margin-top: 16px; display: flex; flex-direction: column; gap: 8px; font-size: 0.85rem;">
-              <div style="display: flex; justify-content: space-between; border-bottom: 1px dashed var(--border-color); padding-bottom: 4px;">
+              <div style="display: flex; justify-content: space-between; border-bottom: 1px dashed var(--border-subtle); padding-bottom: 4px;">
                 <span>Total de Transacciones:</span>
-                <b id="cash-total-tx-count" style="color: #fff;">0 ventas</b>
+                <b id="cash-total-tx-count" style="color: var(--text-main);">0 ventas</b>
               </div>
-              <div style="display: flex; justify-content: space-between; border-bottom: 1px dashed var(--border-color); padding-bottom: 4px;">
+              <div style="display: flex; justify-content: space-between; border-bottom: 1px dashed var(--border-subtle); padding-bottom: 4px;">
                 <span>Total Gastos de Caja Chica:</span>
-                <b id="cash-total-expenses-count" style="color: #ff6b6b;">$0.00</b>
+                <b id="cash-total-expenses-count" style="color: var(--badge-red-text);">$0.00</b>
               </div>
             </div>
           </div>
@@ -595,7 +631,7 @@
           </div>
         </div>
 
-        <!-- Historial de Cortes de Caja Anteriores (Sin comisiones) -->
+        <!-- Historial de Cortes de Caja Anteriores -->
         <div class="panel-card" style="margin-top: 24px;">
           <div class="panel-header">
             <h3>Historial de Cierres de Caja Anteriores</h3>
@@ -644,7 +680,7 @@
           <!-- Servicios -->
           <div class="panel-card">
             <div class="panel-header">
-              <h3>✂️ Catálogo de Servicios</h3>
+              <h3>Catálogo de Servicios</h3>
               <button class="btn btn-primary btn-sm" id="btn-modal-open-service">+ Nuevo Servicio</button>
             </div>
             <div class="table-responsive">
@@ -667,7 +703,7 @@
           <!-- Productos -->
           <div class="panel-card">
             <div class="panel-header">
-              <h3>🧴 Inventario de Productos</h3>
+              <h3>Inventario de Productos</h3>
               <button class="btn btn-primary btn-sm" id="btn-modal-open-product">+ Nuevo Producto</button>
             </div>
             <div class="table-responsive">
@@ -724,8 +760,8 @@
       <section class="view-section" id="view-public-booking">
         <div class="public-booking-container">
           <div style="text-align: center; margin-bottom: 28px;">
-            <div style="font-size: 3rem; margin-bottom: 8px;">💈</div>
-            <h2 style="font-size: 1.8rem; font-weight: 800; color: #fff;">Agenda tu Cita en Barber Club</h2>
+            <div class="brand-icon" style="width: 52px; height: 52px; margin: 0 auto 12px; font-size: 20px; border-radius: 8px;">BC</div>
+            <h2 style="font-size: 1.6rem; font-weight: 700; color: var(--text-main);">Agenda tu Cita en Barber Club</h2>
             <p style="color: var(--text-secondary); max-width: 500px; margin: 0 auto; font-size: 0.95rem;">
               Selecciona uno o más servicios, tu barbero favorito y reserva tu turno en segundos.
             </p>
@@ -733,23 +769,23 @@
 
           <!-- Paso 1: Servicios Múltiples -->
           <div class="form-group">
-            <label class="form-label" style="font-size: 1rem; color: #fff;">1. Selecciona tus Servicios (Puedes elegir más de uno)</label>
+            <label class="form-label" style="font-size: 0.95rem; font-weight: 600; color: var(--text-main);">1. Selecciona tus Servicios (Puedes elegir más de uno)</label>
             <div class="multi-services-container" id="public-services-picker"></div>
             <div class="multi-services-summary-pill" id="public-services-summary" style="display: none;">
               <span id="public-services-summary-text">0 servicios seleccionados</span>
-              <b style="color: var(--gold-primary); font-size: 1.05rem;" id="public-services-summary-price">$0.00</b>
+              <b style="color: var(--primary); font-size: 1.05rem;" id="public-services-summary-price">$0.00</b>
             </div>
           </div>
 
           <!-- Paso 2: Barbero Visual -->
           <div class="form-group" style="margin-top: 24px;">
-            <label class="form-label" style="font-size: 1rem; color: #fff;">2. Elige a tu Barbero</label>
+            <label class="form-label" style="font-size: 0.95rem; font-weight: 600; color: var(--text-main);">2. Elige a tu Barbero</label>
             <div class="barber-picker-container" id="public-book-barbers-grid"></div>
           </div>
 
           <!-- Paso 3: Calendario Interactivo y Horarios -->
-          <div style="margin-top: 24px; border-top: 1px solid var(--border-color); padding-top: 20px;">
-            <label class="form-label" style="font-size: 1rem; color: #fff;">3. Elige Fecha y Horario</label>
+          <div style="margin-top: 24px; border-top: 1px solid var(--border-subtle); padding-top: 20px;">
+            <label class="form-label" style="font-size: 0.95rem; font-weight: 600; color: var(--text-main);">3. Elige Fecha y Horario</label>
             <div style="display: grid; grid-template-columns: 320px 1fr; gap: 20px; align-items: start;">
               <div>
                 <span class="form-label">Fecha deseada</span>
@@ -763,8 +799,8 @@
           </div>
 
           <!-- Paso 4: Datos del Cliente -->
-          <div style="border-top: 1px solid var(--border-color); padding-top: 20px; margin-top: 24px;">
-            <label class="form-label" style="font-size: 1rem; color: #fff; margin-bottom: 12px;">4. Tus Datos de Contacto</label>
+          <div style="border-top: 1px solid var(--border-subtle); padding-top: 20px; margin-top: 24px;">
+            <label class="form-label" style="font-size: 0.95rem; font-weight: 600; color: var(--text-main); margin-bottom: 12px;">4. Tus Datos de Contacto</label>
             <div class="form-row">
               <div class="form-group">
                 <label class="form-label">Nombre Completo *</label>
@@ -783,7 +819,7 @@
 
           <div style="margin-top: 24px; text-align: center;">
             <button class="btn btn-primary btn-lg" id="btn-public-submit-booking" style="width: 100%;">
-              ✂️ Confirmar y Agendar Cita por WhatsApp
+              Confirmar y Agendar Cita por WhatsApp
             </button>
           </div>
         </div>
@@ -820,7 +856,7 @@
         <div class="multi-services-container" id="modal-services-picker"></div>
         <div class="multi-services-summary-pill" id="modal-services-summary">
           <span id="modal-services-summary-text">0 servicios seleccionados</span>
-          <b style="color: var(--gold-primary); font-size: 1.05rem;" id="modal-services-summary-price">$0.00</b>
+          <b style="color: var(--primary); font-size: 1.05rem;" id="modal-services-summary-price">$0.00</b>
         </div>
       </div>
 
@@ -858,13 +894,13 @@
 <div class="modal-overlay" id="modal-barber-tip">
   <div class="modal-container" style="max-width: 440px;">
     <div class="modal-header">
-      <h3>💵 Registrar Propina Recibida</h3>
+      <h3>Registrar Propina Recibida</h3>
       <button class="modal-close" onclick="closeModal('modal-barber-tip')">&times;</button>
     </div>
     <div class="modal-body">
       <div class="form-group">
         <label class="form-label">Monto de la Propina ($) *</label>
-        <input type="number" id="tip-form-amount" class="form-control" style="font-size: 1.3rem; font-weight: bold; color: var(--gold-primary);" placeholder="50.00" min="1" step="5">
+        <input type="number" id="tip-form-amount" class="form-control" style="font-size: 1.3rem; font-weight: bold; color: var(--primary);" placeholder="50.00" min="1" step="5">
       </div>
       <div class="form-group">
         <label class="form-label">Nombre del Cliente / Cita</label>
@@ -914,11 +950,11 @@
   </div>
 </div>
 
-<!-- Modal: Realizar Corte / Cierre de Caja (Sin comisiones) -->
+<!-- Modal: Realizar Corte / Cierre de Caja -->
 <div class="modal-overlay" id="modal-cashcut">
   <div class="modal-container">
     <div class="modal-header">
-      <h3>🏁 Arqueo y Cierre de Caja del Turno</h3>
+      <h3>Arqueo y Cierre de Caja del Turno</h3>
       <button class="modal-close" onclick="closeModal('modal-cashcut')">&times;</button>
     </div>
     <div class="modal-body">
@@ -935,18 +971,18 @@
           <span>+ Ventas en Efectivo:</span>
           <b id="cut-modal-sales-cash">$0.00</b>
         </div>
-        <div style="display: flex; justify-content: space-between; font-size: 0.9rem; color: #f87171;">
+        <div style="display: flex; justify-content: space-between; font-size: 0.9rem; color: var(--badge-red-text);">
           <span>- Gastos / Salidas en Efectivo:</span>
           <b id="cut-modal-expenses">-$0.00</b>
         </div>
-        <div style="display: flex; justify-content: space-between; font-size: 1.05rem; font-weight: bold; border-top: 1px dashed var(--border-color); padding-top: 8px;">
+        <div style="display: flex; justify-content: space-between; font-size: 1.05rem; font-weight: bold; border-top: 1px dashed var(--border-default); padding-top: 8px;">
           <span>Efectivo Esperado en Sistema:</span>
-          <span style="color: var(--gold-primary);" id="cut-modal-expected">$0.00</span>
+          <span style="color: var(--primary);" id="cut-modal-expected">$0.00</span>
         </div>
       </div>
 
       <div class="form-group" style="margin-top: 16px;">
-        <label class="form-label" style="font-size: 0.95rem; color: #fff;">Efectivo Físico Contado en Mano ($) *</label>
+        <label class="form-label" style="font-size: 0.95rem; color: var(--text-main);">Efectivo Físico Contado en Mano ($) *</label>
         <input type="number" id="cut-counted-cash" class="form-control" style="font-size: 1.2rem; font-weight: bold;" placeholder="0.00" step="1">
       </div>
 
@@ -970,7 +1006,66 @@
   </div>
 </div>
 
-<!-- Modal: Nuevo / Editar Barbero con Cuenta de Acceso (Sin comisiones) -->
+<!-- Modal: Modificar Fondo Inicial con Contraseña de Dueño -->
+<div class="modal-overlay" id="modal-edit-fund">
+  <div class="modal-container" style="max-width: 440px;">
+    <div class="modal-header">
+      <h3>Modificar Fondo Inicial de Caja</h3>
+      <button class="modal-close" onclick="closeModal('modal-edit-fund')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 14px;">
+        Esta acción solo está autorizada para el dueño del establecimiento. Requiere contraseña de seguridad.
+      </p>
+      <div class="form-group">
+        <label class="form-label">Nuevo Monto de Fondo Inicial ($) *</label>
+        <input type="number" id="edit-fund-amount" class="form-control" placeholder="500.00" min="0" step="50" style="font-size: 1.2rem; font-weight: 700; color: var(--primary);">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Contraseña de Dueño *</label>
+        <input type="password" id="edit-fund-password" class="form-control" placeholder="•••••" autocomplete="current-password">
+        <small style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-top: 4px;">
+          Ingresa la contraseña de dueño (12345) para autorizar el cambio.
+        </small>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-edit-fund')">Cancelar</button>
+      <button class="btn btn-primary" id="btn-confirm-edit-fund">Actualizar Fondo</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Limpiar Datos de Demostración (Reset Demo) -->
+<div class="modal-overlay" id="modal-reset-demo">
+  <div class="modal-container" style="max-width: 460px;">
+    <div class="modal-header">
+      <h3>Limpiar Datos de Demostración</h3>
+      <button class="modal-close" onclick="closeModal('modal-reset-demo')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div style="display: flex; gap: 14px; align-items: flex-start;">
+        <div style="background-color: var(--badge-red-bg); color: var(--badge-red-text); width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: bold; font-size: 1.1rem;">
+          !
+        </div>
+        <div>
+          <p style="font-size: 0.9rem; font-weight: 600; color: var(--text-main); margin-bottom: 6px;">
+            ¿Deseas restablecer los datos de demostración a cero?
+          </p>
+          <p style="font-size: 0.82rem; color: var(--text-secondary); line-height: 1.45;">
+            Esta acción eliminará todas las citas de la agenda, los movimientos de caja registrados, las propinas de barberos y los cortes de caja previos. Los servicios, productos, clientes y barberos se mantendrán intactos.
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-reset-demo')">Cancelar</button>
+      <button class="btn btn-danger" id="btn-confirm-reset-demo">Sí, Limpiar Datos</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Nuevo / Editar Barbero con Cuenta de Acceso -->
 <div class="modal-overlay" id="modal-barber">
   <div class="modal-container">
     <div class="modal-header">
@@ -980,7 +1075,7 @@
     <div class="modal-body">
       <div class="form-group">
         <label class="form-label">Nombre del Barbero *</label>
-        <input type="text" id="barber-form-name" class="form-control" placeholder="Ej. Carlos 'Fade' Mendoza">
+        <input type="text" id="barber-form-name" class="form-control" placeholder="Ej. Carlos Mendoza">
       </div>
       <div class="form-row">
         <div class="form-group">
@@ -994,8 +1089,8 @@
       </div>
 
       <!-- Credenciales de Inicio de Sesión -->
-      <div style="background-color: var(--bg-secondary); padding: 14px; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-top: 10px;">
-        <h4 style="font-size: 0.82rem; color: var(--gold-primary); text-transform: uppercase; margin-bottom: 10px;">🔑 Credenciales para que el Barbero inicie sesión</h4>
+      <div style="background-color: var(--bg-subtle); padding: 14px; border-radius: var(--radius-md); border: 1px solid var(--border-default); margin-top: 10px;">
+        <h4 style="font-size: 0.82rem; color: var(--primary); text-transform: uppercase; margin-bottom: 10px;">Credenciales para que el Barbero inicie sesión</h4>
         <div class="form-row">
           <div class="form-group" style="margin-bottom: 0;">
             <label class="form-label">Usuario *</label>
@@ -1055,7 +1150,7 @@
     <div class="modal-body">
       <div class="form-group">
         <label class="form-label">Nombre del Producto *</label>
-        <input type="text" id="product-form-name" class="form-control" placeholder="Ej. Cera Mate Fijación Fuerte 100g">
+        <input type="text" id="product-form-name" class="form-control" placeholder="Ej. Cera Pomada Mate Fijación Fuerte 100g">
       </div>
       <div class="form-row">
         <div class="form-group">
@@ -1097,7 +1192,7 @@
       </div>
       <div class="form-group">
         <label class="form-label">Notas de Estilo / Preferencias</label>
-        <textarea id="client-form-notes" class="form-control" rows="2" placeholder="Ej. Fade bajo, no tocar largo de arriba, peinado hacia la derecha..."></textarea>
+        <textarea id="client-form-notes" class="form-control" rows="2" placeholder="Ej. Fade bajo, peinado hacia la derecha..."></textarea>
       </div>
     </div>
     <div class="modal-footer">
@@ -1114,12 +1209,12 @@
       <h3>Recibo / Ticket de Cobro</h3>
       <button class="modal-close" onclick="closeModal('modal-receipt')">&times;</button>
     </div>
-    <div class="modal-body" style="background-color: #262a36; padding: 16px;">
+    <div class="modal-body" style="background-color: var(--bg-app); padding: 16px;">
       <div class="receipt-box" id="printable-receipt-content"></div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal('modal-receipt')">Cerrar</button>
-      <button class="btn btn-primary" id="btn-print-receipt">🖨️ Imprimir Ticket</button>
+      <button class="btn btn-primary" id="btn-print-receipt">Imprimir Ticket</button>
     </div>
   </div>
 </div>

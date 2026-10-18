@@ -2,8 +2,20 @@
  * BARBERSHOP SYSTEM - THE BARBER CLUB & CO.
  * Lógica Completa de la Aplicación en JavaScript
  * Con soporte para Sesiones, Cobro Directo al Completar,
- * Registro de Propinas por Barbero y Sueldo Semanal (Sin comisiones).
+ * Registro de Propinas por Barbero, Sueldo Semanal (Sin comisiones),
+ * Reseteo de Datos Demo y Edición de Fondo Inicial con Contraseña de Dueño (12345).
  */
+
+// ================= UTILIDAD DE INICIALES =================
+function getInitials(name) {
+  if (!name) return 'BP';
+  const clean = name.replace(/['"]/g, '').trim();
+  const parts = clean.split(/\s+/);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+  return clean.substring(0, 2).toUpperCase();
+}
 
 // ================= ESTADO INICIAL Y PERSISTENCIA =================
 const STORAGE_KEY = 'barbershop_system_data_v3';
@@ -30,7 +42,7 @@ const DEFAULT_DATA = {
       phone: "5512345678",
       specialty: "Degradados, Skin Fade & Diseños",
       payType: "Sueldo Semanal",
-      avatar: "💈"
+      avatar: "CF"
     },
     {
       id: "b2",
@@ -40,7 +52,7 @@ const DEFAULT_DATA = {
       phone: "5587654321",
       specialty: "Barba Spa & Ritual Tradicional",
       payType: "Sueldo Semanal",
-      avatar: "🧔"
+      avatar: "MS"
     },
     {
       id: "b3",
@@ -50,7 +62,7 @@ const DEFAULT_DATA = {
       phone: "5599887766",
       specialty: "Cortes Clásicos & Tijera",
       payType: "Sueldo Semanal",
-      avatar: "✂️"
+      avatar: "DR"
     }
   ],
   services: [
@@ -76,7 +88,7 @@ const DEFAULT_DATA = {
   appointments: [],
   cashMovements: [],
   cashClosures: [],
-  barberTips: [] // Propinas capturadas directamente por los barberos
+  barberTips: []
 };
 
 // Generar citas, movimientos y propinas de muestra
@@ -210,6 +222,12 @@ function loadStore() {
       const parsed = JSON.parse(raw);
       if (parsed.barbers && parsed.services && parsed.config) {
         if (!parsed.barberTips) parsed.barberTips = [];
+        // Limpieza de avatares con emojis si quedaron de versiones previas
+        parsed.barbers.forEach(b => {
+          if (!b.avatar || /[\u2600-\u27BF]|[\uD83C-\uD83E][\uDC00-\uDFFF]/.test(b.avatar)) {
+            b.avatar = getInitials(b.name);
+          }
+        });
         return parsed;
       }
     }
@@ -234,7 +252,13 @@ let currentUser = loadSession();
 function loadSession() {
   try {
     const raw = localStorage.getItem(SESSION_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.avatar && /[\u2600-\u27BF]|[\uD83C-\uD83E][\uDC00-\uDFFF]/.test(parsed.avatar)) {
+        parsed.avatar = parsed.role === 'admin' ? 'CG' : getInitials(parsed.name);
+      }
+      return parsed;
+    }
   } catch (e) {}
   return null;
 }
@@ -258,10 +282,10 @@ function handleLogin() {
       role: 'admin',
       name: 'Caja Principal / Dueño',
       username: userVal,
-      avatar: '💼'
+      avatar: 'CG'
     });
     applyUserSession();
-    showToast("¡Bienvenida! Sesión iniciada como Caja", "success");
+    showToast("Sesión iniciada como Caja", "success");
     return;
   }
 
@@ -273,11 +297,11 @@ function handleLogin() {
       barberId: barber.id,
       name: barber.name,
       username: barber.username,
-      avatar: barber.avatar || '💈',
+      avatar: barber.avatar || getInitials(barber.name),
       specialty: barber.specialty
     });
     applyUserSession();
-    showToast(`¡Hola ${barber.name}! Bienvenido a tu sesión`, "success");
+    showToast(`Bienvenido a tu sesión, ${barber.name}`, "success");
     return;
   }
 
@@ -309,7 +333,7 @@ function applyUserSession() {
   loginScreen.classList.add('hidden');
 
   document.getElementById('header-user-name').textContent = currentUser.name;
-  document.getElementById('header-user-avatar').textContent = currentUser.avatar || '👤';
+  document.getElementById('header-user-avatar').textContent = currentUser.avatar || (currentUser.role === 'admin' ? 'CG' : 'BP');
   document.getElementById('header-user-role').textContent = currentUser.role === 'admin' ? 'CAJA / ADMIN' : 'BARBERO';
   document.getElementById('sidebar-role-label').textContent = currentUser.role === 'admin' ? 'CAJA & CONTROL' : `BARBERO: ${currentUser.name.split(' ')[0]}`;
 
@@ -353,125 +377,134 @@ document.addEventListener('DOMContentLoaded', () => {
   applyUserSession();
 });
 
-// ================= NAVEGACIÓN =================
+function renderAllViews() {
+  renderDashboard();
+  renderAppointments();
+  renderPOS();
+  renderCashRegister();
+  renderBarbers();
+  renderCatalog();
+  renderClients();
+  renderPublicBooking();
+
+  if (currentUser && currentUser.role === 'barber') {
+    renderBarberPortal();
+    renderBarberTips();
+  }
+}
+
 function switchView(viewName) {
   currentView = viewName;
+
   document.querySelectorAll('.view-section').forEach(sec => sec.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
 
-  const targetSec = document.getElementById(`view-${viewName}`);
-  if (targetSec) targetSec.classList.add('active');
+  const targetSection = document.getElementById(`view-${viewName}`);
+  if (targetSection) targetSection.classList.add('active');
 
-  const navLink = document.querySelector(`.nav-item[data-view="${viewName}"]`);
-  if (navLink) navLink.classList.add('active');
+  const activeNavItem = document.querySelector(`.nav-item[data-view="${viewName}"]`);
+  if (activeNavItem) activeNavItem.classList.add('active');
 
   const titles = {
-    'dashboard': { t: 'Tablero Principal', s: 'Resumen y métricas de la barbería hoy' },
-    'appointments': { t: 'Agenda de Citas', s: 'Control de citas, turnos y clientes en espera' },
-    'barber-portal': { t: 'Mi Agenda de Citas', s: 'Tus clientes asignados hoy (Estado controlado en caja)' },
-    'barber-tips': { t: 'Mis Propinas Recibidas', s: 'Registro personal de propinas recibidas de clientes' },
-    'pos': { t: 'Punto de Venta (POS)', s: 'Cobro rápido de servicios y productos' },
-    'cash-register': { t: 'Corte de Caja', s: 'Arqueo de turno, control de efectivo y gastos' },
-    'barbers': { t: 'Barberos & Cuentas', s: 'Gestión de personal y credenciales (Pago Semanal)' },
-    'catalog': { t: 'Servicios & Productos', s: 'Catálogo de cortes, tratamientos y stock' },
-    'clients': { t: 'Directorio de Clientes', s: 'Historial de visitas y notas de corte' },
-    'public-booking': { t: 'Reserva Online', s: 'Portal para clientes y confirmación vía WhatsApp' }
+    'dashboard': { title: 'Tablero Principal', sub: 'Resumen y métricas de la barbería hoy' },
+    'appointments': { title: 'Agenda General de Citas', sub: 'Control de citas del día y filtros' },
+    'barber-portal': { title: 'Mi Portal de Barbero', sub: 'Agenda y clientes asignados' },
+    'barber-tips': { title: 'Mis Propinas', sub: 'Historial y registro de propinas recibidas' },
+    'pos': { title: 'Punto de Venta (POS)', sub: 'Cobro de cortes, servicios y productos' },
+    'cash-register': { title: 'Corte & Arqueo de Caja', sub: 'Fondo de caja, balance y cierres' },
+    'barbers': { title: 'Equipo de Barberos', sub: 'Administración de cuentas y personal' },
+    'catalog': { title: 'Catálogo & Inventario', sub: 'Servicios de barbería y productos de cuidado' },
+    'clients': { title: 'Directorio de Clientes', sub: 'Historial de visitas y preferencias' },
+    'public-booking': { title: 'Vista Previa Reserva Online', sub: 'Portal público para clientes' }
   };
 
-  if (titles[viewName]) {
-    document.getElementById('view-title').textContent = titles[viewName].t;
-    document.getElementById('view-subtitle').textContent = titles[viewName].s;
-  }
+  const info = titles[viewName] || { title: 'Sistema de Barbería', sub: '' };
+  document.getElementById('view-title').textContent = info.title;
+  document.getElementById('view-subtitle').textContent = info.sub;
 
   const sidebar = document.getElementById('sidebar');
   if (sidebar) sidebar.classList.remove('open');
 
-  renderView(viewName);
+  if (viewName === 'appointments') renderAppointments();
+  if (viewName === 'barber-portal') renderBarberPortal();
+  if (viewName === 'barber-tips') renderBarberTips();
+  if (viewName === 'pos') renderPOS();
+  if (viewName === 'cash-register') renderCashRegister();
+  if (viewName === 'public-booking') renderPublicBooking();
 }
 
-function renderAllViews() {
-  if (currentUser && currentUser.role === 'barber') {
-    renderBarberPortal();
-    renderBarberTips();
-  } else {
-    renderDashboard();
-    renderAppointments();
-    renderPOS();
-    renderCashRegister();
-    renderBarbers();
-    renderCatalog();
-    renderClients();
-  }
-  renderPublicBooking();
-}
-
-function renderView(viewName) {
-  switch (viewName) {
-    case 'dashboard': renderDashboard(); break;
-    case 'appointments': renderAppointments(); break;
-    case 'barber-portal': renderBarberPortal(); break;
-    case 'barber-tips': renderBarberTips(); break;
-    case 'pos': renderPOS(); break;
-    case 'cash-register': renderCashRegister(); break;
-    case 'barbers': renderBarbers(); break;
-    case 'catalog': renderCatalog(); break;
-    case 'clients': renderClients(); break;
-    case 'public-booking': renderPublicBooking(); break;
-  }
-}
-
-// ================= COMPONENTE DE CALENDARIO INTERACTIVO =================
+// ================= COMPONENTE DE CALENDARIO =================
 function renderCustomCalendar(containerId, activeDateStr, onSelectCallback) {
   const container = document.getElementById(containerId);
   if (!container) return;
 
-  const activeDate = new Date(activeDateStr + "T00:00:00");
+  const activeDate = new Date(activeDateStr + 'T00:00:00');
   const year = activeDate.getFullYear();
   const month = activeDate.getMonth();
 
-  const monthNames = [
-    "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
-  ];
+  const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+  const dayNames = ["Do", "Lu", "Ma", "Mi", "Ju", "Vi", "Sá"];
 
   const firstDayIndex = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const todayStr = new Date().toISOString().split('T')[0];
 
-  container.innerHTML = `
-    <div class="calendar-widget-wrapper">
-      <div class="calendar-widget-header">
+  let html = `
+    <div class="calendar-header">
+      <span class="calendar-month-label">${monthNames[month]} ${year}</span>
+      <div class="calendar-nav-buttons">
         <button type="button" class="calendar-nav-btn" id="${containerId}-prev">&lt;</button>
-        <span class="calendar-widget-title">${monthNames[month]} ${year}</span>
         <button type="button" class="calendar-nav-btn" id="${containerId}-next">&gt;</button>
       </div>
-      <div class="calendar-weekdays-row">
-        <span>Do</span><span>Lu</span><span>Ma</span><span>Mi</span><span>Ju</span><span>Vi</span><span>Sá</span>
-      </div>
-      <div class="calendar-days-grid" id="${containerId}-days"></div>
     </div>
+    <div class="calendar-days-grid">
   `;
 
-  const daysGrid = document.getElementById(`${containerId}-days`);
+  dayNames.forEach(d => {
+    html += `<div class="calendar-day-name">${d}</div>`;
+  });
 
   for (let i = 0; i < firstDayIndex; i++) {
-    const empty = document.createElement('div');
-    empty.className = 'cal-day-cell empty';
-    daysGrid.appendChild(empty);
+    html += `<div class="calendar-cell empty"></div>`;
   }
 
-  for (let d = 1; d <= daysInMonth; d++) {
-    const dayStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-    const cell = document.createElement('div');
-    cell.className = 'cal-day-cell';
-    cell.textContent = d;
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dayPadded = String(day).padStart(2, '0');
+    const monthPadded = String(month + 1).padStart(2, '0');
+    const fullDate = `${year}-${monthPadded}-${dayPadded}`;
 
-    if (dayStr === todayStr) cell.classList.add('today');
-    if (dayStr === activeDateStr) cell.classList.add('selected');
+    const isToday = (fullDate === todayStr);
+    const isSelected = (fullDate === activeDateStr);
 
-    cell.onclick = () => onSelectCallback(dayStr);
-    daysGrid.appendChild(cell);
+    let hasApps = false;
+    if (currentUser && currentUser.role === 'barber') {
+      hasApps = store.appointments.some(a => a.date === fullDate && a.barberId === currentUser.barberId);
+    } else {
+      hasApps = store.appointments.some(a => a.date === fullDate);
+    }
+
+    let cellClasses = 'calendar-cell';
+    if (isToday) cellClasses += ' today';
+    if (isSelected) cellClasses += ' selected';
+    if (hasApps) cellClasses += ' has-appointments';
+
+    html += `
+      <div class="${cellClasses}" data-date="${fullDate}">
+        ${day}
+        ${hasApps ? '<span class="appointment-dot"></span>' : ''}
+      </div>
+    `;
   }
+
+  html += `</div>`;
+  container.innerHTML = html;
+
+  container.querySelectorAll('.calendar-cell:not(.empty)').forEach(cell => {
+    cell.onclick = () => {
+      const selected = cell.dataset.date;
+      onSelectCallback(selected);
+    };
+  });
 
   document.getElementById(`${containerId}-prev`).onclick = () => {
     const prevMonthDate = new Date(year, month - 1, 1).toISOString().split('T')[0];
@@ -496,9 +529,9 @@ function renderTimeSlotsWidget(containerId, barberId, selectedDate, selectedTime
   const bookedTimes = bookedApps.map(a => a.time);
 
   container.innerHTML = `
-    <div class="time-shift-title">☀️ Mañana</div>
+    <div class="time-shift-title">Turno Matutino</div>
     <div class="time-slots-wrapper" id="${containerId}-morning"></div>
-    <div class="time-shift-title" style="margin-top: 8px;">🌙 Tarde</div>
+    <div class="time-shift-title" style="margin-top: 8px;">Turno Vespertino</div>
     <div class="time-slots-wrapper" id="${containerId}-afternoon"></div>
   `;
 
@@ -554,7 +587,7 @@ function renderDashboard() {
       const barber = store.barbers.find(b => b.id === app.barberId) || { name: 'Sin asignar' };
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td><strong style="color: var(--gold-primary); font-size: 1rem;">${app.time}</strong></td>
+        <td><strong style="color: var(--primary); font-size: 0.95rem;">${app.time}</strong></td>
         <td><b>${escapeHtml(app.clientName)}</b></td>
         <td><span style="font-size:0.85rem;">${escapeHtml(app.serviceName)}</span></td>
         <td>${escapeHtml(barber.name)}</td>
@@ -563,9 +596,9 @@ function renderDashboard() {
           <div style="display:flex; gap:6px;">
             ${app.status !== 'completada' ? `
               <button class="btn btn-primary btn-sm" onclick="directPayAppointment('${app.id}')" title="Cobrar cita en caja">
-                💳 Cobrar
+                Cobrar
               </button>
-            ` : `<span style="color:#4ade80; font-size:0.8rem; font-weight:600;">✓ Cobrado</span>`}
+            ` : `<span style="color: var(--badge-green-text); font-size:0.8rem; font-weight:600;">Cobrado</span>`}
           </div>
         </td>
       `;
@@ -578,12 +611,12 @@ function renderDashboard() {
   store.barbers.forEach(barber => {
     const inChair = todayApps.find(a => a.barberId === barber.id && a.status === 'en_proceso');
     const div = document.createElement('div');
-    div.style.cssText = "display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: var(--bg-secondary); border-radius: 8px; border: 1px solid var(--border-color);";
+    div.style.cssText = "display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: var(--bg-subtle); border-radius: 6px; border: 1px solid var(--border-default);";
     div.innerHTML = `
       <div style="display: flex; align-items: center; gap: 10px;">
-        <span style="font-size: 1.5rem;">${barber.avatar || '💈'}</span>
+        <div class="user-session-avatar" style="width: 32px; height: 32px; font-size: 0.8rem;">${barber.avatar || getInitials(barber.name)}</div>
         <div>
-          <strong style="color: #fff; font-size: 0.9rem;">${escapeHtml(barber.name)}</strong>
+          <strong style="color: var(--text-main); font-size: 0.88rem;">${escapeHtml(barber.name)}</strong>
           <p style="font-size: 0.75rem; color: var(--text-secondary);">${escapeHtml(barber.specialty)}</p>
         </div>
       </div>
@@ -637,7 +670,7 @@ function renderAppointments() {
     const barber = store.barbers.find(b => b.id === app.barberId) || { name: 'Desconocido' };
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td><strong style="color: var(--gold-primary); font-size: 1rem;">${app.time}</strong></td>
+      <td><strong style="color: var(--primary); font-size: 0.95rem;">${app.time}</strong></td>
       <td>
         <b>${escapeHtml(app.clientName)}</b>
         ${app.notes ? `<div style="font-size: 0.75rem; color: var(--text-muted);">${escapeHtml(app.notes)}</div>` : ''}
@@ -645,7 +678,7 @@ function renderAppointments() {
       <td>
         <span>${escapeHtml(app.clientPhone || 'Sin tel')}</span>
         ${app.clientPhone ? `
-          <button class="btn btn-secondary btn-sm" style="padding: 2px 6px; margin-left: 6px; font-size: 0.7rem;" onclick="sendWhatsAppReminder('${app.id}')">📲 WhatsApp</button>
+          <button class="btn btn-secondary btn-sm" style="padding: 2px 6px; margin-left: 6px; font-size: 0.7rem;" onclick="sendWhatsAppReminder('${app.id}')">WhatsApp</button>
         ` : ''}
       </td>
       <td><span style="font-size: 0.88rem;">${escapeHtml(app.serviceName)}</span></td>
@@ -653,18 +686,18 @@ function renderAppointments() {
       <td><strong>${formatMoney(app.price)}</strong></td>
       <td>
         <select class="form-select" style="padding: 4px 8px; font-size: 0.8rem; width: auto;" onchange="handleAdminStatusChange('${app.id}', this.value)">
-          <option value="pendiente" ${app.status === 'pendiente' ? 'selected' : ''}>⏳ Pendiente</option>
-          <option value="en_proceso" ${app.status === 'en_proceso' ? 'selected' : ''}>✂️ En Sillón</option>
-          <option value="completada" ${app.status === 'completada' ? 'selected' : ''}>💳 Completar y Cobrar</option>
-          <option value="cancelada" ${app.status === 'cancelada' ? 'selected' : ''}>❌ Cancelada</option>
+          <option value="pendiente" ${app.status === 'pendiente' ? 'selected' : ''}>En Espera</option>
+          <option value="en_proceso" ${app.status === 'en_proceso' ? 'selected' : ''}>En Sillón</option>
+          <option value="completada" ${app.status === 'completada' ? 'selected' : ''}>Completar y Cobrar</option>
+          <option value="cancelada" ${app.status === 'cancelada' ? 'selected' : ''}>Cancelada</option>
         </select>
       </td>
       <td>
         <div style="display: flex; gap: 6px;">
           ${app.status !== 'completada' ? `
             <button class="btn btn-primary btn-sm" onclick="directPayAppointment('${app.id}')">Cobrar</button>
-          ` : `<span style="color:#4ade80; font-size:0.75rem; font-weight:bold;">Cobrado</span>`}
-          <button class="btn btn-danger btn-sm" onclick="deleteAppointment('${app.id}')" title="Eliminar cita">🗑️</button>
+          ` : `<span style="color: var(--badge-green-text); font-size:0.75rem; font-weight:bold;">Cobrado</span>`}
+          <button class="btn btn-danger btn-sm" onclick="deleteAppointment('${app.id}')" title="Eliminar cita">Eliminar</button>
         </div>
       </td>
     `;
@@ -675,7 +708,6 @@ function renderAppointments() {
 // Cuando la cajera cambia el estado de la cita
 function handleAdminStatusChange(appId, newStatus) {
   if (newStatus === 'completada') {
-    // REQUERIMIENTO: Si selecciona completada, mandar directo a cobrar
     directPayAppointment(appId);
     showToast("Cita marcada como completada. Redirigiendo a cobrar en caja...", "info");
   } else {
@@ -711,7 +743,7 @@ function sendWhatsAppReminder(appId) {
 
   const cleanPhone = app.clientPhone.replace(/\D/g, '');
   const msg = encodeURIComponent(
-    `¡Hola ${app.clientName}! 👋 Te recordamos tu cita en *${store.config.shopName}* para hoy a las *${app.time} hrs* (${app.serviceName}). ¡Te esperamos!`
+    `¡Hola ${app.clientName}! Te recordamos tu cita en *${store.config.shopName}* para hoy a las *${app.time} hrs* (${app.serviceName}). ¡Te esperamos!`
   );
   window.open(`https://wa.me/${cleanPhone}?text=${msg}`, '_blank');
 }
@@ -726,7 +758,6 @@ function renderBarberPortal() {
   const todayApps = store.appointments.filter(a => a.barberId === barberId && a.date === todayStr);
   const doneApps = todayApps.filter(a => a.status === 'completada');
 
-  // Calcular total de propinas que el barbero ha capturado hoy
   const myTipsToday = (store.barberTips || [])
     .filter(t => t.barberId === barberId && t.timestamp && t.timestamp.startsWith(todayStr))
     .reduce((sum, t) => sum + (t.amount || 0), 0);
@@ -735,7 +766,6 @@ function renderBarberPortal() {
   document.getElementById('barber-portal-stat-done').textContent = doneApps.length;
   document.getElementById('barber-portal-stat-tips').textContent = formatMoney(myTipsToday);
 
-  // Calendario del Barbero
   renderCustomCalendar('barber-calendar-widget-container', barberSelectedDate, (newDate) => {
     barberSelectedDate = newDate;
     document.getElementById('barber-selected-date-label').textContent = (newDate === todayStr) ? "Hoy (" + newDate + ")" : newDate;
@@ -746,7 +776,6 @@ function renderBarberPortal() {
     ? `Mis Citas para Hoy (${barberSelectedDate})`
     : `Mis Citas para el ${barberSelectedDate}`;
 
-  // Citas del Barbero: SOLO LECTURA DEL ESTADO (Sin opción de editar el estado)
   const dateApps = store.appointments.filter(a => a.barberId === barberId && a.date === barberSelectedDate);
   const tbody = document.getElementById('barber-my-appointments-tbody');
   tbody.innerHTML = '';
@@ -759,7 +788,7 @@ function renderBarberPortal() {
   dateApps.sort((a,b) => a.time.localeCompare(b.time)).forEach(app => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td><strong style="color: var(--gold-primary); font-size: 1.05rem;">${app.time}</strong></td>
+      <td><strong style="color: var(--primary); font-size: 0.95rem;">${app.time}</strong></td>
       <td>
         <b>${escapeHtml(app.clientName)}</b>
         ${app.notes ? `<div style="font-size: 0.75rem; color: var(--text-muted);">${escapeHtml(app.notes)}</div>` : ''}
@@ -767,19 +796,17 @@ function renderBarberPortal() {
       <td>
         <span>${escapeHtml(app.clientPhone || 'Sin tel')}</span>
         ${app.clientPhone ? `
-          <button class="btn btn-secondary btn-sm" style="padding: 2px 6px; margin-left: 6px; font-size: 0.7rem;" onclick="sendWhatsAppReminder('${app.id}')">📲 Recordatorio</button>
+          <button class="btn btn-secondary btn-sm" style="padding: 2px 6px; margin-left: 6px; font-size: 0.7rem;" onclick="sendWhatsAppReminder('${app.id}')">Recordatorio</button>
         ` : ''}
       </td>
-      <td><span style="font-size: 0.88rem; color: #fff;">${escapeHtml(app.serviceName)}</span></td>
+      <td><span style="font-size: 0.88rem;">${escapeHtml(app.serviceName)}</span></td>
       <td><strong>${formatMoney(app.price)}</strong></td>
       <td>
-        <!-- SOLO LECTURA DEL ESTADO ASIGNADO POR LA CAJERA -->
         ${renderStatusBadge(app.status)}
       </td>
       <td>
-        <!-- BOTÓN PARA REGISTRAR PROPINA DE ESTE CLIENTE -->
         <button class="btn btn-secondary btn-sm" onclick="openBarberTipModal('${escapeHtml(app.clientName)}')">
-          💵 + Propina
+          + Propina
         </button>
       </td>
     `;
@@ -817,10 +844,10 @@ function renderBarberTips() {
     tr.innerHTML = `
       <td><strong>${timeFormatted}</strong></td>
       <td><b>${escapeHtml(tip.client || 'Cliente')}</b></td>
-      <td><strong style="color: #4ade80; font-size: 1.05rem;">+${formatMoney(tip.amount)}</strong></td>
+      <td><strong style="color: var(--badge-green-text); font-size: 1rem;">+${formatMoney(tip.amount)}</strong></td>
       <td style="color: var(--text-secondary);">${escapeHtml(tip.notes || '-')}</td>
       <td>
-        <button class="btn btn-danger btn-sm" onclick="deleteBarberTip('${tip.id}')">🗑️</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteBarberTip('${tip.id}')">Eliminar</button>
       </td>
     `;
     tbody.appendChild(tr);
@@ -866,7 +893,7 @@ function saveBarberTipFromModal() {
   closeModal('modal-barber-tip');
   renderBarberPortal();
   renderBarberTips();
-  showToast(`¡Propina de ${formatMoney(amount)} registrada con éxito!`, "success");
+  showToast(`Propina de ${formatMoney(amount)} registrada con éxito`, "success");
 }
 
 function deleteBarberTip(tipId) {
@@ -890,11 +917,11 @@ function renderMultiServicesPicker(containerId, summaryTextId, summaryPriceId, s
     const item = document.createElement('div');
     item.className = `service-select-item ${isSelected ? 'selected' : ''}`;
     item.innerHTML = `
-      <div class="custom-checkbox">${isSelected ? '✓' : ''}</div>
+      <div class="custom-checkbox">${isSelected ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"><polyline points="20 6 9 17 4 12"></polyline></svg>' : ''}</div>
       <div class="service-select-info">
         <div class="service-select-title">${escapeHtml(srv.name)}</div>
         <div class="service-select-meta">
-          <span class="service-select-duration">⏱️ ${srv.duration} min</span>
+          <span class="service-select-duration">${srv.duration} min</span>
           <span class="service-select-price">${formatMoney(srv.price)}</span>
         </div>
       </div>
@@ -916,7 +943,7 @@ function renderMultiServicesPicker(containerId, summaryTextId, summaryPriceId, s
       summaryText.textContent = "Ningún servicio seleccionado";
       summaryPrice.textContent = "$0.00";
     } else {
-      summaryText.textContent = `${totalCount} servicio(s) seleccionado(s) • ⏱️ ${totalDuration} min`;
+      summaryText.textContent = `${totalCount} servicio(s) seleccionado(s) • ${totalDuration} min`;
       summaryPrice.textContent = formatMoney(totalPrice);
     }
   }
@@ -978,7 +1005,7 @@ function renderModalAppointmentComponents() {
     const card = document.createElement('div');
     card.className = `barber-picker-card ${isSelected ? 'selected' : ''}`;
     card.innerHTML = `
-      <div class="avatar">${b.avatar || '💈'}</div>
+      <div class="user-session-avatar" style="width: 32px; height: 32px; margin: 0 auto 6px; font-size: 0.8rem;">${b.avatar || getInitials(b.name)}</div>
       <div class="name">${escapeHtml(b.name)}</div>
       <div class="role">${escapeHtml(b.specialty)}</div>
     `;
@@ -1099,7 +1126,7 @@ function renderPublicBooking() {
     const card = document.createElement('div');
     card.className = `barber-picker-card ${isSelected ? 'selected' : ''}`;
     card.innerHTML = `
-      <div class="avatar">${b.avatar || '💈'}</div>
+      <div class="user-session-avatar" style="width: 36px; height: 36px; margin: 0 auto 6px; font-size: 0.9rem;">${b.avatar || getInitials(b.name)}</div>
       <div class="name">${escapeHtml(b.name)}</div>
       <div class="role">${escapeHtml(b.specialty)}</div>
     `;
@@ -1186,7 +1213,7 @@ function submitPublicBooking() {
 
   const shopPhone = store.config.phone || "525512345678";
   const msg = encodeURIComponent(
-    `¡Hola! Acabo de agendar una cita en *${store.config.shopName}*:\n\n👤 *Cliente:* ${name}\n✂️ *Servicios:* ${serviceName} ($${totalPrice})\n💈 *Barbero:* ${newApp.barberName}\n📅 *Fecha:* ${publicSelectedDate} a las ${publicSelectedTime} hrs\n📝 *Notas:* ${notes || 'Ninguna'}\n\n¡Por favor confirmen mi cita!`
+    `¡Hola! Acabo de agendar una cita en *${store.config.shopName}*:\n\n*Cliente:* ${name}\n*Servicios:* ${serviceName} ($${totalPrice})\n*Barbero:* ${newApp.barberName}\n*Fecha:* ${publicSelectedDate} a las ${publicSelectedTime} hrs\n*Notas:* ${notes || 'Ninguna'}\n\nPor favor confirmen mi cita.`
   );
 
   showToast("¡Cita agendada con éxito!", "success");
@@ -1198,7 +1225,7 @@ function submitPublicBooking() {
   window.open(`https://wa.me/${shopPhone}?text=${msg}`, '_blank');
 }
 
-// ================= RENDERIZADO: PUNTO DE VENTA (POS - SIN PROPINAS EN CAJA) =================
+// ================= RENDERIZADO: PUNTO DE VENTA (POS) =================
 function renderPOS() {
   const barberSelect = document.getElementById('pos-barber-select');
   if (barberSelect) {
@@ -1221,7 +1248,7 @@ function renderPOS() {
       card.innerHTML = `
         <div>
           <div class="pos-item-title">${escapeHtml(srv.name)}</div>
-          <div class="pos-item-sub">⏱️ ${srv.duration} min • ${escapeHtml(srv.category || 'Servicio')}</div>
+          <div class="pos-item-sub">${srv.duration} min • ${escapeHtml(srv.category || 'Servicio')}</div>
         </div>
         <div class="pos-item-price">${formatMoney(srv.price)}</div>
       `;
@@ -1241,8 +1268,8 @@ function renderPOS() {
       card.innerHTML = `
         <div>
           <div class="pos-item-title">${escapeHtml(prod.name)}</div>
-          <div class="pos-item-sub" style="color: ${prod.stock <= 3 ? '#ff6b6b' : 'var(--text-muted)'}; font-weight: 600;">
-            📦 Stock: ${prod.stock} u.
+          <div class="pos-item-sub" style="color: ${prod.stock <= 3 ? 'var(--badge-red-text)' : 'var(--text-muted)'}; font-weight: 600;">
+            Stock: ${prod.stock} u.
           </div>
         </div>
         <div class="pos-item-price">${formatMoney(prod.price)}</div>
@@ -1448,10 +1475,10 @@ function checkoutPOS() {
   renderCashRegister();
   renderBarbers();
 
-  showToast(`¡Cobro exitoso de ${formatMoney(total)} registrado!`, 'success');
+  showToast(`Cobro de ${formatMoney(total)} completado`, 'success');
 }
 
-// ================= RENDERIZADO: CORTE DE CAJA (SIN COMISIONES) =================
+// ================= RENDERIZADO: CORTE DE CAJA =================
 function renderCashRegister() {
   const todayStr = new Date().toISOString().split('T')[0];
   const todayMovs = store.cashMovements.filter(m => m.timestamp.startsWith(todayStr));
@@ -1508,7 +1535,7 @@ function renderCashRegister() {
         <td>${escapeHtml(m.concept || m.client)}</td>
         <td><span style="text-transform: capitalize;">${m.paymentMethod}</span></td>
         <td>${escapeHtml(m.barberName || '-')}</td>
-        <td><strong style="color: ${isSale ? '#4ade80' : '#ff6b6b'};">${isSale ? '+' : '-'}${formatMoney(m.amount)}</strong></td>
+        <td><strong style="color: ${isSale ? 'var(--badge-green-text)' : 'var(--badge-red-text)'};">${isSale ? '+' : '-'}${formatMoney(m.amount)}</strong></td>
       `;
       movsTbody.appendChild(tr);
     });
@@ -1522,7 +1549,7 @@ function renderCashRegister() {
   } else {
     store.cashClosures.slice().reverse().forEach(c => {
       const dateFormatted = new Date(c.closedAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' });
-      const diffClass = c.difference === 0 ? 'color: #4ade80' : (c.difference > 0 ? 'color: #60a5fa' : 'color: #f87171');
+      const diffClass = c.difference === 0 ? 'color: var(--badge-green-text)' : (c.difference > 0 ? 'color: var(--primary)' : 'color: var(--badge-red-text)');
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td><strong>${dateFormatted}</strong></td>
@@ -1536,6 +1563,64 @@ function renderCashRegister() {
       closuresTbody.appendChild(tr);
     });
   }
+}
+
+// ================= MODIFICAR FONDO INICIAL CON CONTRASEÑA DE DUEÑO =================
+function openEditFundModal() {
+  const inputAmount = document.getElementById('edit-fund-amount');
+  const inputPass = document.getElementById('edit-fund-password');
+  if (inputAmount) inputAmount.value = store.config.initialCashFund || 500;
+  if (inputPass) inputPass.value = '';
+  openModal('modal-edit-fund');
+}
+
+function confirmEditFund() {
+  const inputAmount = document.getElementById('edit-fund-amount');
+  const inputPass = document.getElementById('edit-fund-password');
+
+  const newFund = parseFloat(inputAmount.value);
+  const password = inputPass.value.trim();
+
+  if (isNaN(newFund) || newFund < 0) {
+    showToast("Por favor ingresa un monto válido para el fondo inicial", "error");
+    return;
+  }
+
+  // REGLA: Contraseña de dueño requerida = 12345
+  if (password !== '12345') {
+    showToast("Contraseña incorrecta. Solo el dueño puede editar el fondo.", "error");
+    inputPass.focus();
+    return;
+  }
+
+  store.config.initialCashFund = newFund;
+  saveStore();
+  renderCashRegister();
+  closeModal('modal-edit-fund');
+  showToast(`Fondo inicial actualizado a ${formatMoney(newFund)}`, "success");
+}
+
+// ================= RESETEAR DATOS DE DEMOSTRACIÓN =================
+function confirmResetDemo() {
+  // Limpia citas, propinas de barberos y cortes / movimientos de caja previos
+  store.appointments = [];
+  store.cashMovements = [];
+  store.cashClosures = [];
+  store.barberTips = [];
+
+  saveStore();
+
+  renderDashboard();
+  renderAppointments();
+  renderCashRegister();
+  renderBarbers();
+  if (currentUser && currentUser.role === 'barber') {
+    renderBarberPortal();
+    renderBarberTips();
+  }
+
+  closeModal('modal-reset-demo');
+  showToast("Datos demo eliminados. Sistema restablecido a cero.", "success");
 }
 
 function openCashCutModal() {
@@ -1570,13 +1655,13 @@ function openCashCutModal() {
 
     if (Math.abs(diff) < 0.01) {
       badge.className = 'diff-badge balanced';
-      badge.textContent = `Diferencia: $0.00 (Caja Cuadrada Perfecta ✅)`;
+      badge.textContent = `Diferencia: $0.00 (Caja Cuadrada)`;
     } else if (diff > 0) {
       badge.className = 'diff-badge surplus';
-      badge.textContent = `Sobrante: +${formatMoney(diff)} (Efectivo extra en cajón 🟢)`;
+      badge.textContent = `Sobrante: +${formatMoney(diff)} (Efectivo extra en cajón)`;
     } else {
       badge.className = 'diff-badge missing';
-      badge.textContent = `Faltante: -${formatMoney(Math.abs(diff))} (Falta efectivo ⚠️)`;
+      badge.textContent = `Faltante: -${formatMoney(Math.abs(diff))} (Falta efectivo)`;
     }
   };
 
@@ -1631,7 +1716,7 @@ function confirmCashCut() {
   saveStore();
   closeModal('modal-cashcut');
   renderCashRegister();
-  showToast("¡Cierre de caja registrado exitosamente!", "success");
+  showToast("Cierre de caja registrado exitosamente", "success");
   generateCashCutPrint(closure);
 }
 
@@ -1659,33 +1744,33 @@ function renderBarbers() {
     card.innerHTML = `
       <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
         <div style="display: flex; align-items: center; gap: 12px;">
-          <div style="width: 50px; height: 50px; border-radius: 50%; background: #2b3240; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; border: 2px solid var(--gold-primary);">
-            ${barber.avatar || '💈'}
+          <div style="width: 44px; height: 44px; border-radius: 50%; background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: 700;">
+            ${barber.avatar || getInitials(barber.name)}
           </div>
           <div>
-            <h4 style="font-size: 1.05rem; color: #fff; font-weight: 700;">${escapeHtml(barber.name)}</h4>
-            <span style="font-size: 0.8rem; color: var(--gold-primary);">${escapeHtml(barber.specialty)}</span>
+            <h4 style="font-size: 1rem; color: var(--text-main); font-weight: 700;">${escapeHtml(barber.name)}</h4>
+            <span style="font-size: 0.8rem; color: var(--primary); font-weight: 600;">${escapeHtml(barber.specialty)}</span>
           </div>
         </div>
-        <button class="btn btn-secondary btn-sm" onclick="editBarber('${barber.id}')" title="Editar">✏️ Editar</button>
+        <button class="btn btn-secondary btn-sm" onclick="editBarber('${barber.id}')" title="Editar">Editar</button>
       </div>
 
-      <div style="background-color: var(--bg-secondary); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 8px; font-size: 0.85rem;">
-        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 6px;">
+      <div style="background-color: var(--bg-subtle); border-radius: 6px; padding: 12px; display: flex; flex-direction: column; gap: 8px; font-size: 0.85rem; border: 1px solid var(--border-default);">
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); padding-bottom: 6px;">
           <span style="color: var(--text-secondary);">Cuenta de acceso:</span>
-          <b style="color: #4ade80;">Usuario: ${escapeHtml(barber.username || barber.id)}</b>
+          <b style="color: var(--primary);">Usuario: ${escapeHtml(barber.username || barber.id)}</b>
         </div>
         <div style="display: flex; justify-content: space-between;">
           <span style="color: var(--text-secondary);">Modalidad de Pago:</span>
-          <b style="color: #fff;">💼 Sueldo Semanal</b>
+          <b style="color: var(--text-main);">Sueldo Semanal</b>
         </div>
         <div style="display: flex; justify-content: space-between;">
           <span style="color: var(--text-secondary);">Cortes Atendidos Hoy:</span>
-          <b style="color: #fff;">${servicesCount}</b>
+          <b style="color: var(--text-main);">${servicesCount}</b>
         </div>
         <div style="display: flex; justify-content: space-between;">
           <span style="color: var(--text-secondary);">Total Facturado en Sillón:</span>
-          <b style="color: #fff;">${formatMoney(totalGenerated)}</b>
+          <b style="color: var(--text-main);">${formatMoney(totalGenerated)}</b>
         </div>
       </div>
     `;
@@ -1730,6 +1815,7 @@ function saveBarberFromModal() {
       existing.specialty = specialty;
       existing.username = username || existing.username;
       existing.password = password || existing.password;
+      existing.avatar = getInitials(name);
     }
     delete document.getElementById('btn-save-barber').dataset.editId;
     showToast("Barbero actualizado con éxito", "success");
@@ -1742,7 +1828,7 @@ function saveBarberFromModal() {
       payType: "Sueldo Semanal",
       username: username || name.split(' ')[0].toLowerCase(),
       password: password || '123',
-      avatar: "💈"
+      avatar: getInitials(name)
     });
     showToast("Barbero registrado con éxito", "success");
   }
@@ -1764,9 +1850,9 @@ function renderCatalog() {
         <b>${escapeHtml(s.name)}</b>
         <div style="font-size: 0.75rem; color: var(--text-muted);">${escapeHtml(s.category || 'General')}</div>
       </td>
-      <td>⏱️ ${s.duration} min</td>
-      <td><strong style="color: var(--gold-primary); font-size: 1rem;">${formatMoney(s.price)}</strong></td>
-      <td><button class="btn btn-danger btn-sm" onclick="deleteService('${s.id}')">🗑️</button></td>
+      <td>${s.duration} min</td>
+      <td><strong style="color: var(--primary); font-size: 0.95rem;">${formatMoney(s.price)}</strong></td>
+      <td><button class="btn btn-danger btn-sm" onclick="deleteService('${s.id}')">Eliminar</button></td>
     `;
     srvTbody.appendChild(tr);
   });
@@ -1778,10 +1864,10 @@ function renderCatalog() {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><b>${escapeHtml(p.name)}</b></td>
-      <td><span class="badge ${isLow ? 'badge-cancel' : 'badge-done'}">${p.stock} unid. ${isLow ? '⚠️ Stock Bajo' : ''}</span></td>
+      <td><span class="badge ${isLow ? 'badge-cancel' : 'badge-done'}">${p.stock} unid. ${isLow ? 'Stock Bajo' : ''}</span></td>
       <td style="color: var(--text-secondary);">${formatMoney(p.cost)}</td>
-      <td><strong style="color: var(--gold-primary);">${formatMoney(p.price)}</strong></td>
-      <td><button class="btn btn-danger btn-sm" onclick="deleteProduct('${p.id}')">🗑️</button></td>
+      <td><strong style="color: var(--primary);">${formatMoney(p.price)}</strong></td>
+      <td><button class="btn btn-danger btn-sm" onclick="deleteProduct('${p.id}')">Eliminar</button></td>
     `;
     prodTbody.appendChild(tr);
   });
@@ -1826,12 +1912,12 @@ function renderClients() {
   list.forEach(c => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td><strong style="color:#fff;">${escapeHtml(c.name)}</strong></td>
+      <td><strong style="color: var(--text-main);">${escapeHtml(c.name)}</strong></td>
       <td>${escapeHtml(c.phone || 'Sin registrar')}</td>
       <td><b>${c.visits}</b> visitas</td>
-      <td><strong style="color: var(--gold-primary);">${formatMoney(c.totalSpent)}</strong></td>
+      <td><strong style="color: var(--primary);">${formatMoney(c.totalSpent)}</strong></td>
       <td style="font-size: 0.8rem; color: var(--text-secondary); max-width: 250px;">${escapeHtml(c.notes || '-')}</td>
-      <td><button class="btn btn-secondary btn-sm" onclick="quickBookForClient('${c.id}')">📅 Agendar</button></td>
+      <td><button class="btn btn-secondary btn-sm" onclick="quickBookForClient('${c.id}')">Agendar</button></td>
     `;
     tbody.appendChild(tr);
   });
@@ -1959,7 +2045,7 @@ function saveClientFromModal() {
   showToast("Cliente registrado", "success");
 }
 
-// ================= TICKETS E IMPRESIÓN (SIN PROPINAS EN CAJA) =================
+// ================= TICKETS E IMPRESIÓN =================
 function generateReceiptModal(movement) {
   const dateStr = new Date(movement.timestamp).toLocaleString();
   const printContent = `
@@ -2003,7 +2089,7 @@ function generateReceiptModal(movement) {
     </div>
     <div class="receipt-divider"></div>
     <div class="receipt-center" style="margin-top:8px;">
-      ¡Gracias por tu preferencia!<br>Vuelve pronto.
+      Gracias por su preferencia.<br>Vuelva pronto.
     </div>
   `;
 
@@ -2074,9 +2160,12 @@ function setupEventListeners() {
     });
   });
 
-  document.getElementById('btn-toggle-sidebar').addEventListener('click', () => {
-    document.getElementById('sidebar').classList.toggle('open');
-  });
+  const btnToggleSidebar = document.getElementById('btn-toggle-sidebar');
+  if (btnToggleSidebar) {
+    btnToggleSidebar.addEventListener('click', () => {
+      document.getElementById('sidebar').classList.toggle('open');
+    });
+  }
 
   document.querySelectorAll('[data-pos-tab]').forEach(tab => {
     tab.addEventListener('click', () => {
@@ -2101,6 +2190,18 @@ function setupEventListeners() {
   document.getElementById('btn-modal-open-expense').addEventListener('click', () => openModal('modal-expense'));
   document.getElementById('btn-modal-open-cashcut').addEventListener('click', openCashCutModal);
   document.getElementById('btn-quick-cash').addEventListener('click', () => switchView('cash-register'));
+
+  // Botón y modal de reseteo demo
+  const btnResetDemo = document.getElementById('btn-reset-demo');
+  if (btnResetDemo) btnResetDemo.addEventListener('click', () => openModal('modal-reset-demo'));
+  const btnConfirmResetDemo = document.getElementById('btn-confirm-reset-demo');
+  if (btnConfirmResetDemo) btnConfirmResetDemo.addEventListener('click', confirmResetDemo);
+
+  // Botón y modal de edición de fondo con clave
+  const btnOpenEditFund = document.getElementById('btn-open-edit-fund');
+  if (btnOpenEditFund) btnOpenEditFund.addEventListener('click', openEditFundModal);
+  const btnConfirmEditFund = document.getElementById('btn-confirm-edit-fund');
+  if (btnConfirmEditFund) btnConfirmEditFund.addEventListener('click', confirmEditFund);
 
   document.getElementById('btn-modal-open-barber').addEventListener('click', () => {
     document.getElementById('modal-barber-title').textContent = "Registrar Barbero & Cuenta";
@@ -2173,10 +2274,10 @@ function escapeHtml(str) {
 
 function renderStatusBadge(status) {
   switch (status) {
-    case 'pendiente': return `<span class="badge badge-pending">⏳ En Espera</span>`;
-    case 'en_proceso': return `<span class="badge badge-progress">✂️ En Sillón</span>`;
-    case 'completada': return `<span class="badge badge-done">✅ Cobrado / Completado</span>`;
-    case 'cancelada': return `<span class="badge badge-cancel">❌ Cancelada</span>`;
+    case 'pendiente': return `<span class="badge badge-pending">En Espera</span>`;
+    case 'en_proceso': return `<span class="badge badge-progress">En Sillón</span>`;
+    case 'completada': return `<span class="badge badge-done">Cobrado / Completado</span>`;
+    case 'cancelada': return `<span class="badge badge-cancel">Cancelada</span>`;
     default: return `<span class="badge">${escapeHtml(status)}</span>`;
   }
 }
