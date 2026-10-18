@@ -338,39 +338,153 @@ function applyUserSession() {
   const adminElements = document.querySelectorAll('.nav-admin-only');
   const barberElements = document.querySelectorAll('.nav-barber-only');
 
+  // Adaptar barra inferior de navegación móvil según el rol
+  const mobDash = document.getElementById('mob-nav-dashboard');
+  const mobApp = document.getElementById('mob-nav-appointments');
+  const mobPos = document.getElementById('mob-nav-pos');
+
   if (currentUser.role === 'admin') {
     adminElements.forEach(el => el.style.display = '');
     barberElements.forEach(el => el.style.display = 'none');
+    if (mobDash) {
+      mobDash.dataset.view = 'dashboard';
+      const span = mobDash.querySelector('span');
+      if (span) span.textContent = 'Tablero';
+    }
+    if (mobApp) {
+      mobApp.dataset.view = 'appointments';
+      const span = mobApp.querySelector('span');
+      if (span) span.textContent = 'Citas';
+    }
+    if (mobPos) {
+      mobPos.dataset.view = 'pos';
+      const span = mobPos.querySelector('span');
+      if (span) span.textContent = 'Cobrar';
+    }
     switchView('dashboard');
   } else {
     adminElements.forEach(el => el.style.display = 'none');
     barberElements.forEach(el => el.style.display = '');
+    if (mobDash) {
+      mobDash.dataset.view = 'barber-portal';
+      const span = mobDash.querySelector('span');
+      if (span) span.textContent = 'Mis Citas';
+    }
+    if (mobApp) {
+      mobApp.dataset.view = 'barber-tips';
+      const span = mobApp.querySelector('span');
+      if (span) span.textContent = 'Propinas';
+    }
+    if (mobPos) {
+      mobPos.dataset.view = 'public-booking';
+      const span = mobPos.querySelector('span');
+      if (span) span.textContent = 'Reservas';
+    }
     switchView('barber-portal');
   }
 
   renderAllViews();
 }
 
+// ================= UTILIDAD DE FECHAS EN ZONA HORARIA LOCAL =================
+function getLocalDateString(d = new Date()) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 // ================= VARIABLES GLOBALES DE INTERFAZ =================
 let currentView = 'dashboard';
 let currentPosCart = [];
 let currentPosTab = 'services';
+let currentDeviceMode = 'desktop';
 
-let adminSelectedDate = new Date().toISOString().split('T')[0];
-let barberSelectedDate = new Date().toISOString().split('T')[0];
+let adminSelectedDate = getLocalDateString();
+let barberSelectedDate = getLocalDateString();
 
 let modalSelectedServices = [];
 let modalSelectedBarberId = null;
-let modalSelectedDate = new Date().toISOString().split('T')[0];
+let modalSelectedDate = getLocalDateString();
 let modalSelectedTime = null;
 
 let publicSelectedServices = [];
 let publicSelectedBarberId = null;
-let publicSelectedDate = new Date().toISOString().split('T')[0];
+let publicSelectedDate = getLocalDateString();
 let publicSelectedTime = null;
+
+// ================= GESTOR DE MODO DISPOSITIVO (COMPUTADORA / CELULAR) =================
+function initDeviceMode() {
+  const saved = localStorage.getItem('barberia_device_mode');
+  if (saved) {
+    setDeviceMode(saved, false);
+  } else {
+    // Si la pantalla es móvil, activar modo celular por defecto
+    const isMobile = window.innerWidth <= 850;
+    setDeviceMode(isMobile ? 'mobile' : 'desktop', false);
+  }
+}
+
+function setDeviceMode(mode, save = true) {
+  currentDeviceMode = mode;
+  if (save) {
+    localStorage.setItem('barberia_device_mode', mode);
+  }
+
+  const isMobile = (mode === 'mobile');
+
+  if (isMobile) {
+    document.body.classList.add('device-mobile');
+    document.body.classList.remove('device-desktop');
+    document.documentElement.classList.add('device-mobile');
+    document.documentElement.classList.remove('device-desktop');
+  } else {
+    document.body.classList.add('device-desktop');
+    document.body.classList.remove('device-mobile');
+    document.documentElement.classList.add('device-desktop');
+    document.documentElement.classList.remove('device-mobile');
+  }
+
+  // Sincronizar botones en el login y en el header
+  const pcBtns = [document.getElementById('btn-mode-pc'), document.getElementById('btn-header-mode-pc')];
+  const mobBtns = [document.getElementById('btn-mode-mobile'), document.getElementById('btn-header-mode-mobile')];
+
+  pcBtns.forEach(btn => { if (btn) btn.classList.toggle('active', !isMobile); });
+  mobBtns.forEach(btn => { if (btn) btn.classList.toggle('active', isMobile); });
+}
+
+window.setDeviceMode = setDeviceMode;
+
+function openMobileSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const backdrop = document.getElementById('sidebar-backdrop');
+  if (sidebar) sidebar.classList.add('open');
+  if (backdrop) backdrop.classList.add('active');
+}
+
+function closeMobileSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const backdrop = document.getElementById('sidebar-backdrop');
+  if (sidebar) sidebar.classList.remove('open');
+  if (backdrop) backdrop.classList.remove('active');
+}
+
+function toggleMobileSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  if (sidebar && sidebar.classList.contains('open')) {
+    closeMobileSidebar();
+  } else {
+    openMobileSidebar();
+  }
+}
+
+window.openMobileSidebar = openMobileSidebar;
+window.closeMobileSidebar = closeMobileSidebar;
+window.toggleMobileSidebar = toggleMobileSidebar;
 
 // ================= INICIALIZACIÓN =================
 document.addEventListener('DOMContentLoaded', () => {
+  initDeviceMode();
   setupEventListeners();
   applyUserSession();
 });
@@ -403,6 +517,11 @@ function switchView(viewName) {
   const activeNavItem = document.querySelector(`.nav-item[data-view="${viewName}"]`);
   if (activeNavItem) activeNavItem.classList.add('active');
 
+  // Actualizar botones de la barra inferior móvil
+  document.querySelectorAll('.mob-nav-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.view === viewName);
+  });
+
   const titles = {
     'dashboard': { title: 'Tablero Principal', sub: 'Resumen y métricas de la barbería hoy' },
     'appointments': { title: 'Agenda de Citas', sub: 'Control de citas del día y filtros' },
@@ -420,8 +539,7 @@ function switchView(viewName) {
   document.getElementById('view-title').textContent = info.title;
   document.getElementById('view-subtitle').textContent = info.sub;
 
-  const sidebar = document.getElementById('sidebar');
-  if (sidebar) sidebar.classList.remove('open');
+  closeMobileSidebar();
 
   if (viewName === 'appointments') renderAppointments();
   if (viewName === 'barber-portal') renderBarberPortal();
@@ -431,31 +549,40 @@ function switchView(viewName) {
   if (viewName === 'public-booking') renderPublicBooking();
 }
 
-// ================= COMPONENTE DE CALENDARIO =================
-function renderCustomCalendar(containerId, activeDateStr, onSelectCallback) {
+// ================= COMPONENTE DE CALENDARIO PROFESIONAL =================
+function renderCustomCalendar(containerId, activeDateStr, onSelectCallback, viewDateOverride = null) {
   const container = document.getElementById(containerId);
   if (!container) return;
 
-  const activeDate = new Date(activeDateStr + 'T00:00:00');
-  const year = activeDate.getFullYear();
-  const month = activeDate.getMonth();
+  if (viewDateOverride) {
+    container._viewDate = viewDateOverride;
+  } else if (!container._viewDate) {
+    container._viewDate = activeDateStr || getLocalDateString();
+  }
+
+  // Obtenemos año y mes del estado de vista del contenedor
+  const parts = container._viewDate.split('-');
+  const year = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10) - 1; // 0-indexed
 
   const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
   const dayNames = ["Do", "Lu", "Ma", "Mi", "Ju", "Vi", "Sá"];
 
   const firstDayIndex = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getLocalDateString();
 
   let html = `
-    <div class="calendar-header">
-      <span class="calendar-month-label">${monthNames[month]} ${year}</span>
-      <div class="calendar-nav-buttons">
-        <button type="button" class="calendar-nav-btn" id="${containerId}-prev">&lt;</button>
-        <button type="button" class="calendar-nav-btn" id="${containerId}-next">&gt;</button>
+    <div class="calendar-widget-box">
+      <div class="calendar-header">
+        <span class="calendar-month-label">${monthNames[month]} ${year}</span>
+        <div class="calendar-nav-buttons">
+          <button type="button" class="calendar-nav-btn" id="${containerId}-prev" title="Mes anterior">&lt;</button>
+          <button type="button" class="calendar-nav-btn" id="${containerId}-today" title="Ir al día de hoy" style="font-size:0.72rem; min-width:auto; padding:0 8px;">Hoy</button>
+          <button type="button" class="calendar-nav-btn" id="${containerId}-next" title="Mes siguiente">&gt;</button>
+        </div>
       </div>
-    </div>
-    <div class="calendar-days-grid">
+      <div class="calendar-days-grid">
   `;
 
   dayNames.forEach(d => {
@@ -476,9 +603,9 @@ function renderCustomCalendar(containerId, activeDateStr, onSelectCallback) {
 
     let hasApps = false;
     if (currentUser && currentUser.role === 'barber') {
-      hasApps = store.appointments.some(a => a.date === fullDate && a.barberId === currentUser.barberId);
+      hasApps = store.appointments.some(a => a.date === fullDate && a.barberId === currentUser.barberId && a.status !== 'cancelada');
     } else {
-      hasApps = store.appointments.some(a => a.date === fullDate);
+      hasApps = store.appointments.some(a => a.date === fullDate && a.status !== 'cancelada');
     }
 
     let cellClasses = 'calendar-cell';
@@ -487,32 +614,61 @@ function renderCustomCalendar(containerId, activeDateStr, onSelectCallback) {
     if (hasApps) cellClasses += ' has-appointments';
 
     html += `
-      <div class="${cellClasses}" data-date="${fullDate}">
-        ${day}
+      <div class="${cellClasses}" data-date="${fullDate}" title="${fullDate}${isToday ? ' (Hoy)' : ''}${isSelected ? ' (Seleccionado)' : ''}">
+        <span class="cal-day-num">${day}</span>
+        ${isSelected ? '<span class="calendar-selected-x" title="Día seleccionado">✕</span>' : ''}
         ${hasApps ? '<span class="appointment-dot"></span>' : ''}
       </div>
     `;
   }
 
-  html += `</div>`;
+  html += `</div></div>`;
   container.innerHTML = html;
 
+  // Clic en los días del calendario
   container.querySelectorAll('.calendar-cell:not(.empty)').forEach(cell => {
-    cell.onclick = () => {
+    cell.onclick = (e) => {
+      e.stopPropagation();
       const selected = cell.dataset.date;
+      container._viewDate = selected;
       onSelectCallback(selected);
     };
   });
 
-  document.getElementById(`${containerId}-prev`).onclick = () => {
-    const prevMonthDate = new Date(year, month - 1, 1).toISOString().split('T')[0];
-    renderCustomCalendar(containerId, prevMonthDate, onSelectCallback);
-  };
+  // Navegación de mes anterior
+  const btnPrev = document.getElementById(`${containerId}-prev`);
+  if (btnPrev) {
+    btnPrev.onclick = (e) => {
+      e.stopPropagation();
+      const prevDate = new Date(year, month - 1, 1);
+      const prevDateStr = getLocalDateString(prevDate);
+      container._viewDate = prevDateStr;
+      renderCustomCalendar(containerId, activeDateStr, onSelectCallback, prevDateStr);
+    };
+  }
 
-  document.getElementById(`${containerId}-next`).onclick = () => {
-    const nextMonthDate = new Date(year, month + 1, 1).toISOString().split('T')[0];
-    renderCustomCalendar(containerId, nextMonthDate, onSelectCallback);
-  };
+  // Navegación de mes siguiente
+  const btnNext = document.getElementById(`${containerId}-next`);
+  if (btnNext) {
+    btnNext.onclick = (e) => {
+      e.stopPropagation();
+      const nextDate = new Date(year, month + 1, 1);
+      const nextDateStr = getLocalDateString(nextDate);
+      container._viewDate = nextDateStr;
+      renderCustomCalendar(containerId, activeDateStr, onSelectCallback, nextDateStr);
+    };
+  }
+
+  // Botón para volver al día actual
+  const btnToday = document.getElementById(`${containerId}-today`);
+  if (btnToday) {
+    btnToday.onclick = (e) => {
+      e.stopPropagation();
+      const todayDateStr = getLocalDateString();
+      container._viewDate = todayDateStr;
+      onSelectCallback(todayDateStr);
+    };
+  }
 }
 
 // ================= COMPONENTE DE SELECTOR DE HORARIOS =================
@@ -2157,10 +2313,42 @@ function setupEventListeners() {
 
   const btnToggleSidebar = document.getElementById('btn-toggle-sidebar');
   if (btnToggleSidebar) {
-    btnToggleSidebar.addEventListener('click', () => {
-      document.getElementById('sidebar').classList.toggle('open');
-    });
+    btnToggleSidebar.addEventListener('click', toggleMobileSidebar);
   }
+
+  const btnCloseSidebar = document.getElementById('btn-sidebar-close');
+  if (btnCloseSidebar) {
+    btnCloseSidebar.addEventListener('click', closeMobileSidebar);
+  }
+
+  const sidebarBackdrop = document.getElementById('sidebar-backdrop');
+  if (sidebarBackdrop) {
+    sidebarBackdrop.addEventListener('click', closeMobileSidebar);
+  }
+
+  const mobMenuBtn = document.getElementById('mob-nav-menu-btn');
+  if (mobMenuBtn) {
+    mobMenuBtn.addEventListener('click', toggleMobileSidebar);
+  }
+
+  document.querySelectorAll('.mob-nav-btn[data-view]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const view = btn.dataset.view;
+      if (view) switchView(view);
+    });
+  });
+
+  const btnModePc = document.getElementById('btn-mode-pc');
+  if (btnModePc) btnModePc.addEventListener('click', () => setDeviceMode('desktop'));
+
+  const btnModeMobile = document.getElementById('btn-mode-mobile');
+  if (btnModeMobile) btnModeMobile.addEventListener('click', () => setDeviceMode('mobile'));
+
+  const btnHeaderModePc = document.getElementById('btn-header-mode-pc');
+  if (btnHeaderModePc) btnHeaderModePc.addEventListener('click', () => setDeviceMode('desktop'));
+
+  const btnHeaderModeMobile = document.getElementById('btn-header-mode-mobile');
+  if (btnHeaderModeMobile) btnHeaderModeMobile.addEventListener('click', () => setDeviceMode('mobile'));
 
   document.querySelectorAll('[data-pos-tab]').forEach(tab => {
     tab.addEventListener('click', () => {

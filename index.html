@@ -11,6 +11,21 @@
 
 <!-- ================= PANTALLA DE LOGIN CON SESIONES ================= -->
 <div class="login-screen" id="login-screen">
+  <!-- Selector de Vista Computadora / Celular -->
+  <div class="login-device-switch-bar">
+    <span class="device-switch-label">Vista:</span>
+    <div class="device-mode-switch">
+      <button type="button" class="btn-device-mode active" id="btn-mode-pc" onclick="setDeviceMode('desktop')" title="Modo Computadora / Escritorio">
+        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+        <span>Computadora</span>
+      </button>
+      <button type="button" class="btn-device-mode" id="btn-mode-mobile" onclick="setDeviceMode('mobile')" title="Modo Celular / Pantalla Móvil">
+        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+        <span>Celular</span>
+      </button>
+    </div>
+  </div>
+
   <div class="login-container">
     <div class="login-header">
       <div class="login-brand-icon">BC</div>
@@ -61,6 +76,7 @@
         <h1>BARBER CLUB</h1>
         <p id="sidebar-role-label">Management Pro</p>
       </div>
+      <button class="sidebar-close-btn" id="btn-sidebar-close" aria-label="Cerrar menú">&times;</button>
     </div>
 
     <nav class="nav-menu" id="nav-menu-container">
@@ -130,6 +146,9 @@
     </div>
   </aside>
 
+  <!-- Telón de fondo oscuro para menú desplegable en celulares -->
+  <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
   <!-- CONTENIDO PRINCIPAL -->
   <main class="main-wrapper">
     <!-- TOP HEADER -->
@@ -141,6 +160,20 @@
         </div>
       </div>
       <div class="header-actions">
+        <!-- Selector Modo Computadora / Celular en Header -->
+        <div class="header-device-switch">
+          <div class="device-mode-switch compact">
+            <button type="button" class="btn-device-mode active" id="btn-header-mode-pc" onclick="setDeviceMode('desktop')" title="Modo Computadora">
+              <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+              <span>PC</span>
+            </button>
+            <button type="button" class="btn-device-mode" id="btn-header-mode-mobile" onclick="setDeviceMode('mobile')" title="Modo Celular">
+              <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+              <span>Celular</span>
+            </button>
+          </div>
+        </div>
+
         <!-- Badge de Usuario Logueado -->
         <div class="user-session-badge">
           <div class="user-session-avatar" id="header-user-avatar">CG</div>
@@ -219,7 +252,7 @@
           </div>
         </div>
 
-        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-top: 6px;">
+        <div class="responsive-grid-dashboard">
           <!-- Citas de hoy prioritarias -->
           <div class="panel-card">
             <div class="panel-header">
@@ -292,7 +325,7 @@
           </div>
         </div>
 
-        <div style="display: grid; grid-template-columns: 320px 1fr; gap: 24px; align-items: start;">
+        <div class="responsive-grid-appointments">
           <!-- Calendario Elegante del Barbero -->
           <div class="panel-card">
             <div class="panel-header">
@@ -393,7 +426,7 @@
 
       <!-- ================= 2. AGENDA DE CITAS (ADMIN / CAJA) ================= -->
       <section class="view-section" id="view-appointments">
-        <div style="display: grid; grid-template-columns: 320px 1fr; gap: 24px; align-items: start;">
+        <div class="responsive-grid-appointments">
           <!-- Calendario Interactivo Lateral para Filtrar -->
           <div class="panel-card">
             <div class="panel-header">
@@ -659,14 +692,14 @@
           <button class="btn btn-primary" id="btn-modal-open-barber">+ Nuevo Barbero</button>
         </div>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; margin-top: 16px;" id="barbers-cards-container">
+        <div class="responsive-grid-barbers" id="barbers-cards-container">
           <!-- Tarjetas de barberos inyectadas -->
         </div>
       </section>
 
       <!-- ================= 6. SERVICIOS & PRODUCTOS ================= -->
       <section class="view-section" id="view-catalog">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+        <div class="responsive-grid-catalog">
           <!-- Servicios -->
           <div class="panel-card">
             <div class="panel-header">
@@ -776,7 +809,7 @@
           <!-- Paso 3: Calendario Interactivo y Horarios -->
           <div style="margin-top: 24px; border-top: 1px solid var(--border-subtle); padding-top: 20px;">
             <label class="form-label" style="font-size: 0.95rem; font-weight: 600; color: var(--text-main);">3. Elige Fecha y Horario</label>
-            <div style="display: grid; grid-template-columns: 320px 1fr; gap: 20px; align-items: start;">
+            <div class="responsive-grid-booking">
               <div>
                 <span class="form-label">Fecha deseada</span>
                 <div id="public-calendar-widget-container"></div>
@@ -817,6 +850,26 @@
 
     </div>
   </main>
+
+  <!-- BARRA DE NAVEGACIÓN INFERIOR PARA MÓVILES -->
+  <nav class="mobile-bottom-nav" id="mobile-bottom-nav">
+    <button type="button" class="mob-nav-btn active" data-view="dashboard" id="mob-nav-dashboard">
+      <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+      <span>Tablero</span>
+    </button>
+    <button type="button" class="mob-nav-btn" data-view="appointments" id="mob-nav-appointments">
+      <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+      <span>Citas</span>
+    </button>
+    <button type="button" class="mob-nav-btn" data-view="pos" id="mob-nav-pos">
+      <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+      <span>Cobrar</span>
+    </button>
+    <button type="button" class="mob-nav-btn" id="mob-nav-menu-btn">
+      <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+      <span>Menú</span>
+    </button>
+  </nav>
 </div>
 
 <!-- ================= MODALES DEL SISTEMA ================= -->
@@ -857,7 +910,7 @@
       </div>
 
       <!-- Calendario Interactivo y Horarios -->
-      <div style="display: grid; grid-template-columns: 280px 1fr; gap: 16px; margin-top: 16px; align-items: start;">
+      <div class="responsive-grid-modal-calendar">
         <div>
           <label class="form-label">Fecha de la Cita *</label>
           <div id="modal-calendar-widget-container"></div>
