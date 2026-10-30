@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>INK & PIERCING STUDIO - Sistema de Gestión</title>
+  <title>Tattoo Studio - Sistema de Gestión</title>
   <link rel="stylesheet" href="styles.css">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%2317171A%22/><text x=%2250%22 y=%2265%22 font-family=%22sans-serif%22 font-size=%2244%22 font-weight=%22bold%22 text-anchor=%22middle%22 fill=%22%23C8102E%22>INK</text></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%2317171A%22/><text x=%2250%22 y=%2265%22 font-family=%22sans-serif%22 font-size=%2244%22 font-weight=%22bold%22 text-anchor=%22middle%22 fill=%22%23C8102E%22>TS</text></svg>">
 </head>
 <body>
 
@@ -28,15 +28,15 @@
 
   <div class="login-container">
     <div class="login-header">
-      <div class="login-brand-icon">INK</div>
-      <h2>INK & PIERCING STUDIO</h2>
-      <p>Gestión Integral para Estudios de Tatuaje y Piercing en México</p>
+      <div class="login-brand-icon">TS</div>
+      <h2>TATTOO STUDIO</h2>
+      <p>Sistema de Gestión de Estudio de Tatuajes & Piercing</p>
     </div>
 
     <form id="login-form">
       <div class="form-group">
         <label class="form-label">Usuario</label>
-        <input type="text" id="login-username" class="form-control" placeholder="Ej. dueño, recepcion, alex..." required autocomplete="username">
+        <input type="text" id="login-username" class="form-control" placeholder="caja o tatuador" required autocomplete="username">
       </div>
       <div class="form-group">
         <label class="form-label">Contraseña</label>
@@ -50,17 +50,11 @@
     <div class="quick-accounts-box">
       <h4>Acceso Rápido por Rol (Demostración)</h4>
       <div class="quick-accounts-grid">
-        <button type="button" class="quick-btn" onclick="quickLogin('dueño')">
-          <span class="user-session-avatar" style="width: 20px; height: 20px; font-size: 0.65rem;">AD</span> <b>Dueño / Admin</b>
+        <button type="button" class="quick-btn" onclick="quickLogin('caja')">
+          <span class="user-session-avatar" style="width: 22px; height: 22px; font-size: 0.7rem;">CJ</span> <b>Caja / Admin</b>
         </button>
-        <button type="button" class="quick-btn" onclick="quickLogin('recepcion')">
-          <span class="user-session-avatar" style="width: 20px; height: 20px; font-size: 0.65rem;">RC</span> <b>Recepción / Caja</b>
-        </button>
-        <button type="button" class="quick-btn" onclick="quickLogin('alex')">
-          <span class="user-session-avatar" style="width: 20px; height: 20px; font-size: 0.65rem;">AT</span> <b>Alex (Tatuador)</b>
-        </button>
-        <button type="button" class="quick-btn" onclick="quickLogin('maya')">
-          <span class="user-session-avatar" style="width: 20px; height: 20px; font-size: 0.65rem;">MC</span> <b>Maya (Tatuadora)</b>
+        <button type="button" class="quick-btn" onclick="quickLogin('tatuador')">
+          <span class="user-session-avatar" style="width: 22px; height: 22px; font-size: 0.7rem;">TA</span> <b>Tatuador</b>
         </button>
       </div>
     </div>
@@ -71,16 +65,16 @@
   <!-- SIDEBAR DE NAVEGACIÓN -->
   <aside class="sidebar" id="sidebar">
     <div class="brand">
-      <div class="brand-icon">INK</div>
+      <div class="brand-icon">TS</div>
       <div class="brand-info">
-        <h1>INK & PIERCING</h1>
+        <h1>TATTOO STUDIO</h1>
         <p id="sidebar-role-label">Studio Pro MX</p>
       </div>
       <button class="sidebar-close-btn" id="btn-sidebar-close" aria-label="Cerrar menú">&times;</button>
     </div>
 
     <nav class="nav-menu" id="nav-menu-container">
-      <!-- Ítems para Admin / Recepción -->
+      <!-- Ítems para Admin / Caja -->
       <div class="nav-category nav-admin-only">Principal</div>
       <a class="nav-item active nav-admin-only" data-view="dashboard">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
@@ -97,8 +91,8 @@
         <span class="badge-counter" id="badge-appointments-count">0</span>
       </a>
 
-      <!-- Ítems para Artista -->
-      <div class="nav-category nav-artist-only" style="display:none;">Artista</div>
+      <!-- Ítems para Tatuador -->
+      <div class="nav-category nav-artist-only" style="display:none;">Tatuador</div>
       <a class="nav-item nav-artist-only" data-view="artist-portal" style="display:none;">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
         Mis Sesiones
@@ -113,7 +107,7 @@
         Mis Propinas
       </a>
 
-      <!-- Ítems Financieros de Admin / Recepción -->
+      <!-- Ítems Financieros de Admin / Caja -->
       <div class="nav-category nav-admin-only">Operaciones & Dinero</div>
       <a class="nav-item nav-admin-only" data-view="pos">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
@@ -127,7 +121,7 @@
       <div class="nav-category nav-admin-only">Administración</div>
       <a class="nav-item nav-admin-only" data-view="artists">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-        Artistas & Cabinas
+        Tatuador & Cabina
       </a>
       <a class="nav-item nav-admin-only" data-view="catalog">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-2z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
@@ -136,12 +130,6 @@
       <a class="nav-item nav-admin-only" data-view="clients">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
         Clientes & Expedientes
-      </a>
-
-      <div class="nav-category">Canales</div>
-      <a class="nav-item" data-view="public-booking">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
-        Cotización & Reserva Online
       </a>
     </nav>
 
@@ -153,6 +141,10 @@
         </div>
         <button class="btn btn-secondary btn-sm" id="btn-quick-cash" title="Ir a corte de caja">$</button>
       </div>
+      <!-- Botón para presentaciones de software -->
+      <button class="btn btn-danger btn-sm" style="width: 100%; margin-top: 8px; font-size: 0.72rem; padding: 5px;" onclick="openModal('modal-reset-demo')" title="Restablecer datos demo a cero">
+        Limpiar Datos Demo (Presentación)
+      </button>
     </div>
   </aside>
 
@@ -169,7 +161,7 @@
         </button>
         <div class="header-title-box">
           <h2 id="view-title">Tablero Principal</h2>
-          <p id="view-subtitle">Métricas y agenda del estudio en tiempo real</p>
+          <p id="view-subtitle">Métricas y agenda de Tattoo Studio en tiempo real</p>
         </div>
       </div>
       <div class="header-actions">
@@ -187,12 +179,18 @@
           </div>
         </div>
 
+        <!-- Botón Limpiar Datos Demo para presentaciones -->
+        <button class="btn btn-danger btn-sm nav-admin-only" id="btn-reset-demo" onclick="openModal('modal-reset-demo')" title="Vaciar citas, clientes y movimientos para demostración">
+          <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+          <span>Limpiar Datos Demo</span>
+        </button>
+
         <!-- Badge de Usuario -->
         <div class="user-session-badge">
-          <div class="user-session-avatar" id="header-user-avatar">AD</div>
+          <div class="user-session-avatar" id="header-user-avatar">CJ</div>
           <div class="user-session-info">
-            <span class="user-session-name" id="header-user-name">Administrador</span>
-            <span class="user-session-role" id="header-user-role">Dueño</span>
+            <span class="user-session-name" id="header-user-name">Caja</span>
+            <span class="user-session-role" id="header-user-role">Administración</span>
           </div>
         </div>
 
@@ -216,7 +214,7 @@
             <div class="stat-details">
               <span>Facturación Hoy</span>
               <h3 id="dash-stat-revenue">$0.00 MXN</h3>
-              <small>Cobrado en sesiones y productos</small>
+              <small>Cobrado en sesiones y aftercare</small>
             </div>
             <div class="stat-icon">
               <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
@@ -267,30 +265,26 @@
                   <tr>
                     <th>Horario (12h)</th>
                     <th>Cliente</th>
-                    <th>Trabajo / Zona</th>
-                    <th>Artista & Cabina</th>
+                    <th>Trabajo & Estilo</th>
+                    <th>Cabina</th>
                     <th>Estado</th>
                     <th>Acción</th>
                   </tr>
                 </thead>
-                <tbody id="dash-today-appointments-tbody">
-                  <!-- Render dinámico -->
-                </tbody>
+                <tbody id="dash-today-appointments-tbody"></tbody>
               </table>
             </div>
             <!-- Lista en tarjetas para celular -->
             <div class="mobile-appointments-list" id="dash-today-appointments-mobile-list"></div>
           </div>
 
-          <!-- Estado de Cabinas & Artistas -->
+          <!-- Estado de Cabina & Tatuador -->
           <div class="panel-card">
             <div class="panel-header">
-              <h3>Cabinas & Artistas</h3>
-              <span class="badge badge-done" id="dash-booths-online-badge">Activas</span>
+              <h3>Estado de Cabina</h3>
+              <span class="badge badge-done" id="dash-booths-online-badge">Activa</span>
             </div>
-            <div style="display: flex; flex-direction: column; gap: 10px;" id="dash-booths-list">
-              <!-- Render dinámico -->
-            </div>
+            <div style="display: flex; flex-direction: column; gap: 10px;" id="dash-booths-list"></div>
           </div>
         </div>
       </section>
@@ -302,10 +296,10 @@
             <div>
               <h3>Solicitudes de Cotización & Anticipos</h3>
               <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px;">
-                Revisa ideas de clientes, fija precio estimado, define el depósito requerido y genera el enlace de pago.
+                Revisa ideas de clientes, evalúa el estilo de tatuaje, fija el precio y genera el enlace de depósito.
               </p>
             </div>
-            <div style="display: flex; gap: 8px; align-items: center;">
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
               <select class="form-select" id="requests-status-filter" style="width: auto; min-width: 170px;" onchange="renderQuoteRequests()">
                 <option value="all">Todos los estados</option>
                 <option value="solicitud">Nuevas Solicitudes</option>
@@ -320,9 +314,7 @@
           </div>
 
           <!-- Grid de Solicitudes -->
-          <div class="quotes-grid" id="quotes-container">
-            <!-- Render dinámico de tarjetas de cotización -->
-          </div>
+          <div class="quotes-grid" id="quotes-container"></div>
         </div>
       </section>
 
@@ -355,9 +347,6 @@
                 <span style="font-size: 0.78rem; color: var(--text-muted);" id="appointments-day-subtitle">Horarios y estados</span>
               </div>
               <div style="display: flex; gap: 8px;">
-                <select class="form-select" id="appointments-filter-artist" style="width: auto;" onchange="renderAppointments()">
-                  <option value="all">Todos los Artistas</option>
-                </select>
                 <button class="btn btn-primary btn-sm" onclick="openNewAppointmentModal()">+ Agendar Cita</button>
               </div>
             </div>
@@ -369,15 +358,13 @@
                     <th>Horario (12h)</th>
                     <th>Cliente</th>
                     <th>Servicio / Duración</th>
-                    <th>Artista & Cabina</th>
+                    <th>Cabina</th>
                     <th>Anticipo</th>
                     <th>Estado</th>
                     <th>Acciones</th>
                   </tr>
                 </thead>
-                <tbody id="appointments-tbody">
-                  <!-- Render dinámico -->
-                </tbody>
+                <tbody id="appointments-tbody"></tbody>
               </table>
             </div>
             <!-- Lista en tarjetas para celular -->
@@ -386,13 +373,13 @@
         </div>
       </section>
 
-      <!-- ================= 4. PORTAL ARTISTA ================= -->
+      <!-- ================= 4. PORTAL TATUADOR ================= -->
       <section class="view-section" id="view-artist-portal">
         <div class="panel-card">
           <div class="panel-header">
             <div>
               <h3 id="artist-portal-title">Mi Agenda de Sesiones</h3>
-              <p style="font-size: 0.8rem; color: var(--text-secondary);">Tus clientes y citas asignadas</p>
+              <p style="font-size: 0.8rem; color: var(--text-secondary);">Clientes y citas asignadas en cabina</p>
             </div>
             <button class="btn btn-accent btn-sm" onclick="openArtistTipModal()">+ Registrar Propina</button>
           </div>
@@ -408,29 +395,28 @@
                   <th>Notas / Estilo</th>
                 </tr>
               </thead>
-              <tbody id="artist-my-appointments-tbody">
-                <!-- Render dinámico -->
-              </tbody>
+              <tbody id="artist-my-appointments-tbody"></tbody>
             </table>
           </div>
           <div class="mobile-appointments-list" id="artist-my-appointments-mobile-list"></div>
         </div>
       </section>
 
-      <!-- ================= 5. MIS COTIZACIONES (ARTISTA) ================= -->
+      <!-- ================= 5. MIS COTIZACIONES (TATUADOR) ================= -->
       <section class="view-section" id="view-artist-quotes">
         <div class="panel-card">
           <div class="panel-header">
             <div>
-              <h3>Solicitudes Asignadas a Mí</h3>
-              <p style="font-size: 0.8rem; color: var(--text-secondary);">Proyectos asignados para evaluar y cotizar</p>
+              <h3>Solicitudes de Proyectos</h3>
+              <p style="font-size: 0.8rem; color: var(--text-secondary);">Proyectos pendientes de evaluar y cotizar</p>
             </div>
+            <button class="btn btn-primary btn-sm" onclick="openNewQuoteModal()">+ Nueva Solicitud</button>
           </div>
           <div class="quotes-grid" id="artist-quotes-container"></div>
         </div>
       </section>
 
-      <!-- ================= 6. PROPINAS (ARTISTA) ================= -->
+      <!-- ================= 6. PROPINAS (TATUADOR) ================= -->
       <section class="view-section" id="view-artist-tips">
         <div class="panel-card">
           <div class="panel-header">
@@ -592,14 +578,11 @@
         <div class="panel-card">
           <div class="panel-header">
             <div>
-              <h3>Equipo de Artistas & Cabinas</h3>
-              <p style="font-size: 0.8rem; color: var(--text-secondary);">Tatuadores, perforadores y estaciones de trabajo</p>
+              <h3>Tatuador & Cabina Principal</h3>
+              <p style="font-size: 0.8rem; color: var(--text-secondary);">Perfil del artista del estudio y estación de trabajo</p>
             </div>
-            <button class="btn btn-primary btn-sm" onclick="openNewArtistModal()">+ Nuevo Artista</button>
           </div>
-          <div class="grid-stats" id="artists-cards-container" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));">
-            <!-- Render dinámico -->
-          </div>
+          <div class="grid-stats" id="artists-cards-container" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));"></div>
         </div>
       </section>
 
@@ -683,83 +666,6 @@
         </div>
       </section>
 
-      <!-- ================= 12. RESERVA / COTIZACIÓN PÚBLICA ================= -->
-      <section class="view-section" id="view-public-booking">
-        <div class="public-booking-container">
-          <div style="text-align: center; margin-bottom: 24px;">
-            <div class="brand-icon" style="margin: 0 auto 10px;">INK</div>
-            <h2 style="font-size: 1.35rem; color: var(--text-main);">Solicita tu Tatuaje o Piercing</h2>
-            <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 4px;">
-              Cuéntanos tu idea, sube tus referencias y recibe tu cotización oficial y enlace de depósito por WhatsApp.
-            </p>
-          </div>
-
-          <form id="public-booking-form" onsubmit="submitPublicBooking(event)">
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label">Nombre Completo *</label>
-                <input type="text" id="pb-client-name" class="form-control" placeholder="Ej. Camila Vega" required>
-              </div>
-              <div class="form-group">
-                <label class="form-label">WhatsApp (10 dígitos) *</label>
-                <input type="tel" id="pb-client-phone" class="form-control" placeholder="5512345678" required>
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label">Edad *</label>
-                <input type="number" id="pb-client-age" class="form-control" placeholder="Ej. 24" min="14" max="99" required onchange="handleAgeCheck(this.value)">
-                <small id="pb-minor-warning" style="display: none; color: var(--color-error); font-weight: 600; margin-top: 4px;">
-                  Nota: Menores de 18 años requieren autorización y firma de padre o tutor legal con INE.
-                </small>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Tipo de Servicio *</label>
-                <select id="pb-service-type" class="form-select" required>
-                  <option value="Tatuaje">Tatuaje</option>
-                  <option value="Piercing">Perforación / Piercing</option>
-                  <option value="Retoque">Retoque de Tatuaje</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label">Zona del Cuerpo *</label>
-                <input type="text" id="pb-body-zone" class="form-control" placeholder="Ej. Antebrazo interno, Costillas, Tobillo..." required>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Tamaño Aproximado (cm) *</label>
-                <input type="text" id="pb-size-cm" class="form-control" placeholder="Ej. 10 x 8 cm, Manga completa..." required>
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Artista Preferido</label>
-              <select id="pb-artist-select" class="form-select">
-                <option value="">Cualquier artista disponible según estilo</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Descripción de tu Idea o Diseño *</label>
-              <textarea id="pb-description" class="form-control" rows="3" placeholder="Describe los detalles, elementos que deseas, estilo (Blackwork, Fine Line, Color, Neotradicional)..." required></textarea>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Foto de Referencia (URL de imagen o archivo)</label>
-              <input type="url" id="pb-photo-url" class="form-control" placeholder="https://ejemplo.com/tu-foto-referencia.jpg">
-              <small style="color: var(--text-muted); font-size: 0.72rem;">O pega el enlace de tu diseño de Pinterest/Instagram</small>
-            </div>
-
-            <button type="submit" class="btn btn-primary btn-lg" style="width: 100%; margin-top: 10px;">
-              Enviar Solicitud de Cotización
-            </button>
-          </form>
-        </div>
-      </section>
-
     </div>
   </main>
 </div>
@@ -819,12 +725,6 @@
         </div>
       </div>
 
-      <!-- Selector Visual de Artista -->
-      <div class="form-group" style="margin-top: 14px;">
-        <label class="form-label">Artista Asignado *</label>
-        <div class="barber-picker-container" id="modal-artist-picker"></div>
-      </div>
-
       <!-- Duración Libre de la Sesión -->
       <div class="form-group" style="margin-top: 14px;">
         <label class="form-label">Duración de la Sesión (Libre / Personalizada) *</label>
@@ -870,7 +770,7 @@
 
       <div class="form-group" style="margin-top: 14px;">
         <label class="form-label">Notas del Proyecto / Especificaciones Técnicas</label>
-        <textarea id="app-form-notes" class="form-control" rows="2" placeholder="Zona, aguja, alergias, stencils, detalles especiales..."></textarea>
+        <textarea id="app-form-notes" class="form-control" rows="2" placeholder="Zona, aguja, especificaciones de tinta, detalles..."></textarea>
       </div>
     </div>
     <div class="modal-footer">
@@ -880,7 +780,117 @@
   </div>
 </div>
 
-<!-- Modal 2: Cotizar Solicitud (FASE 1) -->
+<!-- Modal 2: Registrar / Nueva Solicitud de Cotización (Con Adjuntar Archivo y Todos los Diseños de Tatuaje) -->
+<div class="modal-overlay" id="modal-new-quote-request">
+  <div class="modal-container" style="max-width: 660px;">
+    <div class="modal-header">
+      <h3 id="modal-new-quote-title">Nueva Solicitud de Proyecto</h3>
+      <button class="modal-close" onclick="closeModal('modal-new-quote-request')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="new-quote-form" onsubmit="handleNewQuoteSubmit(event)">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Nombre del Cliente *</label>
+            <input type="text" id="nq-client-name" class="form-control" placeholder="Ej. Camila Vega" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">WhatsApp (10 dígitos) *</label>
+            <input type="tel" id="nq-client-phone" class="form-control" placeholder="5512345678" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Edad *</label>
+            <input type="number" id="nq-client-age" class="form-control" placeholder="24" min="14" max="99" required onchange="handleNewQuoteAge(this.value)">
+            <small id="nq-minor-alert" style="display: none; color: var(--color-error); font-weight: 600; margin-top: 4px;">
+              Aviso: Menor de 18 años requiere padre o tutor legal con identificación oficial INE.
+            </small>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tipo de Trabajo *</label>
+            <select id="nq-work-type" class="form-select" required>
+              <option value="Tatuaje">Tatuaje</option>
+              <option value="Piercing">Perforación / Piercing</option>
+              <option value="Retoque">Retoque / Cover-Up</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Tipo / Estilo de Diseño de Tatuaje (Reemplaza artista preferido con todos los estilos de tatuaje) -->
+        <div class="form-group">
+          <label class="form-label">Estilo / Tipo de Diseño de Tatuaje *</label>
+          <select id="nq-tattoo-style" class="form-select" required>
+            <option value="Blackwork">Blackwork (Tintas negras sólidas, tramas y contrastes fuertes)</option>
+            <option value="Fine Line">Fine Line / Trazo Fino (Líneas finas, botánico, minimalista)</option>
+            <option value="Micro-realismo / Black & Grey">Micro-realismo / Realismo en Sombras (Black & Grey)</option>
+            <option value="Realismo a Color">Realismo a Color (Retratos, animales, hiperrealismo)</option>
+            <option value="Neotradicional">Neotradicional (Colores vibrantes, volumen y líneas variadas)</option>
+            <option value="Tradicional Americano / Old School">Tradicional Americano / Old School (Líneas gruesas, paleta clásica)</option>
+            <option value="Japonés Tradicional (Irezumi)">Japonés Tradicional (Irezumi - Dragones, carpas koi, flores)</option>
+            <option value="Geométrico & Puntillismo">Geométrico & Puntillismo (Dotwork, mandalas y simetría)</option>
+            <option value="Acuarela / Watercolor">Acuarela / Watercolor (Degradados fluidos sin bordes rígidos)</option>
+            <option value="Letras / Caligrafía (Lettering)">Letras / Caligrafía (Lettering, chicano, cursivas, góticas)</option>
+            <option value="Anime / Manga / Ilustrativo">Anime / Manga / Ilustrativo / Cómic</option>
+            <option value="Surrealismo / Trash Polka">Surrealismo / Trash Polka (Contraste caótico negro y rojo)</option>
+            <option value="Tribal / Polinesio / Maorí">Tribal / Polinesio / Maorí</option>
+            <option value="Flash / Minimalista">Flash / Minimalista (Diseño rápido de catálogo)</option>
+            <option value="Retoque / Cover-Up">Retoque / Cover-Up (Tapar o mejorar tatuaje previo)</option>
+            <option value="Piercing Corporal">Piercing Corporal (Joyería estéril grado implante)</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Zona del Cuerpo *</label>
+            <input type="text" id="nq-body-zone" class="form-control" placeholder="Ej. Antebrazo interior, Costillas, Tobillo..." required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tamaño Estimado (cm) *</label>
+            <input type="text" id="nq-size-cm" class="form-control" placeholder="Ej. 12 x 8 cm, Media manga..." required>
+          </div>
+        </div>
+
+        <!-- Apartado para Adjuntar Archivo o Enlace de Referencia -->
+        <div class="form-group">
+          <label class="form-label">Foto o Referencia del Diseño</label>
+          <div class="file-upload-box" onclick="document.getElementById('nq-file-input').click()">
+            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" style="margin: 0 auto 6px; display: block; color: var(--accent-secondary);"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+            <span style="font-weight: 600; font-size: 0.82rem; color: var(--text-main);">Haz clic para adjuntar archivo desde tu dispositivo</span>
+            <p style="font-size: 0.72rem; color: var(--text-muted); margin-top: 2px;">JPG, PNG, WEBP o capturas de pantalla</p>
+            <input type="file" id="nq-file-input" class="file-upload-input" accept="image/*" onchange="handleFileUpload(event)">
+          </div>
+
+          <div style="margin-top: 8px;">
+            <input type="url" id="nq-photo-url" class="form-control" placeholder="O pega el enlace de la imagen (Pinterest, Instagram, Web)" oninput="handleUrlInput(this.value)">
+          </div>
+
+          <div class="file-preview-container" id="nq-preview-container" style="display: none;">
+            <img src="" id="nq-preview-img" class="file-preview-img" alt="Vista previa">
+            <div style="flex: 1;">
+              <span style="font-size: 0.78rem; font-weight: 600; color: var(--text-main);" id="nq-preview-title">Foto adjuntada</span>
+              <p style="font-size: 0.7rem; color: var(--color-success); margin: 0;">Lista para guardar</p>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="removeAttachedPhoto()">Quitar</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Descripción de la Idea / Detalles *</label>
+          <textarea id="nq-description" class="form-control" rows="3" placeholder="Describe los elementos que quieres, sombras, líneas, detalles especiales..." required></textarea>
+        </div>
+
+        <div class="modal-footer" style="padding-left: 0; padding-right: 0; padding-bottom: 0;">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('modal-new-quote-request')">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Solicitud</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal 3: Cotizar Solicitud (Fijar Precio y Depósito) -->
 <div class="modal-overlay" id="modal-quote-request">
   <div class="modal-container" style="max-width: 620px;">
     <div class="modal-header">
@@ -894,13 +904,13 @@
           <span class="badge badge-pending" id="modal-quote-status">Solicitud</span>
         </div>
         <p style="font-size: 0.88rem; color: var(--text-main);" id="modal-quote-client-info">Cliente: Camila Vega (24 años)</p>
-        <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px;" id="modal-quote-body-info">Zona: Antebrazo interior | Tamaño: 12 x 8 cm</p>
+        <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px;" id="modal-quote-body-info">Estilo: Fine Line | Zona: Antebrazo | Tamaño: 12 x 8 cm</p>
         <div style="margin-top: 8px;">
           <span style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Idea del Cliente:</span>
           <p style="font-size: 0.82rem; color: var(--text-main); margin-top: 2px;" id="modal-quote-desc">Diseño botánico fine line...</p>
         </div>
         <div id="modal-quote-ref-container" style="margin-top: 8px; display: none;">
-          <span style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Foto de Referencia:</span>
+          <span style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Foto / Referencia:</span>
           <div style="margin-top: 4px;" id="modal-quote-ref-img-box"></div>
         </div>
       </div>
@@ -919,29 +929,23 @@
         </div>
       </div>
 
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Artista Asignado *</label>
-          <select id="quote-form-artist" class="form-select"></select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Duración Estimada *</label>
-          <select id="quote-form-duration" class="form-select">
-            <option value="1h">1 hora</option>
-            <option value="1h 30m">1 hora 30 min</option>
-            <option value="2h">2 horas</option>
-            <option value="2h 30m">2 horas 30 min</option>
-            <option value="3h">3 horas</option>
-            <option value="4h">4 horas (Media jornada)</option>
-            <option value="5h">5 horas</option>
-            <option value="6h">6 horas (Jornada completa)</option>
-          </select>
-        </div>
+      <div class="form-group">
+        <label class="form-label">Duración Estimada *</label>
+        <select id="quote-form-duration" class="form-select">
+          <option value="1h">1 hora</option>
+          <option value="1h 30m">1 hora 30 min</option>
+          <option value="2h">2 horas</option>
+          <option value="2h 30m">2 horas 30 min</option>
+          <option value="3h">3 horas</option>
+          <option value="4h">4 horas (Media jornada)</option>
+          <option value="5h">5 horas</option>
+          <option value="6h">6 horas (Jornada completa)</option>
+        </select>
       </div>
 
       <div class="form-group">
-        <label class="form-label">Notas / Recomendaciones del Artista</label>
-        <textarea id="quote-form-notes" class="form-control" rows="2" placeholder="Recomendaciones de piel, cuidados previos, cambios en el diseño..."></textarea>
+        <label class="form-label">Notas / Recomendaciones del Tatuador</label>
+        <textarea id="quote-form-notes" class="form-control" rows="2" placeholder="Recomendaciones de piel, cuidados previos, detalles del stencil..."></textarea>
       </div>
     </div>
     <div class="modal-footer">
@@ -951,7 +955,7 @@
   </div>
 </div>
 
-<!-- Modal 3: Enlace de Pago de Anticipo & Confirmación (FASE 1) -->
+<!-- Modal 4: Enlace de Pago de Anticipo & Confirmación -->
 <div class="modal-overlay" id="modal-deposit-payment">
   <div class="modal-container" style="max-width: 520px;">
     <div class="modal-header">
@@ -963,7 +967,7 @@
         <span class="badge badge-progress" id="dep-modal-status-badge">Esperando Depósito</span>
         <h2 style="font-size: 1.8rem; color: var(--color-success); margin-top: 8px;" id="dep-modal-amount">$0.00 MXN</h2>
         <p style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 4px;" id="dep-modal-concept">
-          Anticipo para sesión de Camila Vega
+          Anticipo para sesión
         </p>
       </div>
 
@@ -986,7 +990,7 @@
       <div style="border-top: 1px dashed var(--border-default); margin-top: 18px; padding-top: 14px;">
         <span class="form-label">Simulación de Pasarela / Confirmación Automática:</span>
         <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 8px;">
-          Al recibir la notificación del banco o pago del cliente, confirma para cambiar el estado a "Depósito Pagado" y habilitar la agenda.
+          Al recibir la transferencia o pago del cliente, confirma para cambiar el estado a "Depósito Pagado" y habilitar la agenda.
         </p>
         <button class="btn btn-success" style="width: 100%;" id="btn-confirm-deposit-auto" onclick="confirmDepositPayment()">
           Confirmar Pago de Anticipo Recibido
@@ -999,7 +1003,34 @@
   </div>
 </div>
 
-<!-- Modal 4: Registrar Propina -->
+<!-- Modal 5: Limpiar Datos Demo (Para Presentaciones de Software) -->
+<div class="modal-overlay" id="modal-reset-demo">
+  <div class="modal-container" style="max-width: 480px;">
+    <div class="modal-header">
+      <h3>Limpiar Datos de Demostración</h3>
+      <button class="modal-close" onclick="closeModal('modal-reset-demo')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div style="display: flex; gap: 14px; align-items: flex-start;">
+        <div style="background-color: rgba(255, 90, 95, 0.2); color: var(--color-error); width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-weight: bold; font-size: 1.3rem;">
+          !
+        </div>
+        <div>
+          <h4 style="margin-bottom: 6px; color: var(--text-main); font-size: 1rem;">¿Vaciar citas, cotizaciones y clientes de prueba?</h4>
+          <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.45;">
+            Esta función es exclusiva para presentaciones en vivo. Eliminará todas las citas de la agenda, solicitudes de cotización, clientes registrados, propinas y movimientos de caja de prueba para iniciar una presentación 100% limpia sin alterar el catálogo de servicios ni las sesiones de usuario.
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-reset-demo')">Cancelar</button>
+      <button class="btn btn-danger" onclick="confirmResetDemo()">Sí, Limpiar Datos</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal 6: Registrar Propina -->
 <div class="modal-overlay" id="modal-artist-tip">
   <div class="modal-container" style="max-width: 440px;">
     <div class="modal-header">
@@ -1007,10 +1038,6 @@
       <button class="modal-close" onclick="closeModal('modal-artist-tip')">&times;</button>
     </div>
     <div class="modal-body">
-      <div class="form-group">
-        <label class="form-label">Artista que Recibe la Propina *</label>
-        <select id="tip-form-artist" class="form-select"></select>
-      </div>
       <div class="form-group">
         <label class="form-label">Monto de la Propina ($ MXN) *</label>
         <input type="number" id="tip-form-amount" class="form-control" placeholder="Ej. 150" min="10" step="10">
@@ -1025,7 +1052,7 @@
       </div>
       <div class="form-group">
         <label class="form-label">Notas / Cliente Opcional</label>
-        <input type="text" id="tip-form-notes" class="form-control" placeholder="Ej. Cliente muy agradecido por el sombreado">
+        <input type="text" id="tip-form-notes" class="form-control" placeholder="Ej. Cliente satisfecho con el sombreado">
       </div>
     </div>
     <div class="modal-footer">
@@ -1035,7 +1062,7 @@
   </div>
 </div>
 
-<!-- Modal 5: Cobro en Caja (Checkout POS) -->
+<!-- Modal 7: Cobro en Caja (Checkout POS) -->
 <div class="modal-overlay" id="modal-checkout">
   <div class="modal-container" style="max-width: 480px;">
     <div class="modal-header">
@@ -1066,11 +1093,6 @@
           <b style="color: var(--color-success);" id="checkout-change-display">$0.00 MXN</b>
         </div>
       </div>
-
-      <div class="form-group">
-        <label class="form-label">Artista que Realizó el Trabajo</label>
-        <select id="checkout-artist" class="form-select"></select>
-      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal('modal-checkout')">Cancelar</button>
@@ -1079,7 +1101,7 @@
   </div>
 </div>
 
-<!-- Modal 6: Ticket Imprimible / Digital -->
+<!-- Modal 8: Ticket Imprimible / Digital -->
 <div class="modal-overlay" id="modal-receipt">
   <div class="modal-container" style="max-width: 400px;">
     <div class="modal-header">
@@ -1087,9 +1109,7 @@
       <button class="modal-close" onclick="closeModal('modal-receipt')">&times;</button>
     </div>
     <div class="modal-body">
-      <div class="receipt-box" id="receipt-modal-content">
-        <!-- Render dinámico del ticket -->
-      </div>
+      <div class="receipt-box" id="receipt-modal-content"></div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal('modal-receipt')">Cerrar</button>
@@ -1098,7 +1118,7 @@
   </div>
 </div>
 
-<!-- Modal 7: Registrar Gasto de Caja -->
+<!-- Modal 9: Registrar Gasto de Caja -->
 <div class="modal-overlay" id="modal-expense">
   <div class="modal-container" style="max-width: 440px;">
     <div class="modal-header">
@@ -1108,7 +1128,7 @@
     <div class="modal-body">
       <div class="form-group">
         <label class="form-label">Concepto del Gasto *</label>
-        <input type="text" id="expense-concept" class="form-control" placeholder="Ej. Compra de papel para stencil, agua, limpieza">
+        <input type="text" id="expense-concept" class="form-control" placeholder="Ej. Compra de papel para stencil, jabón, agua">
       </div>
       <div class="form-group">
         <label class="form-label">Monto ($ MXN) *</label>
@@ -1122,7 +1142,7 @@
   </div>
 </div>
 
-<!-- Modal 8: Corte de Turno / Arqueo -->
+<!-- Modal 10: Corte de Turno / Arqueo -->
 <div class="modal-overlay" id="modal-cash-cut">
   <div class="modal-container" style="max-width: 480px;">
     <div class="modal-header">
@@ -1149,7 +1169,7 @@
   </div>
 </div>
 
-<!-- Modal 9: Editar Fondo Inicial -->
+<!-- Modal 11: Editar Fondo Inicial -->
 <div class="modal-overlay" id="modal-edit-fund">
   <div class="modal-container" style="max-width: 420px;">
     <div class="modal-header">
@@ -1173,50 +1193,7 @@
   </div>
 </div>
 
-<!-- Modal 10: Artista (Crear / Editar) -->
-<div class="modal-overlay" id="modal-artist">
-  <div class="modal-container" style="max-width: 480px;">
-    <div class="modal-header">
-      <h3 id="modal-artist-title">Nuevo Artista</h3>
-      <button class="modal-close" onclick="closeModal('modal-artist')">&times;</button>
-    </div>
-    <div class="modal-body">
-      <input type="hidden" id="artist-form-id">
-      <div class="form-group">
-        <label class="form-label">Nombre Completo *</label>
-        <input type="text" id="artist-form-name" class="form-control" placeholder="Ej. Alex Thorne">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Especialidad / Estilos *</label>
-        <input type="text" id="artist-form-specialty" class="form-control" placeholder="Ej. Blackwork, Fine Line, Microdermal...">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Cabina Asignada *</label>
-        <input type="text" id="artist-form-booth" class="form-control" placeholder="Ej. Cabina 1, Cabina 2 (Piercing)...">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Teléfono WhatsApp</label>
-        <input type="tel" id="artist-form-phone" class="form-control" placeholder="5512345678">
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">Usuario de Acceso *</label>
-          <input type="text" id="artist-form-username" class="form-control" placeholder="alex">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Contraseña *</label>
-          <input type="password" id="artist-form-password" class="form-control" placeholder="••••••••">
-        </div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeModal('modal-artist')">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveArtistFromModal()">Guardar Artista</button>
-    </div>
-  </div>
-</div>
-
-<!-- Modal 11: Nuevo Cliente -->
+<!-- Modal 12: Nuevo Cliente -->
 <div class="modal-overlay" id="modal-client">
   <div class="modal-container" style="max-width: 460px;">
     <div class="modal-header">
@@ -1255,7 +1232,7 @@
   </div>
 </div>
 
-<!-- Modal 12: Nuevo Servicio -->
+<!-- Modal 13: Nuevo Servicio -->
 <div class="modal-overlay" id="modal-service">
   <div class="modal-container" style="max-width: 440px;">
     <div class="modal-header">
@@ -1289,7 +1266,7 @@
   </div>
 </div>
 
-<!-- Modal 13: Nuevo Producto -->
+<!-- Modal 14: Nuevo Producto -->
 <div class="modal-overlay" id="modal-product">
   <div class="modal-container" style="max-width: 440px;">
     <div class="modal-header">

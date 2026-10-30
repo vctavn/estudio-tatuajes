@@ -1,9 +1,9 @@
 /**
- * INK & PIERCING STUDIO - SISTEMA DE GESTIÓN INTEGRAL
+ * TATTOO STUDIO - SISTEMA DE GESTIÓN INTEGRAL
  * Software para Estudios de Tatuaje y Piercing en México
- * FASE 1: Solicitud de Proyecto + Cotización + Depósito / Anticipo
- * Duración Libre de Sesiones & Horarios en Formato 12 Horas (AM/PM)
- * Descuento Automático de Anticipos en el Punto de Venta (POS)
+ * Dos Sesiones: Caja y Tatuador
+ * Cotizaciones con Selección Completa de Estilos de Tatuaje y Adjuntar Archivo
+ * Botón Limpiar Datos Demo para Presentaciones en Vivo
  */
 
 // ================= UTILIDADES GENERALES =================
@@ -23,7 +23,7 @@ function escapeHtml(str) {
 }
 
 function getInitials(name) {
-  if (!name) return 'IN';
+  if (!name) return 'TS';
   const clean = name.replace(/['"]/g, '').trim();
   const parts = clean.split(/\s+/);
   if (parts.length >= 2) {
@@ -68,7 +68,6 @@ function parseTime12hToMinutes(time12h) {
   if (!time12h) return 600; // 10:00 AM default
   const match = time12h.match(/(\d+):(\d+)\s*(AM|PM)/i);
   if (!match) {
-    // Si viene en 24h
     const [h, m] = time12h.split(':').map(Number);
     return (h || 10) * 60 + (m || 0);
   }
@@ -98,7 +97,7 @@ function calculateEndTime(startTime12h, durationMinutes) {
   return minutesToTime12h(endMins);
 }
 
-// Formatear minutos a texto legible (ej. 150 -> "2h 30m")
+// Formatear minutos a texto legible
 function formatDurationLabel(minutes) {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
@@ -108,51 +107,32 @@ function formatDurationLabel(minutes) {
 }
 
 // ================= ESTADO Y DATOS INICIALES =================
-const STORAGE_KEY = 'ink_piercing_studio_data_v1';
-const SESSION_KEY = 'ink_piercing_studio_session_v1';
+const STORAGE_KEY = 'tattoo_studio_data_v2';
+const SESSION_KEY = 'tattoo_studio_session_v2';
 
 const DEFAULT_DATA = {
   config: {
-    shopName: "INK & PIERCING STUDIO MX",
+    shopName: "Tattoo Studio",
     currency: "$ MXN",
     initialCashFund: 1500.00,
     isCashOpen: true,
     cashOpenedAt: new Date().toISOString(),
     phone: "525512345678",
     address: "Roma Norte, Cuauhtémoc, CDMX",
-    adminUser: "dueño",
+    adminUser: "caja",
     adminPass: "123"
   },
+  // Solo un Tatuador asignado según solicitud
   artists: [
     {
       id: "a1",
-      name: "Alex Thorne",
-      username: "alex",
+      name: "Tatuador",
+      username: "tatuador",
       password: "123",
       phone: "5512345678",
-      specialty: "Blackwork, Geométrico & Neotradicional",
-      avatar: "AT",
-      booth: "Cabina 1"
-    },
-    {
-      id: "a2",
-      name: "Maya Cruz",
-      username: "maya",
-      password: "123",
-      phone: "5587654321",
-      specialty: "Fine Line, Micro-realismo & Floral",
-      avatar: "MC",
-      booth: "Cabina 2"
-    },
-    {
-      id: "a3",
-      name: "Ian Soler",
-      username: "ian",
-      password: "123",
-      phone: "5599887766",
-      specialty: "Body Piercing & Modificaciones Estériles",
-      avatar: "IS",
-      booth: "Cabina 3 (Piercing)"
+      specialty: "Tatuador Profesional",
+      avatar: "TA",
+      booth: "Cabina Principal"
     }
   ],
   services: [
@@ -172,11 +152,10 @@ const DEFAULT_DATA = {
     { id: "p6", name: "Jabón Neutro Especial Sin Fragancia (250ml)", price: 140, cost: 60, stock: 20, category: "Aftercare" }
   ],
   clients: [
-    { id: "c1", name: "Roberto Gómez", age: 28, phone: "5533445566", visits: 3, totalSpent: 6200, allergies: "Ninguna", notes: "Tatuaje brazo derecho terminado. Excelente cicatrización." },
-    { id: "c2", name: "Valeria Mendoza", age: 22, phone: "5544556677", visits: 2, totalSpent: 3400, allergies: "Látex (usar guantes de nitrilo)", notes: "Piel sensible. Tatuaje floral fine line." },
+    { id: "c1", name: "Roberto Gómez", age: 28, phone: "5533445566", visits: 3, totalSpent: 6200, allergies: "Ninguna", notes: "Tatuaje en brazo terminado. Excelente cicatrización." },
+    { id: "c2", name: "Valeria Mendoza", age: 22, phone: "5544556677", visits: 2, totalSpent: 3400, allergies: "Látex (usar nitrilo)", notes: "Piel sensible. Tatuaje floral fine line." },
     { id: "c3", name: "Emiliano Carrillo", age: 17, phone: "5577889900", visits: 1, totalSpent: 750, allergies: "Ninguna", isMinor: true, notes: "Menor de edad. Acompañado de madre con INE y carta de autorización firmada." }
   ],
-  // Solicitudes de Cotización & Anticipos (FASE 1)
   quoteRequests: [
     {
       id: "req-101",
@@ -186,13 +165,14 @@ const DEFAULT_DATA = {
       clientAge: 24,
       isMinor: false,
       type: "Tatuaje",
+      tattooStyle: "Fine Line / Trazo Fino",
       bodyZone: "Antebrazo interior",
       sizeCm: "12 x 8 cm",
       description: "Diseño botánico fine line de peonías y mariposa monarca en escala de grises.",
       photoUrl: "https://images.unsplash.com/photo-1598371839696-5c5bb00bdc28?auto=format&fit=crop&w=400&q=80",
-      artistId: "a2",
-      artistName: "Maya Cruz",
-      status: "deposito_pagado", // Solicitud -> Cotizada -> Deposito Pagado -> Agendada -> Realizada -> Retoque
+      artistId: "a1",
+      artistName: "Tatuador",
+      status: "deposito_pagado",
       estimatedPrice: 3200,
       depositAmount: 600,
       depositPaid: true,
@@ -209,12 +189,13 @@ const DEFAULT_DATA = {
       clientAge: 30,
       isMinor: false,
       type: "Tatuaje",
+      tattooStyle: "Neotradicional",
       bodyZone: "Pantorrilla derecha",
       sizeCm: "20 x 15 cm",
       description: "Cráneo neotradicional con serpiente y rosas, alto contraste.",
       photoUrl: "https://images.unsplash.com/photo-1562962230-16e4623d36e6?auto=format&fit=crop&w=400&q=80",
       artistId: "a1",
-      artistName: "Alex Thorne",
+      artistName: "Tatuador",
       status: "cotizada",
       estimatedPrice: 4500,
       depositAmount: 1000,
@@ -232,12 +213,13 @@ const DEFAULT_DATA = {
       clientAge: 17,
       isMinor: true,
       type: "Piercing",
+      tattooStyle: "Piercing Corporal",
       bodyZone: "Nariz (Septum)",
       sizeCm: "Perforación estándar",
       description: "Perforación de septum con aro circular barbell en titanio grado implante.",
       photoUrl: "",
-      artistId: "a3",
-      artistName: "Ian Soler",
+      artistId: "a1",
+      artistName: "Tatuador",
       status: "solicitud",
       estimatedPrice: 0,
       depositAmount: 0,
@@ -266,16 +248,16 @@ const DEFAULT_DATA = {
       ],
       serviceName: "Tatuaje Mediano (Línea & Sombra)",
       price: 2800,
-      depositDeducted: 500, // Anticipo que se descontará al cobrar en el POS
+      depositDeducted: 500,
       durationMinutes: 150,
       durationLabel: "2h 30m",
       artistId: "a1",
-      artistName: "Alex Thorne",
-      booth: "Cabina 1",
+      artistName: "Tatuador",
+      booth: "Cabina Principal",
       date: todayStr,
       time: "11:00 AM",
       endTime: "1:30 PM",
-      status: "en_proceso", // agendada, en_proceso, realizada, retoque, cancelada
+      status: "en_proceso",
       notes: "Sesión 2. Sombra y detalles de manga.",
       quoteRef: "COT-2026-000"
     },
@@ -286,42 +268,20 @@ const DEFAULT_DATA = {
       services: [
         { id: "s1", name: "Tatuaje Flash / Pieza Pequeña", price: 1200, duration: 60 }
       ],
-      serviceName: "Tatuaje Flash / Pieza Pequeña",
+      serviceName: "Tatuaje Flash / Fine Line",
       price: 1200,
       depositDeducted: 300,
       durationMinutes: 60,
       durationLabel: "1h",
-      artistId: "a2",
-      artistName: "Maya Cruz",
-      booth: "Cabina 2",
+      artistId: "a1",
+      artistName: "Tatuador",
+      booth: "Cabina Principal",
       date: todayStr,
       time: "2:00 PM",
       endTime: "3:00 PM",
       status: "agendada",
-      notes: "Alérgica al látex. Usar nitrilo.",
+      notes: "Alérgica al látex. Usar guantes de nitrilo.",
       quoteRef: "COT-2026-001"
-    },
-    {
-      id: "ses-103",
-      clientName: "Emiliano Carrillo",
-      clientPhone: "5577889900",
-      services: [
-        { id: "s5", name: "Piercing Septum (Titanio)", price: 750, duration: 30 }
-      ],
-      serviceName: "Piercing Septum (Titanio)",
-      price: 750,
-      depositDeducted: 200,
-      durationMinutes: 30,
-      durationLabel: "30m",
-      artistId: "a3",
-      artistName: "Ian Soler",
-      booth: "Cabina 3",
-      date: todayStr,
-      time: "4:30 PM",
-      endTime: "5:00 PM",
-      status: "agendada",
-      notes: "Menor de edad con consentimiento y tutor legal.",
-      quoteRef: "COT-2026-003"
     }
   ];
 
@@ -340,16 +300,16 @@ const DEFAULT_DATA = {
     {
       id: "tip-01",
       artistId: "a1",
-      artistName: "Alex Thorne",
+      artistName: "Tatuador",
       amount: 200,
       method: "Efectivo",
-      notes: "Agradecimiento cliente Roberto",
+      notes: "Agradecimiento cliente Roberto Gómez",
       timestamp: `${todayStr}T13:40:00Z`
     }
   ];
 })();
 
-// ================= CAPA DE DATOS (DATA SERVICE) =================
+// ================= CAPA DE DATOS =================
 let store = null;
 
 const DataService = {
@@ -358,9 +318,8 @@ const DataService = {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         store = JSON.parse(saved);
-        // Asegurar campos nuevos de Fase 1 si faltasen
         if (!store.quoteRequests) store.quoteRequests = DEFAULT_DATA.quoteRequests;
-        if (!store.artists) store.artists = DEFAULT_DATA.artists;
+        if (!store.artists || store.artists.length === 0) store.artists = DEFAULT_DATA.artists;
         return;
       }
     } catch (e) {
@@ -379,7 +338,7 @@ const DataService = {
   }
 };
 
-// ================= GESTIÓN DE SESIONES & ROLES =================
+// ================= GESTIÓN DE SESIONES (SOLO CAJA Y TATUADOR) =================
 let currentSession = null;
 
 function loadSession() {
@@ -407,39 +366,26 @@ function handleLogin(e) {
   const userVal = document.getElementById('login-username').value.trim().toLowerCase();
   const passVal = document.getElementById('login-password').value.trim();
 
-  // Dueño / Administrador
-  if ((userVal === 'dueño' || userVal === 'admin' || userVal === 'caja') && (passVal === '123' || passVal === (store.config.adminPass || '123'))) {
+  // 1. Sesión de Caja
+  if ((userVal === 'caja' || userVal === 'admin' || userVal === 'dueño') && (passVal === '123' || passVal === (store.config.adminPass || '123'))) {
     saveSession({
       role: 'owner',
-      username: 'dueño',
-      name: 'Dueño / Administrador',
-      avatar: 'AD'
+      username: 'caja',
+      name: 'Caja',
+      avatar: 'CJ'
     });
     applyUserSession();
     return;
   }
 
-  // Recepción / Caja
-  if (userVal === 'recepcion' && passVal === '123') {
-    saveSession({
-      role: 'reception',
-      username: 'recepcion',
-      name: 'Recepción & Caja',
-      avatar: 'RC'
-    });
-    applyUserSession();
-    return;
-  }
-
-  // Artistas individuales
-  const artist = store.artists.find(a => (a.username || '').toLowerCase() === userVal);
-  if (artist && passVal === (artist.password || '123')) {
+  // 2. Sesión de Tatuador
+  if ((userVal === 'tatuador' || userVal === 'alex') && passVal === '123') {
     saveSession({
       role: 'artist',
-      artistId: artist.id,
-      username: artist.username,
-      name: artist.name,
-      avatar: artist.avatar || getInitials(artist.name)
+      artistId: 'a1',
+      username: 'tatuador',
+      name: 'Tatuador',
+      avatar: 'TA'
     });
     applyUserSession();
     return;
@@ -448,9 +394,14 @@ function handleLogin(e) {
   showToast("Usuario o contraseña incorrectos", "error");
 }
 
-function quickLogin(username) {
-  document.getElementById('login-username').value = username;
-  document.getElementById('login-password').value = '123';
+function quickLogin(roleName) {
+  if (roleName === 'caja') {
+    document.getElementById('login-username').value = 'caja';
+    document.getElementById('login-password').value = '123';
+  } else {
+    document.getElementById('login-username').value = 'tatuador';
+    document.getElementById('login-password').value = '123';
+  }
   handleLogin();
 }
 
@@ -468,9 +419,9 @@ function applyUserSession() {
   }
 
   document.getElementById('login-screen').classList.add('hidden');
-  document.getElementById('header-user-avatar').textContent = currentSession.avatar || 'AD';
+  document.getElementById('header-user-avatar').textContent = currentSession.avatar || 'TS';
   document.getElementById('header-user-name').textContent = currentSession.name || 'Usuario';
-  document.getElementById('header-user-role').textContent = currentSession.role === 'owner' ? 'Dueño' : (currentSession.role === 'reception' ? 'Recepción' : 'Artista');
+  document.getElementById('header-user-role').textContent = currentSession.role === 'owner' ? 'Caja / Admin' : 'Tatuador';
 
   const adminElements = document.querySelectorAll('.nav-admin-only');
   const artistElements = document.querySelectorAll('.nav-artist-only');
@@ -478,7 +429,7 @@ function applyUserSession() {
   if (currentSession.role === 'artist') {
     adminElements.forEach(el => el.style.display = 'none');
     artistElements.forEach(el => el.style.display = '');
-    document.getElementById('sidebar-role-label').textContent = 'Portal de Artista';
+    document.getElementById('sidebar-role-label').textContent = 'Portal Tatuador';
     switchView('artist-portal');
   } else {
     adminElements.forEach(el => el.style.display = '');
@@ -490,14 +441,29 @@ function applyUserSession() {
   renderAllViews();
 }
 
+// ================= RESET DEMO (PARA PRESENTACIONES DE SOFTWARE) =================
+function confirmResetDemo() {
+  store.appointments = [];
+  store.quoteRequests = [];
+  store.cashMovements = [];
+  store.cashClosures = [];
+  store.artistTips = [];
+  store.clients = [];
+
+  DataService.saveStore();
+  closeModal('modal-reset-demo');
+  renderAllViews();
+  showToast("Datos de prueba eliminados. Software 100% limpio listo para presentar.", "success");
+}
+
 // ================= SELECTOR DE DISPOSITIVO (COMPUTADORA / CELULAR) =================
 function initDeviceMode() {
-  const saved = localStorage.getItem('ink_studio_device_mode') || 'desktop';
+  const saved = localStorage.getItem('tattoo_studio_device_mode') || 'desktop';
   setDeviceMode(saved, false);
 }
 
 function setDeviceMode(mode, save = true) {
-  if (save) localStorage.setItem('ink_studio_device_mode', mode);
+  if (save) localStorage.setItem('tattoo_studio_device_mode', mode);
 
   const isMobile = (mode === 'mobile');
   document.body.classList.toggle('device-mobile', isMobile);
@@ -540,23 +506,21 @@ function switchView(viewId) {
   const mobBtn = document.querySelector(`.mob-nav-btn[data-mob-view="${viewId}"]`);
   if (mobBtn) mobBtn.classList.add('active');
 
-  // Actualizar títulos del encabezado
   const titles = {
-    'dashboard': ['Tablero Principal', 'Métricas y agenda del estudio en tiempo real'],
-    'requests': ['Solicitudes de Cotización & Anticipos', 'Revisa ideas, fija precios estimados y gestiona depósitos'],
+    'dashboard': ['Tablero Principal', 'Métricas y agenda de Tattoo Studio en tiempo real'],
+    'requests': ['Solicitudes de Cotización & Anticipos', 'Revisa ideas, estilos de tatuaje y gestiona depósitos'],
     'appointments': ['Agenda de Sesiones', 'Calendario interactivo y citas programadas'],
-    'artist-portal': ['Mi Agenda de Sesiones', 'Tus clientes y citas asignadas'],
+    'artist-portal': ['Mi Agenda de Sesiones', 'Tus clientes y citas asignadas en cabina'],
     'artist-quotes': ['Mis Cotizaciones Asignadas', 'Proyectos pendientes de evaluar y cotizar'],
     'artist-tips': ['Mis Propinas', 'Historial de propinas directas en MXN'],
-    'pos': ['Punto de Venta (POS)', 'Cobro con deducción de depósito y venta de productos'],
+    'pos': ['Punto de Venta (POS)', 'Cobro con deducción de depósito y venta de aftercare'],
     'cash-register': ['Control & Corte de Caja', 'Arqueo de gaveta y registro de movimientos'],
-    'artists': ['Artistas & Cabinas', 'Equipo de tatuadores, piercers y estaciones de trabajo'],
+    'artists': ['Tatuador & Cabina', 'Estación de trabajo y perfil'],
     'catalog': ['Catálogo de Servicios & Joyería', 'Tarifas de sesión y stock de insumos'],
-    'clients': ['Directorio de Clientes', 'Expedientes, edades, alergias e historial'],
-    'public-booking': ['Cotización & Reserva Online', 'Formulario para que clientes soliciten su pieza']
+    'clients': ['Directorio de Clientes', 'Expedientes, edades, alergias e historial']
   };
 
-  const [t, sub] = titles[viewId] || ['INK Studio', 'Sistema de Gestión'];
+  const [t, sub] = titles[viewId] || ['Tattoo Studio', 'Sistema de Gestión'];
   document.getElementById('view-title').textContent = t;
   document.getElementById('view-subtitle').textContent = sub;
 
@@ -576,7 +540,6 @@ function renderAllViews() {
   renderArtists();
   renderCatalog();
   renderClients();
-  renderPublicBookingArtists();
 }
 
 // ================= 1. TABLERO (DASHBOARD) =================
@@ -593,8 +556,7 @@ function renderDashboard() {
   document.getElementById('dash-stat-completed').textContent = completedApps;
   document.getElementById('dash-stat-avg-ticket').textContent = formatMoney(avgTicket);
 
-  // Badges contadores
-  const pendingQuotes = store.quoteRequests.filter(r => r.status === 'solicitud' || r.status === 'cotizada').length;
+  const pendingQuotes = (store.quoteRequests || []).filter(r => r.status === 'solicitud' || r.status === 'cotizada').length;
   document.getElementById('badge-quotes-count').textContent = pendingQuotes;
   document.getElementById('badge-appointments-count').textContent = todayApps.length;
 
@@ -609,13 +571,12 @@ function renderDashboard() {
     mobList.innerHTML = `<p style="text-align: center; color: var(--text-muted); padding: 14px; font-size: 0.85rem;">No hay sesiones programadas para hoy.</p>`;
   } else {
     todayApps.forEach(app => {
-      // Fila Desktop
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td><b>${formatTime12h(app.time)} - ${formatTime12h(app.endTime || calculateEndTime(app.time, app.durationMinutes || 60))}</b></td>
         <td><b>${escapeHtml(app.clientName)}</b><br><small style="color:var(--text-muted);">${escapeHtml(app.clientPhone)}</small></td>
         <td>${escapeHtml(app.serviceName)}<br><small style="color:var(--accent-secondary); font-weight:600;">${app.durationLabel || '1h'}</small></td>
-        <td>${escapeHtml(app.artistName)}<br><small style="color:var(--text-muted);">${escapeHtml(app.booth || 'Cabina 1')}</small></td>
+        <td>${escapeHtml(app.booth || 'Cabina Principal')}</td>
         <td>${renderStatusBadge(app.status)}</td>
         <td>
           <button class="btn btn-primary btn-sm" onclick="directPayAppointment('${app.id}')" title="Cobrar sesión">Cobrar</button>
@@ -623,7 +584,6 @@ function renderDashboard() {
       `;
       tbody.appendChild(tr);
 
-      // Tarjeta Móvil
       const card = document.createElement('div');
       card.className = 'mobile-app-card';
       card.innerHTML = `
@@ -634,7 +594,7 @@ function renderDashboard() {
         <div class="mobile-app-client">${escapeHtml(app.clientName)}</div>
         <div class="mobile-app-meta">
           <span><b>Trabajo:</b> ${escapeHtml(app.serviceName)} (${app.durationLabel || '1h'})</span>
-          <span><b>Artista & Cabina:</b> ${escapeHtml(app.artistName)} - ${escapeHtml(app.booth || 'Cabina 1')}</span>
+          <span><b>Cabina:</b> ${escapeHtml(app.booth || 'Cabina Principal')}</span>
           ${app.depositDeducted ? `<span style="color:var(--color-success); font-weight:600;">Depósito acreditado: -$${app.depositDeducted} MXN</span>` : ''}
         </div>
         <div class="mobile-app-actions">
@@ -646,29 +606,27 @@ function renderDashboard() {
     });
   }
 
-  // Estado de cabinas
+  // Estado de cabina
   const boothsList = document.getElementById('dash-booths-list');
   boothsList.innerHTML = '';
-  store.artists.forEach((art, idx) => {
-    const activeApp = todayApps.find(a => a.artistId === art.id && a.status === 'en_proceso');
-    const isOccupied = !!activeApp;
+  const activeApp = todayApps.find(a => a.status === 'en_proceso');
+  const isOccupied = !!activeApp;
 
-    const row = document.createElement('div');
-    row.style.cssText = 'background: var(--bg-subtle); border: 1px solid var(--border-default); border-radius: 6px; padding: 10px 12px; display: flex; align-items: center; justify-content: space-between;';
-    row.innerHTML = `
-      <div style="display: flex; align-items: center; gap: 10px;">
-        <div class="user-session-avatar" style="width: 32px; height: 32px; font-size: 0.75rem;">${art.avatar || 'AR'}</div>
-        <div>
-          <b style="font-size: 0.85rem; color: var(--text-main);">${escapeHtml(art.booth || ('Cabina ' + (idx + 1)))}</b>
-          <p style="font-size: 0.75rem; color: var(--text-secondary); margin: 0;">${escapeHtml(art.name)} (${escapeHtml(art.specialty)})</p>
-        </div>
+  const row = document.createElement('div');
+  row.style.cssText = 'background: var(--bg-subtle); border: 1px solid var(--border-default); border-radius: 6px; padding: 12px; display: flex; align-items: center; justify-content: space-between;';
+  row.innerHTML = `
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div class="user-session-avatar" style="width: 34px; height: 34px; font-size: 0.8rem;">TA</div>
+      <div>
+        <b style="font-size: 0.9rem; color: var(--text-main);">Cabina Principal</b>
+        <p style="font-size: 0.75rem; color: var(--text-secondary); margin: 0;">Tatuador Profesional</p>
       </div>
-      <span class="badge ${isOccupied ? 'badge-progress' : 'badge-done'}">
-        ${isOccupied ? 'En Sesión' : 'Disponible'}
-      </span>
-    `;
-    boothsList.appendChild(row);
-  });
+    </div>
+    <span class="badge ${isOccupied ? 'badge-progress' : 'badge-done'}">
+      ${isOccupied ? 'En Sesión' : 'Disponible'}
+    </span>
+  `;
+  boothsList.appendChild(row);
 }
 
 function renderStatusBadge(status) {
@@ -687,6 +645,8 @@ function renderStatusBadge(status) {
 }
 
 // ================= 2. SOLICITUDES & COTIZACIONES (FASE 1) =================
+window._attachedPhotoDataUrl = '';
+
 function renderQuoteRequests() {
   const container = document.getElementById('quotes-container');
   const artistContainer = document.getElementById('artist-quotes-container');
@@ -717,8 +677,8 @@ function renderQuoteRequests() {
 
       <div class="quote-details-list">
         <div><b>Tipo:</b> ${escapeHtml(req.type || 'Tatuaje')}</div>
+        <div><b>Estilo de Diseño:</b> <span style="color:var(--accent-secondary); font-weight:700;">${escapeHtml(req.tattooStyle || 'Personalizado')}</span></div>
         <div><b>Zona:</b> ${escapeHtml(req.bodyZone)} | <b>Tamaño:</b> ${escapeHtml(req.sizeCm)}</div>
-        <div><b>Artista Asignado:</b> ${escapeHtml(req.artistName || 'Sin asignar')}</div>
         <div style="background: var(--bg-subtle); padding: 8px; border-radius: 4px; border: 1px solid var(--border-subtle); margin-top: 4px;">
           <small style="color:var(--text-muted); display:block; font-weight:700;">IDEA / DISEÑO:</small>
           <span>${escapeHtml(req.description)}</span>
@@ -727,8 +687,8 @@ function renderQuoteRequests() {
 
       ${req.photoUrl ? `
         <div class="quote-reference-preview">
-          <a href="${req.photoUrl}" target="_blank" title="Ver referencia completa">
-            <img src="${req.photoUrl}" class="quote-ref-thumb" alt="Referencia">
+          <a href="${req.photoUrl}" target="_blank" title="Ver foto o referencia completa">
+            <img src="${req.photoUrl}" class="quote-ref-thumb" alt="Foto / Referencia">
           </a>
         </div>
       ` : ''}
@@ -778,20 +738,133 @@ function renderQuoteRequests() {
 
   if (artistContainer && currentSession && currentSession.role === 'artist') {
     artistContainer.innerHTML = '';
-    const myQuotes = (store.quoteRequests || []).filter(r => r.artistId === currentSession.artistId);
+    const myQuotes = store.quoteRequests || [];
     if (document.getElementById('badge-artist-quotes-count')) {
       document.getElementById('badge-artist-quotes-count').textContent = myQuotes.filter(r => r.status === 'solicitud').length;
     }
     if (myQuotes.length === 0) {
-      artistContainer.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 30px;">No tienes cotizaciones asignadas actualmente.</p>`;
+      artistContainer.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 30px;">No hay solicitudes registradas actualmente.</p>`;
     } else {
       myQuotes.forEach(req => artistContainer.appendChild(buildCard(req)));
     }
   }
 }
 
+// Abrir modal de nueva solicitud de cotización
 function openNewQuoteModal() {
-  switchView('public-booking');
+  document.getElementById('new-quote-form').reset();
+  document.getElementById('nq-minor-alert').style.display = 'none';
+  removeAttachedPhoto();
+  openModal('modal-new-quote-request');
+}
+
+function handleNewQuoteAge(val) {
+  const age = parseInt(val, 10);
+  const alertEl = document.getElementById('nq-minor-alert');
+  if (age && age < 18) {
+    alertEl.style.display = 'block';
+  } else {
+    alertEl.style.display = 'none';
+  }
+}
+
+// Manejo de archivo adjunto (FileReader)
+function handleFileUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    window._attachedPhotoDataUrl = evt.target.result;
+    document.getElementById('nq-preview-img').src = evt.target.result;
+    document.getElementById('nq-preview-title').textContent = file.name;
+    document.getElementById('nq-preview-container').style.display = 'flex';
+  };
+  reader.readAsDataURL(file);
+}
+
+function handleUrlInput(val) {
+  if (val && val.trim().startsWith('http')) {
+    window._attachedPhotoDataUrl = val.trim();
+    document.getElementById('nq-preview-img').src = val.trim();
+    document.getElementById('nq-preview-title').textContent = 'Imagen desde enlace web';
+    document.getElementById('nq-preview-container').style.display = 'flex';
+  }
+}
+
+function removeAttachedPhoto() {
+  window._attachedPhotoDataUrl = '';
+  const fileInput = document.getElementById('nq-file-input');
+  if (fileInput) fileInput.value = '';
+  const urlInput = document.getElementById('nq-photo-url');
+  if (urlInput) urlInput.value = '';
+  const preview = document.getElementById('nq-preview-container');
+  if (preview) preview.style.display = 'none';
+}
+
+function handleNewQuoteSubmit(e) {
+  e.preventDefault();
+  const name = document.getElementById('nq-client-name').value.trim();
+  const phone = document.getElementById('nq-client-phone').value.trim();
+  const age = parseInt(document.getElementById('nq-client-age').value, 10);
+  const type = document.getElementById('nq-work-type').value;
+  const style = document.getElementById('nq-tattoo-style').value;
+  const zone = document.getElementById('nq-body-zone').value.trim();
+  const size = document.getElementById('nq-size-cm').value.trim();
+  const desc = document.getElementById('nq-description').value.trim();
+  const photoUrl = window._attachedPhotoDataUrl || document.getElementById('nq-photo-url').value.trim();
+
+  const isMinor = age < 18;
+  const folioNum = (store.quoteRequests.length + 1).toString().padStart(3, '0');
+  const folio = `COT-2026-${folioNum}`;
+
+  const newReq = {
+    id: 'req-' + Date.now(),
+    folio: folio,
+    clientName: name,
+    clientPhone: phone,
+    clientAge: age,
+    isMinor: isMinor,
+    type: type,
+    tattooStyle: style,
+    bodyZone: zone,
+    sizeCm: size,
+    description: desc,
+    photoUrl: photoUrl,
+    artistId: 'a1',
+    artistName: 'Tatuador',
+    status: 'solicitud',
+    estimatedPrice: 0,
+    depositAmount: 0,
+    depositPaid: false,
+    depositLink: `https://estudio-tatuajes.vercel.app/deposito?ref=${folio}`,
+    notes: '',
+    dateRequested: new Date().toISOString().split('T')[0]
+  };
+
+  store.quoteRequests.unshift(newReq);
+
+  // Asegurar registro del cliente
+  const existingClient = store.clients.find(c => c.phone === phone);
+  if (!existingClient) {
+    store.clients.push({
+      id: 'c-' + Date.now(),
+      name: name,
+      age: age,
+      phone: phone,
+      allergies: isMinor ? 'Menor de edad (Requiere tutor con INE)' : 'Ninguna',
+      visits: 0,
+      totalSpent: 0,
+      isMinor: isMinor,
+      notes: `Solicitud ${folio} registrada.`
+    });
+  }
+
+  DataService.saveStore();
+  closeModal('modal-new-quote-request');
+  renderQuoteRequests();
+  renderClients();
+  showToast(`Solicitud ${folio} creada para ${name}. Lista para cotizar.`, "success");
 }
 
 function openQuoteModal(requestId) {
@@ -802,7 +875,7 @@ function openQuoteModal(requestId) {
   document.getElementById('modal-quote-folio').textContent = req.folio;
   document.getElementById('modal-quote-status').innerHTML = renderStatusBadge(req.status);
   document.getElementById('modal-quote-client-info').textContent = `Cliente: ${req.clientName} (${req.clientAge || 20} años)${req.isMinor ? ' - MENOR DE EDAD' : ''}`;
-  document.getElementById('modal-quote-body-info').textContent = `Tipo: ${req.type} | Zona: ${req.bodyZone} | Tamaño: ${req.sizeCm}`;
+  document.getElementById('modal-quote-body-info').textContent = `Estilo: ${req.tattooStyle || 'Tatuaje'} | Zona: ${req.bodyZone} | Tamaño: ${req.sizeCm}`;
   document.getElementById('modal-quote-desc').textContent = req.description;
 
   const refBox = document.getElementById('modal-quote-ref-container');
@@ -819,24 +892,12 @@ function openQuoteModal(requestId) {
   document.getElementById('quote-form-deposit').value = req.depositAmount || '';
   document.getElementById('quote-form-notes').value = req.notes || '';
 
-  // Selector de artistas
-  const selectArt = document.getElementById('quote-form-artist');
-  selectArt.innerHTML = '';
-  store.artists.forEach(art => {
-    const opt = document.createElement('option');
-    opt.value = art.id;
-    opt.textContent = `${art.name} (${art.specialty})`;
-    if (req.artistId === art.id) opt.selected = true;
-    selectArt.appendChild(opt);
-  });
-
   openModal('modal-quote-request');
 }
 
 function calculateSuggestedDeposit(priceVal) {
   const price = Number(priceVal) || 0;
   if (price > 0) {
-    // 20% redondeado a centenas
     const deposit = Math.round((price * 0.25) / 50) * 50;
     document.getElementById('quote-form-deposit').value = Math.max(deposit, 200);
   }
@@ -849,8 +910,6 @@ function saveQuoteFromModal() {
 
   const price = Number(document.getElementById('quote-form-price').value);
   const deposit = Number(document.getElementById('quote-form-deposit').value);
-  const artistId = document.getElementById('quote-form-artist').value;
-  const artist = store.artists.find(a => a.id === artistId);
   const duration = document.getElementById('quote-form-duration').value;
   const notes = document.getElementById('quote-form-notes').value.trim();
 
@@ -865,8 +924,8 @@ function saveQuoteFromModal() {
 
   req.estimatedPrice = price;
   req.depositAmount = deposit;
-  req.artistId = artistId;
-  req.artistName = artist ? artist.name : '';
+  req.artistId = 'a1';
+  req.artistName = 'Tatuador';
   req.durationEstimated = duration;
   req.notes = notes;
   req.status = req.depositPaid ? 'deposito_pagado' : 'cotizada';
@@ -877,7 +936,6 @@ function saveQuoteFromModal() {
   renderQuoteRequests();
   showToast(`Cotización guardada para ${req.clientName}. Se generó el enlace de anticipo.`, "success");
 
-  // Abrir de inmediato el modal de enlace para compartir
   if (!req.depositPaid) {
     openDepositPaymentModal(req.id);
   }
@@ -896,7 +954,7 @@ function openDepositPaymentModal(requestId) {
   badge.className = req.depositPaid ? 'badge badge-done' : 'badge badge-progress';
   badge.textContent = req.depositPaid ? 'Depósito Pagado ✓' : 'Esperando Depósito';
 
-  const msg = `¡Hola ${req.clientName}! Te compartimos tu cotización oficial de INK & PIERCING STUDIO para tu proyecto (${req.folio}):\n\nTotal estimado: ${formatMoney(req.estimatedPrice)}\nAnticipo requerido para agendar: ${formatMoney(req.depositAmount)}\n\nPuedes pagar tu anticipo seguro en este enlace: ${req.depositLink}\n\n¡Al confirmarse tu depósito agendaremos de inmediato tu sesión!`;
+  const msg = `¡Hola ${req.clientName}! Te compartimos tu cotización oficial de TATTOO STUDIO para tu proyecto (${req.folio}):\n\nTotal estimado: ${formatMoney(req.estimatedPrice)}\nAnticipo requerido para agendar: ${formatMoney(req.depositAmount)}\n\nPuedes pagar tu anticipo seguro en este enlace: ${req.depositLink}\n\n¡Al confirmarse tu depósito agendaremos de inmediato tu sesión en cabina!`;
   document.getElementById('dep-modal-whatsapp-preview').textContent = msg;
 
   const confirmBtn = document.getElementById('btn-confirm-deposit-auto');
@@ -925,11 +983,10 @@ function sendDepositWhatsApp() {
   const req = (store.quoteRequests || []).find(r => r.id === reqId);
   if (!req) return;
 
-  const msg = `¡Hola ${req.clientName}! Te compartimos tu cotización oficial de INK & PIERCING STUDIO para tu proyecto (${req.folio}):%0A%0A*Total estimado:* ${formatMoney(req.estimatedPrice)}%0A*Anticipo requerido:* ${formatMoney(req.depositAmount)}%0A%0APuedes liquidar tu anticipo en este enlace seguro:%0A${encodeURIComponent(req.depositLink)}%0A%0AUna vez acreditado fijaremos fecha y hora en cabina.`;
+  const msg = `¡Hola ${req.clientName}! Te compartimos tu cotización oficial de *TATTOO STUDIO* para tu proyecto (${req.folio}):%0A%0A*Total estimado:* ${formatMoney(req.estimatedPrice)}%0A*Anticipo requerido:* ${formatMoney(req.depositAmount)}%0A%0APuedes liquidar tu anticipo en este enlace seguro:%0A${encodeURIComponent(req.depositLink)}%0A%0AUna vez acreditado fijaremos fecha y hora en cabina.`;
   window.open(`https://wa.me/52${req.clientPhone}?text=${msg}`, '_blank');
 }
 
-// Confirmar pago del depósito (Simulación de Webhook de Pasarela)
 function confirmDepositPayment() {
   const reqId = window._activeDepositReqId;
   const req = (store.quoteRequests || []).find(r => r.id === reqId);
@@ -939,7 +996,6 @@ function confirmDepositPayment() {
   req.depositPaidAt = new Date().toISOString();
   req.status = 'deposito_pagado';
 
-  // Registrar movimiento de anticipo en caja
   store.cashMovements.push({
     id: 'mov-' + Date.now(),
     type: 'anticipo',
@@ -955,13 +1011,11 @@ function confirmDepositPayment() {
   renderCashRegister();
   showToast(`¡Pago de depósito confirmado para ${req.clientName}! Ya puedes agendar la sesión.`, "success");
 
-  // Ofrecer agendar directamente
   setTimeout(() => {
     scheduleSessionFromQuote(req.id);
   }, 400);
 }
 
-// Abrir modal de agendar con los datos de la cotización prellenados
 function scheduleSessionFromQuote(requestId) {
   const req = (store.quoteRequests || []).find(r => r.id === requestId);
   if (!req) return;
@@ -970,153 +1024,37 @@ function scheduleSessionFromQuote(requestId) {
 
   document.getElementById('app-form-client').value = req.clientName;
   document.getElementById('app-form-phone').value = req.clientPhone;
-  document.getElementById('app-form-notes').value = `Cotización ${req.folio}: ${req.description}`;
+  document.getElementById('app-form-notes').value = `Cotización ${req.folio} (${req.tattooStyle || 'Tatuaje'}): ${req.description}`;
 
-  // Mostrar anticipo acreditado
   const depRow = document.getElementById('modal-deposit-row');
   if (depRow) {
     depRow.style.display = 'block';
     document.getElementById('app-form-deposit-display').value = `${formatMoney(req.depositAmount)} (Acreditado - Se descontará al liquidar en POS)`;
   }
 
-  // Guardar referencia en el modal
   window._quoteScheduledRef = req;
-
-  // Seleccionar artista si está asignado
-  if (req.artistId) {
-    selectModalArtist(req.artistId);
-  }
-}
-
-// Envío del formulario público
-function submitPublicBooking(e) {
-  e.preventDefault();
-  const name = document.getElementById('pb-client-name').value.trim();
-  const phone = document.getElementById('pb-client-phone').value.trim();
-  const age = parseInt(document.getElementById('pb-client-age').value, 10);
-  const type = document.getElementById('pb-service-type').value;
-  const zone = document.getElementById('pb-body-zone').value.trim();
-  const size = document.getElementById('pb-size-cm').value.trim();
-  const artistId = document.getElementById('pb-artist-select').value;
-  const desc = document.getElementById('pb-description').value.trim();
-  const photoUrl = document.getElementById('pb-photo-url').value.trim();
-
-  const isMinor = age < 18;
-  const folioNum = (store.quoteRequests.length + 1).toString().padStart(3, '0');
-  const folio = `COT-2026-${folioNum}`;
-
-  const artist = store.artists.find(a => a.id === artistId);
-
-  const newReq = {
-    id: 'req-' + Date.now(),
-    folio: folio,
-    clientName: name,
-    clientPhone: phone,
-    clientAge: age,
-    isMinor: isMinor,
-    type: type,
-    bodyZone: zone,
-    sizeCm: size,
-    description: desc,
-    photoUrl: photoUrl,
-    artistId: artistId || (store.artists[0] ? store.artists[0].id : ''),
-    artistName: artist ? artist.name : 'Por Asignar',
-    status: 'solicitud',
-    estimatedPrice: 0,
-    depositAmount: 0,
-    depositPaid: false,
-    depositLink: `https://estudio-tatuajes.vercel.app/deposito?ref=${folio}`,
-    notes: '',
-    dateRequested: new Date().toISOString().split('T')[0]
-  };
-
-  store.quoteRequests.unshift(newReq);
-
-  // Asegurar registro del cliente en el directorio
-  const existingClient = store.clients.find(c => c.phone === phone);
-  if (!existingClient) {
-    store.clients.push({
-      id: 'c-' + Date.now(),
-      name: name,
-      age: age,
-      phone: phone,
-      allergies: isMinor ? 'Menor de edad (Requiere tutor)' : 'Ninguna',
-      visits: 0,
-      totalSpent: 0,
-      isMinor: isMinor,
-      notes: `Solicitud ${folio} registrada.`
-    });
-  }
-
-  DataService.saveStore();
-
-  document.getElementById('public-booking-form').reset();
-  document.getElementById('pb-minor-warning').style.display = 'none';
-
-  showToast(`¡Solicitud ${folio} enviada con éxito! Te contactaremos por WhatsApp con tu cotización.`, "success");
-  switchView('requests');
-}
-
-function handleAgeCheck(val) {
-  const age = parseInt(val, 10);
-  const warn = document.getElementById('pb-minor-warning');
-  if (age && age < 18) {
-    warn.style.display = 'block';
-  } else {
-    warn.style.display = 'none';
-  }
-}
-
-function renderPublicBookingArtists() {
-  const sel = document.getElementById('pb-artist-select');
-  if (!sel) return;
-  sel.innerHTML = '<option value="">Cualquier artista disponible según estilo</option>';
-  store.artists.forEach(art => {
-    const opt = document.createElement('option');
-    opt.value = art.id;
-    opt.textContent = `${art.name} (${art.specialty})`;
-    sel.appendChild(opt);
-  });
 }
 
 // ================= 3. AGENDA & CALENDARIO INTERACTIVO (DURACIÓN LIBRE + 12H) =================
 let selectedCalendarDate = new Date().toISOString().split('T')[0];
-let selectedModalArtistId = '';
 let selectedModalTime = '11:00 AM';
-let selectedModalDurationMinutes = 120; // 2 horas default
+let selectedModalDurationMinutes = 120;
 let selectedModalServices = [];
 
 function renderAppointments() {
   const tbody = document.getElementById('appointments-tbody');
   const mobList = document.getElementById('appointments-mobile-list');
-  const filterArtist = document.getElementById('appointments-filter-artist') ? document.getElementById('appointments-filter-artist').value : 'all';
 
-  // Llenar selector de filtro por artista
-  const selectArt = document.getElementById('appointments-filter-artist');
-  if (selectArt && selectArt.options.length <= 1) {
-    store.artists.forEach(a => {
-      const opt = document.createElement('option');
-      opt.value = a.id;
-      opt.textContent = a.name;
-      selectArt.appendChild(opt);
-    });
-  }
-
-  // Actualizar calendario
   renderCalendarWidget('appointments-calendar-container', selectedCalendarDate, (d) => {
     selectedCalendarDate = d;
     renderAppointments();
   });
 
-  // Título del día seleccionado
   const dateObj = new Date(selectedCalendarDate + 'T00:00:00');
   const dateFormatted = dateObj.toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   document.getElementById('appointments-day-title').textContent = `Sesiones para el ${dateFormatted}`;
 
-  let apps = store.appointments.filter(a => a.date === selectedCalendarDate);
-  if (filterArtist !== 'all') {
-    apps = apps.filter(a => a.artistId === filterArtist);
-  }
+  const apps = store.appointments.filter(a => a.date === selectedCalendarDate);
 
   tbody.innerHTML = '';
   mobList.innerHTML = '';
@@ -1130,13 +1068,12 @@ function renderAppointments() {
   apps.forEach(app => {
     const endTimeStr = app.endTime || calculateEndTime(app.time, app.durationMinutes || 60);
 
-    // Desktop
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><b>${formatTime12h(app.time)} - ${formatTime12h(endTimeStr)}</b></td>
       <td><b>${escapeHtml(app.clientName)}</b><br><small style="color:var(--text-muted);">${escapeHtml(app.clientPhone)}</small></td>
       <td>${escapeHtml(app.serviceName)}<br><small style="color:var(--accent-secondary); font-weight:600;">${app.durationLabel || '1h'}</small></td>
-      <td>${escapeHtml(app.artistName)}<br><small style="color:var(--text-muted);">${escapeHtml(app.booth || 'Cabina 1')}</small></td>
+      <td>${escapeHtml(app.booth || 'Cabina Principal')}</td>
       <td>${app.depositDeducted ? `<span style="color:var(--color-success); font-weight:700;">-${formatMoney(app.depositDeducted)}</span>` : '<span style="color:var(--text-muted);">$0</span>'}</td>
       <td>
         <select class="form-select" style="font-size:0.75rem; padding:3px 6px;" onchange="updateAppointmentStatus('${app.id}', this.value)">
@@ -1157,7 +1094,6 @@ function renderAppointments() {
     `;
     tbody.appendChild(tr);
 
-    // Mobile
     const card = document.createElement('div');
     card.className = 'mobile-app-card';
     card.innerHTML = `
@@ -1168,7 +1104,7 @@ function renderAppointments() {
       <div class="mobile-app-client">${escapeHtml(app.clientName)}</div>
       <div class="mobile-app-meta">
         <span><b>Servicio:</b> ${escapeHtml(app.serviceName)} (${app.durationLabel || '1h'})</span>
-        <span><b>Artista:</b> ${escapeHtml(app.artistName)} - ${escapeHtml(app.booth || 'Cabina 1')}</span>
+        <span><b>Cabina:</b> ${escapeHtml(app.booth || 'Cabina Principal')}</span>
         ${app.depositDeducted ? `<span style="color:var(--color-success); font-weight:700;">Anticipo acreditado: -${formatMoney(app.depositDeducted)}</span>` : ''}
         ${app.notes ? `<span style="color:var(--text-muted); font-size:0.75rem;">Nota: ${escapeHtml(app.notes)}</span>` : ''}
       </div>
@@ -1203,14 +1139,13 @@ function deleteAppointment(appId) {
 function sendWhatsAppReminder(appId) {
   const app = store.appointments.find(a => a.id === appId);
   if (!app) return;
-  const msg = `¡Hola ${app.clientName}! Te recordamos tu cita en *INK & PIERCING STUDIO*:%0A%0A*Fecha:* ${app.date}%0A*Horario:* ${formatTime12h(app.time)}%0A*Artista:* ${app.artistName}%0A*Cabina:* ${app.booth || 'Cabina 1'}%0A%0A*Instrucciones previas:*%0A- Ven bien hidratado(a) y con comida previa.%0A- No tomes alcohol ni aspirinas 24 horas antes.%0A- Ropa cómoda que permita acceso a la zona.%0A%0A¡Te esperamos con gusto!`;
+  const msg = `¡Hola ${app.clientName}! Te recordamos tu cita en *TATTOO STUDIO*:%0A%0A*Fecha:* ${app.date}%0A*Horario:* ${formatTime12h(app.time)}%0A*Cabina:* ${app.booth || 'Cabina Principal'}%0A%0A*Instrucciones previas:*%0A- Ven bien hidratado(a) y con comida previa.%0A- No tomes alcohol ni aspirinas 24 horas antes.%0A- Ropa cómoda que permita acceso a la zona.%0A%0A¡Te esperamos con gusto!`;
   window.open(`https://wa.me/52${app.clientPhone}?text=${msg}`, '_blank');
 }
 
-// ================= MODAL AGENDAR NUEVA CITA / SESIÓN =================
+// Modal Agendar Sesión
 function openNewAppointmentModal() {
   selectedModalServices = [];
-  selectedModalArtistId = store.artists[0] ? store.artists[0].id : '';
   selectedModalTime = '11:00 AM';
   selectedModalDurationMinutes = 120;
   window._quoteScheduledRef = null;
@@ -1222,7 +1157,6 @@ function openNewAppointmentModal() {
   document.getElementById('modal-deposit-row').style.display = 'none';
 
   renderModalServicesPicker();
-  renderModalArtistPicker();
   renderModalCalendar();
   renderModalTimePicker();
   updateModalTimeRange();
@@ -1269,30 +1203,6 @@ function updateModalServicesSummary() {
   document.getElementById('modal-services-summary-price').textContent = formatMoney(totalPrice);
 }
 
-function renderModalArtistPicker() {
-  const container = document.getElementById('modal-artist-picker');
-  container.innerHTML = '';
-
-  store.artists.forEach(art => {
-    const isSelected = (art.id === selectedModalArtistId);
-    const card = document.createElement('div');
-    card.className = `barber-picker-card ${isSelected ? 'selected' : ''}`;
-    card.innerHTML = `
-      <div class="avatar-badge">${art.avatar || 'AR'}</div>
-      <div class="name">${escapeHtml(art.name)}</div>
-      <div class="role">${escapeHtml(art.specialty)}</div>
-    `;
-    card.onclick = () => selectModalArtist(art.id);
-    container.appendChild(card);
-  });
-}
-
-function selectModalArtist(artistId) {
-  selectedModalArtistId = artistId;
-  renderModalArtistPicker();
-  renderModalTimePicker();
-}
-
 function renderModalCalendar() {
   renderCalendarWidget('modal-calendar-widget-container', selectedCalendarDate, (d) => {
     selectedCalendarDate = d;
@@ -1302,7 +1212,6 @@ function renderModalCalendar() {
   });
 }
 
-// Selector de horas en formato 12 Horas
 function renderModalTimePicker() {
   const container = document.getElementById('modal-time-picker-container');
   if (!container) return;
@@ -1313,9 +1222,8 @@ function renderModalTimePicker() {
     "5:00 PM", "6:00 PM", "7:00 PM"
   ];
 
-  // Identificar horarios ocupados para el artista en la fecha seleccionada
   const bookedSlots = store.appointments
-    .filter(a => a.date === selectedCalendarDate && a.artistId === selectedModalArtistId && a.status !== 'cancelada')
+    .filter(a => a.date === selectedCalendarDate && a.status !== 'cancelada')
     .map(a => formatTime12h(a.time));
 
   container.innerHTML = `
@@ -1346,7 +1254,6 @@ function renderModalTimePicker() {
   });
 }
 
-// Duración de sesión flexible (presets & personalizada)
 function selectDurationPreset(minutes, label) {
   selectedModalDurationMinutes = minutes;
   document.getElementById('app-form-custom-duration').value = minutes;
@@ -1378,20 +1285,14 @@ function saveAppointmentFromModal() {
     showToast("Ingresa el nombre del cliente", "error");
     return;
   }
-  if (!selectedModalArtistId) {
-    showToast("Selecciona un artista", "error");
-    return;
-  }
   if (selectedModalServices.length === 0) {
     showToast("Selecciona al menos un servicio o tipo de sesión", "error");
     return;
   }
 
-  const artist = store.artists.find(a => a.id === selectedModalArtistId);
   const totalPrice = selectedModalServices.reduce((a, s) => a + (s.price || 0), 0);
   const serviceName = selectedModalServices.map(s => s.name).join(" + ");
 
-  // Si vino de una cotización con anticipo acreditado
   let depositDeducted = 0;
   let quoteRef = '';
   if (window._quoteScheduledRef) {
@@ -1412,9 +1313,9 @@ function saveAppointmentFromModal() {
     depositDeducted: depositDeducted,
     durationMinutes: selectedModalDurationMinutes,
     durationLabel: formatDurationLabel(selectedModalDurationMinutes),
-    artistId: selectedModalArtistId,
-    artistName: artist ? artist.name : '',
-    booth: artist ? (artist.booth || 'Cabina 1') : 'Cabina 1',
+    artistId: 'a1',
+    artistName: 'Tatuador',
+    booth: 'Cabina Principal',
     date: selectedCalendarDate,
     time: selectedModalTime,
     endTime: endTimeStr,
@@ -1425,7 +1326,6 @@ function saveAppointmentFromModal() {
 
   store.appointments.push(newApp);
 
-  // Asegurar registro en clientes
   let client = store.clients.find(c => c.phone === clientPhone);
   if (!client) {
     client = {
@@ -1451,7 +1351,7 @@ function saveAppointmentFromModal() {
   showToast(`Sesión agendada para ${clientName} el ${selectedCalendarDate} a las ${selectedModalTime}`, "success");
 }
 
-// ================= COMPONENTE REUTILIZABLE: CALENDARIO WIDGET =================
+// ================= CALENDARIO WIDGET =================
 function renderCalendarWidget(containerId, activeDateStr, onDateSelect) {
   const container = document.getElementById(containerId);
   if (!container) return;
@@ -1459,8 +1359,6 @@ function renderCalendarWidget(containerId, activeDateStr, onDateSelect) {
   const [y, m, d] = activeDateStr.split('-').map(Number);
   const currentMonthDate = new Date(y, m - 1, 1);
   const monthName = currentMonthDate.toLocaleDateString('es-MX', { month: 'long', year: 'numeric' });
-
-  // Citas agendadas para pintar puntos en el calendario
   const bookedDates = store.appointments.map(a => a.date);
 
   container.innerHTML = `
@@ -1502,14 +1400,12 @@ function renderCalendarWidget(containerId, activeDateStr, onDateSelect) {
   const daysInMonth = new Date(y, m, 0).getDate();
   const todayStr = new Date().toISOString().split('T')[0];
 
-  // Celdas vacías al inicio
   for (let i = 0; i < firstDayIndex; i++) {
     const empty = document.createElement('div');
     empty.className = 'cal-day-cell empty';
     grid.appendChild(empty);
   }
 
-  // Días del mes
   for (let dayNum = 1; dayNum <= daysInMonth; dayNum++) {
     const dayStr = `${y}-${m < 10 ? '0' + m : m}-${dayNum < 10 ? '0' + dayNum : dayNum}`;
     const isSelected = (dayStr === activeDateStr);
@@ -1531,7 +1427,7 @@ function renderCalendarWidget(containerId, activeDateStr, onDateSelect) {
   }
 }
 
-// ================= 4. PORTAL DEL ARTISTA =================
+// ================= 4. PORTAL DEL TATUADOR =================
 function renderArtistPortal() {
   if (!currentSession || currentSession.role !== 'artist') return;
   const tbody = document.getElementById('artist-my-appointments-tbody');
@@ -1539,9 +1435,9 @@ function renderArtistPortal() {
   if (!tbody) return;
 
   const todayStr = new Date().toISOString().split('T')[0];
-  const myApps = store.appointments.filter(a => a.artistId === currentSession.artistId && a.date === todayStr);
+  const myApps = store.appointments.filter(a => a.date === todayStr);
 
-  document.getElementById('artist-portal-title').textContent = `Mi Agenda de Hoy (${currentSession.name})`;
+  document.getElementById('artist-portal-title').textContent = "Mi Agenda de Hoy (Tatuador)";
 
   tbody.innerHTML = '';
   mobList.innerHTML = '';
@@ -1560,7 +1456,7 @@ function renderArtistPortal() {
       <td><b>${formatTime12h(app.time)} - ${formatTime12h(endTimeStr)}</b></td>
       <td><b>${escapeHtml(app.clientName)}</b><br><small style="color:var(--text-muted);">${escapeHtml(app.clientPhone)}</small></td>
       <td>${escapeHtml(app.serviceName)} (${app.durationLabel || '1h'})</td>
-      <td>${escapeHtml(app.booth || 'Cabina 1')}</td>
+      <td>${escapeHtml(app.booth || 'Cabina Principal')}</td>
       <td>${renderStatusBadge(app.status)}</td>
       <td><small style="color:var(--text-secondary);">${escapeHtml(app.notes || 'Sin especificaciones')}</small></td>
     `;
@@ -1576,7 +1472,7 @@ function renderArtistPortal() {
       <div class="mobile-app-client">${escapeHtml(app.clientName)}</div>
       <div class="mobile-app-meta">
         <span><b>Trabajo:</b> ${escapeHtml(app.serviceName)} (${app.durationLabel || '1h'})</span>
-        <span><b>Cabina:</b> ${escapeHtml(app.booth || 'Cabina 1')}</span>
+        <span><b>Cabina:</b> ${escapeHtml(app.booth || 'Cabina Principal')}</span>
         ${app.notes ? `<span><b>Notas:</b> ${escapeHtml(app.notes)}</span>` : ''}
       </div>
     `;
@@ -1588,12 +1484,7 @@ function renderArtistTips() {
   const tbody = document.getElementById('artist-tips-tbody');
   if (!tbody) return;
 
-  const isArtist = (currentSession && currentSession.role === 'artist');
-  let tips = store.artistTips || [];
-  if (isArtist) {
-    tips = tips.filter(t => t.artistId === currentSession.artistId);
-  }
-
+  const tips = store.artistTips || [];
   const todayStr = new Date().toISOString().split('T')[0];
   const todayTips = tips.filter(t => t.timestamp.startsWith(todayStr));
   const sumToday = todayTips.reduce((a, t) => a + (t.amount || 0), 0);
@@ -1621,22 +1512,12 @@ function renderArtistTips() {
 }
 
 function openArtistTipModal() {
-  const sel = document.getElementById('tip-form-artist');
-  sel.innerHTML = '';
-  store.artists.forEach(a => {
-    const opt = document.createElement('option');
-    opt.value = a.id;
-    opt.textContent = a.name;
-    if (currentSession && currentSession.artistId === a.id) opt.selected = true;
-    sel.appendChild(opt);
-  });
   document.getElementById('tip-form-amount').value = '';
   document.getElementById('tip-form-notes').value = '';
   openModal('modal-artist-tip');
 }
 
 function saveArtistTipFromModal() {
-  const artistId = document.getElementById('tip-form-artist').value;
   const amount = Number(document.getElementById('tip-form-amount').value);
   const method = document.getElementById('tip-form-method').value;
   const notes = document.getElementById('tip-form-notes').value.trim();
@@ -1646,12 +1527,10 @@ function saveArtistTipFromModal() {
     return;
   }
 
-  const artist = store.artists.find(a => a.id === artistId);
-
   store.artistTips.unshift({
     id: 'tip-' + Date.now(),
-    artistId: artistId,
-    artistName: artist ? artist.name : '',
+    artistId: 'a1',
+    artistName: 'Tatuador',
     amount: amount,
     method: method,
     notes: notes,
@@ -1666,7 +1545,7 @@ function saveArtistTipFromModal() {
 
 // ================= 5. PUNTO DE VENTA (POS CON DEDUCCIÓN DE ANTICIPO) =================
 let posCart = [];
-let posDeductedDeposit = 0; // Descuento de anticipo de la cita
+let posDeductedDeposit = 0;
 let posActiveAppointment = null;
 
 function renderPOS() {
@@ -1761,7 +1640,6 @@ function clearPosCart() {
   renderPosCart();
 }
 
-// Carga automática de cita al POS con deducción de depósito
 function loadAppointmentToPos(appId) {
   if (!appId) {
     clearPosCart();
@@ -1773,7 +1651,6 @@ function loadAppointmentToPos(appId) {
   posCart = [];
   posActiveAppointment = app;
 
-  // Añadir servicios de la cita
   if (app.services && app.services.length > 0) {
     app.services.forEach(s => {
       posCart.push({
@@ -1794,9 +1671,7 @@ function loadAppointmentToPos(appId) {
     });
   }
 
-  // Deducción automática del depósito / anticipo
   posDeductedDeposit = app.depositDeducted || 0;
-
   renderPosCart();
   showToast(`Cita de ${app.clientName} cargada al POS. Anticipo acreditado: -${formatMoney(posDeductedDeposit)}`, "info");
 }
@@ -1858,7 +1733,6 @@ function renderPosCart() {
   document.getElementById('pos-summary-total').textContent = formatMoney(finalTotal);
 }
 
-// Modal de Checkout / Cobro Final
 function openCheckoutModal() {
   if (posCart.length === 0) {
     showToast("Agrega servicios o productos a la orden", "error");
@@ -1879,16 +1753,6 @@ function openCheckoutModal() {
 
   document.getElementById('checkout-cash-received').value = total;
   document.getElementById('checkout-change-display').textContent = '$0.00 MXN';
-
-  const selectArt = document.getElementById('checkout-artist');
-  selectArt.innerHTML = '';
-  store.artists.forEach(a => {
-    const opt = document.createElement('option');
-    opt.value = a.id;
-    opt.textContent = `${a.name} (${a.specialty})`;
-    if (posActiveAppointment && posActiveAppointment.artistId === a.id) opt.selected = true;
-    selectArt.appendChild(opt);
-  });
 
   openModal('modal-checkout');
 }
@@ -1914,10 +1778,7 @@ function confirmCheckout() {
   const subtotal = posCart.reduce((a, b) => a + (b.price * b.qty), 0);
   const total = Math.max(0, subtotal - posDeductedDeposit);
   const method = document.getElementById('checkout-method').value;
-  const artistId = document.getElementById('checkout-artist').value;
-  const artist = store.artists.find(a => a.id === artistId);
 
-  // Registrar venta en movimientos de caja
   const concept = posActiveAppointment
     ? `Liquidación Sesión: ${posActiveAppointment.clientName} (${posActiveAppointment.serviceName})`
     : `Venta POS (${posCart.map(i => i.name).join(', ')})`;
@@ -1930,21 +1791,18 @@ function confirmCheckout() {
     depositDeducted: posDeductedDeposit,
     amount: total,
     method: method,
-    artistId: artistId,
+    artistId: 'a1',
     timestamp: new Date().toISOString()
   });
 
-  // Si estaba ligada a una cita, marcarla como realizada
   if (posActiveAppointment) {
     posActiveAppointment.status = 'realizada';
-    // Buscar solicitud ligada y marcarla como realizada
     if (posActiveAppointment.quoteRef) {
       const req = store.quoteRequests.find(r => r.folio === posActiveAppointment.quoteRef);
       if (req) req.status = 'realizada';
     }
   }
 
-  // Reducir stock de productos vendidos
   posCart.forEach(item => {
     if (item.itemType === 'product') {
       const prod = store.products.find(p => p.id === item.id);
@@ -1955,8 +1813,7 @@ function confirmCheckout() {
   DataService.saveStore();
   closeModal('modal-checkout');
 
-  // Generar y mostrar ticket
-  generateReceiptModal(subtotal, posDeductedDeposit, total, method, artist ? artist.name : '');
+  generateReceiptModal(subtotal, posDeductedDeposit, total, method, 'Tatuador');
 
   clearPosCart();
   renderAppointments();
@@ -1980,7 +1837,7 @@ function generateReceiptModal(subtotal, deposit, total, method, artistName) {
   `).join('');
 
   const html = `
-    <h4>INK & PIERCING STUDIO MX</h4>
+    <h4>TATTOO STUDIO</h4>
     <div class="receipt-center">Roma Norte, Cuauhtémoc, CDMX</div>
     <div class="receipt-center">Tel: 55 1234 5678 | WhatsApp Oficial</div>
     <div class="receipt-divider"></div>
@@ -1989,7 +1846,7 @@ function generateReceiptModal(subtotal, deposit, total, method, artistName) {
       <span>Ticket #${Math.floor(1000 + Math.random() * 9000)}</span>
     </div>
     <div style="font-size:10px; margin-top:2px;">Cliente: ${escapeHtml(client)}</div>
-    ${artistName ? `<div style="font-size:10px;">Artista: ${escapeHtml(artistName)}</div>` : ''}
+    ${artistName ? `<div style="font-size:10px;">Atendido por: ${escapeHtml(artistName)}</div>` : ''}
     <div class="receipt-divider"></div>
     ${itemsHtml}
     <div class="receipt-divider"></div>
@@ -2010,9 +1867,9 @@ function generateReceiptModal(subtotal, deposit, total, method, artistName) {
     <div style="font-size:10px; margin-top:4px;">Método de Pago: ${escapeHtml(method)}</div>
     <div class="receipt-divider"></div>
     <div class="receipt-center" style="font-size:9px; margin-top:6px;">
-      ¡Gracias por tu confianza!<br>
+      ¡Gracias por tu preferencia!<br>
       Sigue las indicaciones de cicatrización.<br>
-      Cualquier duda contáctanos a nuestro WhatsApp oficial.
+      Cualquier duda contáctanos por WhatsApp.
     </div>
   `;
 
@@ -2047,7 +1904,6 @@ function renderCashRegister() {
   document.getElementById('cash-expenses-total').textContent = formatMoney(expensesTotal);
   document.getElementById('cash-expected-total').textContent = formatMoney(expectedTotal);
 
-  // Tabla de movimientos
   const tbody = document.getElementById('cash-movements-tbody');
   tbody.innerHTML = '';
   if (movs.length === 0) {
@@ -2164,9 +2020,8 @@ function confirmEditFund() {
   const newFund = Number(document.getElementById('edit-fund-amount').value);
   const pass = document.getElementById('edit-fund-password').value.trim();
 
-  // Validación de seguridad de contraseña
   if (pass !== (store.config.adminPass || '123') && pass !== '12345') {
-    showToast("Contraseña de administrador incorrecta", "error");
+    showToast("Contraseña incorrecta", "error");
     return;
   }
   if (!newFund || newFund < 0) {
@@ -2181,107 +2036,33 @@ function confirmEditFund() {
   showToast("Fondo inicial actualizado con éxito", "success");
 }
 
-// ================= 7. ARTISTAS & CABINAS =================
+// ================= 7. ARTISTA / TATUADOR & CABINA =================
 function renderArtists() {
   const container = document.getElementById('artists-cards-container');
   if (!container) return;
   container.innerHTML = '';
 
-  store.artists.forEach(art => {
-    const card = document.createElement('div');
-    card.className = 'panel-card';
-    card.innerHTML = `
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-        <div style="display:flex; align-items:center; gap:10px;">
-          <div class="user-session-avatar" style="width:40px; height:40px; font-size:0.9rem;">${art.avatar || 'AR'}</div>
-          <div>
-            <h4 style="font-size:0.95rem; color:var(--text-main); font-weight:700;">${escapeHtml(art.name)}</h4>
-            <span style="font-size:0.75rem; color:var(--accent-secondary); font-weight:600;">${escapeHtml(art.booth || 'Cabina 1')}</span>
-          </div>
+  const art = store.artists[0] || { name: 'Tatuador', specialty: 'Tatuador Profesional', booth: 'Cabina Principal', avatar: 'TA' };
+  const card = document.createElement('div');
+  card.className = 'panel-card';
+  card.innerHTML = `
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <div class="user-session-avatar" style="width:44px; height:44px; font-size:1rem;">${art.avatar || 'TA'}</div>
+        <div>
+          <h4 style="font-size:1rem; color:var(--text-main); font-weight:700;">${escapeHtml(art.name)}</h4>
+          <span style="font-size:0.8rem; color:var(--accent-secondary); font-weight:600;">${escapeHtml(art.booth || 'Cabina Principal')}</span>
         </div>
-        <button class="btn btn-secondary btn-sm" onclick="editArtist('${art.id}')">Editar</button>
       </div>
-      <div style="font-size:0.8rem; color:var(--text-secondary); background:var(--bg-subtle); padding:10px; border-radius:4px; border:1px solid var(--border-default);">
-        <div><b>Especialidad:</b> ${escapeHtml(art.specialty)}</div>
-        <div style="margin-top:4px;"><b>WhatsApp:</b> ${escapeHtml(art.phone || 'Sin registrar')}</div>
-        <div style="margin-top:4px;"><b>Usuario:</b> <code style="color:var(--primary);">${escapeHtml(art.username)}</code></div>
-      </div>
-    `;
-    container.appendChild(card);
-  });
-}
-
-function openNewArtistModal() {
-  document.getElementById('modal-artist-title').textContent = "Nuevo Artista / Piercer";
-  document.getElementById('artist-form-id').value = '';
-  document.getElementById('artist-form-name').value = '';
-  document.getElementById('artist-form-specialty').value = '';
-  document.getElementById('artist-form-booth').value = '';
-  document.getElementById('artist-form-phone').value = '';
-  document.getElementById('artist-form-username').value = '';
-  document.getElementById('artist-form-password').value = '';
-  openModal('modal-artist');
-}
-
-function editArtist(artistId) {
-  const art = store.artists.find(a => a.id === artistId);
-  if (!art) return;
-
-  document.getElementById('modal-artist-title').textContent = "Editar Artista";
-  document.getElementById('artist-form-id').value = art.id;
-  document.getElementById('artist-form-name').value = art.name;
-  document.getElementById('artist-form-specialty').value = art.specialty;
-  document.getElementById('artist-form-booth').value = art.booth || '';
-  document.getElementById('artist-form-phone').value = art.phone || '';
-  document.getElementById('artist-form-username').value = art.username;
-  document.getElementById('artist-form-password').value = art.password || '';
-  openModal('modal-artist');
-}
-
-function saveArtistFromModal() {
-  const id = document.getElementById('artist-form-id').value;
-  const name = document.getElementById('artist-form-name').value.trim();
-  const spec = document.getElementById('artist-form-specialty').value.trim();
-  const booth = document.getElementById('artist-form-booth').value.trim();
-  const phone = document.getElementById('artist-form-phone').value.trim();
-  const username = document.getElementById('artist-form-username').value.trim().toLowerCase();
-  const password = document.getElementById('artist-form-password').value.trim();
-
-  if (!name || !spec || !username) {
-    showToast("Completa los campos obligatorios", "error");
-    return;
-  }
-
-  if (id) {
-    const art = store.artists.find(a => a.id === id);
-    if (art) {
-      art.name = name;
-      art.specialty = spec;
-      art.booth = booth;
-      art.phone = phone;
-      art.username = username;
-      if (password) art.password = password;
-      art.avatar = getInitials(name);
-    }
-  } else {
-    store.artists.push({
-      id: 'a-' + Date.now(),
-      name: name,
-      specialty: spec,
-      booth: booth || 'Cabina 1',
-      phone: phone,
-      username: username,
-      password: password || '123',
-      avatar: getInitials(name)
-    });
-  }
-
-  DataService.saveStore();
-  closeModal('modal-artist');
-  renderArtists();
-  renderAppointments();
-  renderDashboard();
-  showToast("Artista guardado con éxito", "success");
+      <span class="badge badge-done">Activo</span>
+    </div>
+    <div style="font-size:0.85rem; color:var(--text-secondary); background:var(--bg-subtle); padding:12px; border-radius:6px; border:1px solid var(--border-default);">
+      <div><b>Especialidad:</b> ${escapeHtml(art.specialty)}</div>
+      <div style="margin-top:6px;"><b>WhatsApp Oficial:</b> ${escapeHtml(art.phone || '5512345678')}</div>
+      <div style="margin-top:6px;"><b>Usuario de Acceso:</b> <code style="color:var(--primary); font-weight:700;">tatuador</code></div>
+    </div>
+  `;
+  container.appendChild(card);
 }
 
 // ================= 8. CATÁLOGO & JOYERÍA =================
@@ -2472,7 +2253,6 @@ document.addEventListener('DOMContentLoaded', () => {
   loadSession();
   initDeviceMode();
 
-  // Listeners
   const loginForm = document.getElementById('login-form');
   if (loginForm) loginForm.onsubmit = handleLogin;
 
@@ -2488,7 +2268,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnQuickCash = document.getElementById('btn-quick-cash');
   if (btnQuickCash) btnQuickCash.onclick = () => switchView('cash-register');
 
-  // Enlaces de navegación sidebar
   document.querySelectorAll('.nav-item').forEach(item => {
     item.onclick = (e) => {
       e.preventDefault();
@@ -2497,7 +2276,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
   });
 
-  // Cerrar modales con clic fuera
   document.querySelectorAll('.modal-overlay').forEach(overlay => {
     overlay.addEventListener('click', (e) => {
       if (e.target === overlay) {
