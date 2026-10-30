@@ -1,9 +1,9 @@
 @echo off
-title Sistema de Barberia - The Barber Club
+title INK & PIERCING STUDIO - Actualizar y Abrir
 cd /d "%~dp0"
 
 echo ========================================================
-echo       THE BARBER CLUB ^& CO. - INICIANDO SISTEMA
+echo       INK & PIERCING STUDIO MX - INICIANDO SISTEMA
 echo ========================================================
 echo.
 echo [1/2] Verificando si hay actualizaciones disponibles en la nube...

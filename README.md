@@ -1,71 +1,47 @@
-# The Barber Club & Co. - Sistema de Gestión de Barbería
+# INK & PIERCING STUDIO - Sistema de Gestión
 
-Sistema web profesional, sobrio y ligero para la gestión integral de una barbería comercial o cadena de sucursales. Diseñado con una interfaz SaaS B2B limpia y discreta, funciona de forma autónoma sin dependencias complejas ni frameworks pesados, garantizando máxima velocidad y privacidad.
-
----
-
-## Cómo Iniciar el Sistema
-
-1. **Opción 1:** Haz doble clic sobre el archivo `actualizar_y_abrir.bat` (sincroniza cambios si hay conexión y abre la app).
-2. **Opción 2:** Haz doble clic sobre `abrir_barberia.bat` o `index.html` en tu navegador favorito.
+Sistema web profesional, sobrio y optimizado para la gestión integral de **Estudios de Tatuaje y Piercing en México**. Diseñado con una interfaz SaaS B2B limpia en modo oscuro, adaptable a pantallas de escritorio y teléfonos móviles sin desplazamiento horizontal.
 
 ---
 
-## Sistema de Sesiones & Cuentas por Rol
-
-La plataforma cuenta con un sistema de autenticación para separar la información sensible de la caja y administración de la vista de agenda de los barberos:
-
-### 1. Sesión de Caja / Administrador
-- **Usuario:** `caja` (o `admin`) | **Contraseña:** `123`
-- **Acceso:** Control total de la plataforma:
-  - **Tablero Principal:** Métricas en tiempo real de facturación, citas agendadas, servicios atendidos y ticket promedio.
-  - **Agenda de Citas:** Control de estados de cada cliente. Al seleccionar **"Completar y Cobrar"**, el sistema redirige automáticamente al Punto de Venta con los servicios precargados para cobro inmediato.
-  - **Punto de Venta:** Cobro de servicios y productos, desglose de tickets, descuentos y múltiples métodos de pago (efectivo, tarjeta, transferencia).
-  - **Control & Corte de Caja:** Fondo inicial editable con clave de seguridad, desglose por método de pago, registro de gastos de caja chica, arqueo físico de efectivo y cálculo automático de sobrante/faltante.
-  - **Gestión de Barberos:** Administración de personal y credenciales de acceso.
-  - **Catálogo & Inventario:** Gestión de tarifas de corte y stock de productos de cuidado.
-  - **Directorio de Clientes:** Historial de consumos, visitas y preferencias de corte.
-  - **Botón Limpiar Datos Demo:** Permite vaciar citas, propinas y movimientos de prueba para iniciar una demostración limpia.
-
-### 2. Sesiones Individuales para Barberos
-- Cuentas de acceso individuales:
-  - **Carlos Mendoza:** Usuario `carlos` | Contraseña `123`
-  - **Mateo Silva:** Usuario `mateo` | Contraseña `123`
-  - **David Romero:** Usuario `david` | Contraseña `123`
-- **Acceso exclusivo del barbero:**
-  - **Mi Agenda de Citas:** Visualiza únicamente a sus clientes asignados con calendario interactivo.
-  - **Estado en Tiempo Real (Solo Lectura):** Visualiza el estado asignado por la cajera (`En Espera`, `En Sillón`, `Cobrado / Completado`), sin permisos de modificación.
-  - **Registro de Propinas:** Módulo exclusivo para registrar propinas directas en efectivo entregadas por los clientes, con historial y total acumulado.
-  - **Privacidad Financiera:** El personal no tiene visibilidad sobre ingresos globales, gastos ni arqueos de caja del negocio.
+## 🎨 Paleta de Colores
+- **Fondo:** `#0E0E10`
+- **Superficie:** `#17171A`
+- **Borde:** `#2C2C33`
+- **Texto:** `#F2EDE4`
+- **Acento Primario:** `#C8102E` (Crimson / Rojo sangre)
+- **Acento Secundario:** `#D4A64A` (Gold / Latón)
+- **Éxito:** `#3FA672` (Verde esmeralda)
+- **Error:** `#FF5A5F` (Coral rojizo)
 
 ---
 
-## Funcionalidades Clave
-
-### 1. Edición de Fondo Inicial con Clave de Dueño
-- El fondo inicial de caja (por defecto $500) puede editarse directamente desde el módulo de Corte de Caja.
-- Requiere autenticación con la contraseña autorizada de dueño: **`12345`**.
-
-### 2. Limpieza de Datos de Demostración (Reset Demo)
-- Diseñado para pruebas y demostraciones en vivo.
-- Vacía en un solo clic las citas de agenda, los movimientos de caja, las propinas registradas y los cierres previos sin alterar el catálogo de servicios ni las cuentas de usuarios.
-
-### 3. Flujo Directo de Cobro
-- Al marcar una cita como completada en la agenda, el sistema abre la orden directamente en el Punto de Venta para agilizar la atención en recepción.
-
-### 4. Selección Múltiple de Servicios
-- Permite seleccionar combinaciones de servicios al agendar (ej. Corte Clásico + Perfilado de Barba + Cejas), calculando automáticamente precio y tiempo total.
+## ⚙️ FASE 1: Solicitud + Depósito / Anticipo
+1. **Formulario Público de Solicitud:**
+   - Captura: Idea/Diseño, zona del cuerpo, tamaño en cm, fotos de referencia, edad del cliente (alerta obligatoria para menores de 18 años) y artista preferido.
+2. **Panel de Cotizaciones & Enlace de Pago:**
+   - El artista o recepción evalúa la pieza, fija precio estimado total, define el anticipo requerido (ej. 20%-30%) y duración flexible.
+   - Genera enlace único de depósito con texto preformateado para WhatsApp y confirmación automática.
+3. **Máquina de Estados:**
+   `Solicitud` ➔ `Cotizada` ➔ `Depósito pagado` ➔ `Agendada` ➔ `Realizada` ➔ `Retoque`
+4. **Descuento de Anticipo en el POS:**
+   - Al completar la cita y liquidar en caja, el sistema deduce automáticamente el depósito pagado (`Total - Anticipo = Saldo a Liquidar`), desglosándolo en el ticket térmico/digital.
+5. **Horarios en Formato 12 Horas (AM/PM) & Duración Libre:**
+   - Horas desplegadas en formato `1:00 PM`.
+   - Duración de sesión flexible por presets (30m, 1h, 1.5h, 2h, 3h, 4h, 5h, 6h) o minutos personalizados con cálculo automático del rango en cabina.
 
 ---
 
-## Estructura del Proyecto
+## 🚀 Cómo Iniciar el Sistema
+- **Opción 1:** Haz doble clic en `abrir_estudio.bat`.
+- **Opción 2:** Haz doble clic en `actualizar_y_abrir.bat` para sincronizar con GitHub y abrir.
+- **Opción 3:** Abre `index.html` en cualquier navegador web moderno.
 
-```
-barbershop-system/
-├── index.html              # Interfaz principal, pantalla de acceso y modales
-├── styles.css              # Hoja de estilos profesional SaaS (sobrio, sin emojis)
-├── app.js                  # Lógica de sesiones, ventas, arqueo, propinas y reset demo
-├── abrir_barberia.bat      # Acceso directo rápido en Windows
-├── actualizar_y_abrir.bat  # Script para actualizar vía git y abrir el sistema
-└── README.md               # Documentación general del sistema
-```
+---
+
+## 👥 Cuentas de Acceso (Demostración)
+- **Dueño / Administrador:** Usuario `dueño` | Clave `123`
+- **Recepción / Caja:** Usuario `recepcion` | Clave `123`
+- **Alex Thorne (Tatuador):** Usuario `alex` | Clave `123`
+- **Maya Cruz (Tatuadora):** Usuario `maya` | Clave `123`
+- **Ian Soler (Piercer):** Usuario `ian` | Clave `123`

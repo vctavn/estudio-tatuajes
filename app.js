@@ -1,14 +1,29 @@
 /**
- * BARBERSHOP SYSTEM - THE BARBER CLUB & CO.
- * Lógica Completa de la Aplicación en JavaScript
- * Con soporte para Sesiones, Cobro Directo al Completar,
- * Registro de Propinas por Barbero, Sueldo Semanal (Sin comisiones),
- * Reseteo de Datos Demo y Edición de Fondo Inicial con Contraseña de Dueño (12345).
+ * INK & PIERCING STUDIO - SISTEMA DE GESTIÓN INTEGRAL
+ * Software para Estudios de Tatuaje y Piercing en México
+ * FASE 1: Solicitud de Proyecto + Cotización + Depósito / Anticipo
+ * Duración Libre de Sesiones & Horarios en Formato 12 Horas (AM/PM)
+ * Descuento Automático de Anticipos en el Punto de Venta (POS)
  */
 
-// ================= UTILIDAD DE INICIALES =================
+// ================= UTILIDADES GENERALES =================
+function formatMoney(amount) {
+  const num = Number(amount) || 0;
+  return '$' + num.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' MXN';
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 function getInitials(name) {
-  if (!name) return 'BP';
+  if (!name) return 'IN';
   const clean = name.replace(/['"]/g, '').trim();
   const parts = clean.split(/\s+/);
   if (parts.length >= 2) {
@@ -17,298 +32,425 @@ function getInitials(name) {
   return clean.substring(0, 2).toUpperCase();
 }
 
-// ================= ESTADO INICIAL Y PERSISTENCIA =================
-const STORAGE_KEY = 'barbershop_system_data_v3';
-const SESSION_KEY = 'barbershop_system_session_v3';
+function showToast(message, type = 'info') {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `<span>${escapeHtml(message)}</span>`;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transition = 'opacity 0.3s ease';
+    setTimeout(() => toast.remove(), 300);
+  }, 3500);
+}
+
+// Formatear hora de 24h a 12h (ej. "13:00" -> "1:00 PM")
+function formatTime12h(timeStr) {
+  if (!timeStr) return '';
+  const trimmed = timeStr.trim();
+  if (trimmed.toUpperCase().includes('AM') || trimmed.toUpperCase().includes('PM')) {
+    return trimmed;
+  }
+  const parts = trimmed.split(':');
+  let h = parseInt(parts[0], 10);
+  const m = parts[1] || '00';
+  if (isNaN(h)) return trimmed;
+  const period = h >= 12 ? 'PM' : 'AM';
+  h = h % 12;
+  if (h === 0) h = 12;
+  return `${h}:${m} ${period}`;
+}
+
+// Convertir hora 12h a minutos desde medianoche
+function parseTime12hToMinutes(time12h) {
+  if (!time12h) return 600; // 10:00 AM default
+  const match = time12h.match(/(\d+):(\d+)\s*(AM|PM)/i);
+  if (!match) {
+    // Si viene en 24h
+    const [h, m] = time12h.split(':').map(Number);
+    return (h || 10) * 60 + (m || 0);
+  }
+  let h = parseInt(match[1], 10);
+  const m = parseInt(match[2], 10);
+  const period = match[3].toUpperCase();
+  if (period === 'PM' && h < 12) h += 12;
+  if (period === 'AM' && h === 12) h = 0;
+  return h * 60 + m;
+}
+
+// Convertir minutos a string 12h
+function minutesToTime12h(totalMinutes) {
+  let h = Math.floor(totalMinutes / 60) % 24;
+  let m = totalMinutes % 60;
+  const mStr = m < 10 ? '0' + m : '' + m;
+  const period = h >= 12 ? 'PM' : 'AM';
+  h = h % 12;
+  if (h === 0) h = 12;
+  return `${h}:${mStr} ${period}`;
+}
+
+// Calcular hora de fin dada hora de inicio y minutos de duración
+function calculateEndTime(startTime12h, durationMinutes) {
+  const startMins = parseTime12hToMinutes(startTime12h);
+  const endMins = startMins + durationMinutes;
+  return minutesToTime12h(endMins);
+}
+
+// Formatear minutos a texto legible (ej. 150 -> "2h 30m")
+function formatDurationLabel(minutes) {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h > 0 && m > 0) return `${h}h ${m}m`;
+  if (h > 0) return `${h}h`;
+  return `${m}m`;
+}
+
+// ================= ESTADO Y DATOS INICIALES =================
+const STORAGE_KEY = 'ink_piercing_studio_data_v1';
+const SESSION_KEY = 'ink_piercing_studio_session_v1';
 
 const DEFAULT_DATA = {
   config: {
-    shopName: "The Barber Club & Co.",
-    currency: "$",
-    initialCashFund: 500.00,
+    shopName: "INK & PIERCING STUDIO MX",
+    currency: "$ MXN",
+    initialCashFund: 1500.00,
     isCashOpen: true,
     cashOpenedAt: new Date().toISOString(),
     phone: "525512345678",
-    address: "Av. Principal #452, Zona Centro",
-    adminUser: "caja",
+    address: "Roma Norte, Cuauhtémoc, CDMX",
+    adminUser: "dueño",
     adminPass: "123"
   },
-  barbers: [
+  artists: [
     {
-      id: "b1",
-      name: "Carlos 'Fade' Mendoza",
-      username: "carlos",
+      id: "a1",
+      name: "Alex Thorne",
+      username: "alex",
       password: "123",
       phone: "5512345678",
-      specialty: "Degradados, Skin Fade & Diseños",
-      avatar: "CF"
+      specialty: "Blackwork, Geométrico & Neotradicional",
+      avatar: "AT",
+      booth: "Cabina 1"
     },
     {
-      id: "b2",
-      name: "Mateo 'Beard King' Silva",
-      username: "mateo",
+      id: "a2",
+      name: "Maya Cruz",
+      username: "maya",
       password: "123",
       phone: "5587654321",
-      specialty: "Barba Spa & Ritual Tradicional",
-      avatar: "MS"
+      specialty: "Fine Line, Micro-realismo & Floral",
+      avatar: "MC",
+      booth: "Cabina 2"
     },
     {
-      id: "b3",
-      name: "David 'Scissors' Romero",
-      username: "david",
+      id: "a3",
+      name: "Ian Soler",
+      username: "ian",
       password: "123",
       phone: "5599887766",
-      specialty: "Cortes Clásicos & Tijera",
-      avatar: "DR"
+      specialty: "Body Piercing & Modificaciones Estériles",
+      avatar: "IS",
+      booth: "Cabina 3 (Piercing)"
     }
   ],
   services: [
-    { id: "s1", name: "Corte Clásico / Skin Fade", price: 180, duration: 40, category: "Corte" },
-    { id: "s2", name: "Perfilado y Ritual de Barba", price: 140, duration: 30, category: "Barba" },
-    { id: "s3", name: "Combo VIP (Corte + Barba + Toalla Caliente)", price: 290, duration: 60, category: "Combo" },
-    { id: "s4", name: "Perfilado de Cejas con Navaja", price: 60, duration: 15, category: "Detalle" },
-    { id: "s5", name: "Limpieza Facial con Black Mask", price: 110, duration: 25, category: "Facial" },
-    { id: "s6", name: "Camuflaje de Canas / Tinte Barba", price: 190, duration: 45, category: "Color" }
+    { id: "s1", name: "Tatuaje Flash / Pieza Pequeña (hasta 8cm)", price: 1200, duration: 60, category: "Tatuaje" },
+    { id: "s2", name: "Tatuaje Mediano (Línea & Sombra 10-15cm)", price: 2800, duration: 150, category: "Tatuaje" },
+    { id: "s3", name: "Sesión Completa / Media Jornada (4-5 horas)", price: 5500, duration: 270, category: "Tatuaje" },
+    { id: "s4", name: "Piercing Lóbulo / Hélix (Titanio Grado Implante)", price: 650, duration: 30, category: "Piercing" },
+    { id: "s5", name: "Piercing Septum / Nostril (Titanio Grado Implante)", price: 750, duration: 30, category: "Piercing" },
+    { id: "s6", name: "Sesión de Retoque (Evaluación y Repaso de Tinta)", price: 400, duration: 60, category: "Retoque" }
   ],
   products: [
-    { id: "p1", name: "Cera Pomada Mate Fijación Fuerte (100g)", price: 200, cost: 95, stock: 15 },
-    { id: "p2", name: "Aceite Hidratante para Barba (30ml)", price: 220, cost: 110, stock: 8 },
-    { id: "p3", name: "Loción After Shave Refrescante (250ml)", price: 160, cost: 80, stock: 12 },
-    { id: "p4", name: "Bálsamo Crecimiento con Minoxidil 5%", price: 290, cost: 150, stock: 6 },
-    { id: "p5", name: "Cerveza Artesanal / Bebida Premium", price: 60, cost: 28, stock: 20 }
+    { id: "p1", name: "Bálsamo Vegano Cicatrizante Aftercare (50g)", price: 220, cost: 90, stock: 24, category: "Aftercare" },
+    { id: "p2", name: "Espuma Antibacterial Antiséptica (150ml)", price: 260, cost: 120, stock: 18, category: "Aftercare" },
+    { id: "p3", name: "Parche Dérmico Segunda Piel (Pack 3 apósitos)", price: 180, cost: 75, stock: 30, category: "Aftercare" },
+    { id: "p4", name: "Joyería Labret Titanio ASTM F-136 Rosca Interna", price: 450, cost: 180, stock: 15, category: "Joyería" },
+    { id: "p5", name: "Aro Clicker Titanio Anodizado con Circonias", price: 550, cost: 220, stock: 12, category: "Joyería" },
+    { id: "p6", name: "Jabón Neutro Especial Sin Fragancia (250ml)", price: 140, cost: 60, stock: 20, category: "Aftercare" }
   ],
   clients: [
-    { id: "c1", name: "Roberto Gómez", phone: "5533445566", visits: 6, totalSpent: 1420, notes: "Skin fade bajo con navaja, raya marcada en lado izquierdo." },
-    { id: "c2", name: "Alejandro Torres", phone: "5544556677", visits: 4, totalSpent: 960, notes: "Arreglo de barba cuadrada, no tocar el largo del bigote." },
-    { id: "c3", name: "Miguel Ángel Ruiz", phone: "5577889900", visits: 2, totalSpent: 580, notes: "Corte clásico a tijera, peinado formal hacia atrás." }
+    { id: "c1", name: "Roberto Gómez", age: 28, phone: "5533445566", visits: 3, totalSpent: 6200, allergies: "Ninguna", notes: "Tatuaje brazo derecho terminado. Excelente cicatrización." },
+    { id: "c2", name: "Valeria Mendoza", age: 22, phone: "5544556677", visits: 2, totalSpent: 3400, allergies: "Látex (usar guantes de nitrilo)", notes: "Piel sensible. Tatuaje floral fine line." },
+    { id: "c3", name: "Emiliano Carrillo", age: 17, phone: "5577889900", visits: 1, totalSpent: 750, allergies: "Ninguna", isMinor: true, notes: "Menor de edad. Acompañado de madre con INE y carta de autorización firmada." }
+  ],
+  // Solicitudes de Cotización & Anticipos (FASE 1)
+  quoteRequests: [
+    {
+      id: "req-101",
+      folio: "COT-2026-001",
+      clientName: "Camila Vega",
+      clientPhone: "5511223344",
+      clientAge: 24,
+      isMinor: false,
+      type: "Tatuaje",
+      bodyZone: "Antebrazo interior",
+      sizeCm: "12 x 8 cm",
+      description: "Diseño botánico fine line de peonías y mariposa monarca en escala de grises.",
+      photoUrl: "https://images.unsplash.com/photo-1598371839696-5c5bb00bdc28?auto=format&fit=crop&w=400&q=80",
+      artistId: "a2",
+      artistName: "Maya Cruz",
+      status: "deposito_pagado", // Solicitud -> Cotizada -> Deposito Pagado -> Agendada -> Realizada -> Retoque
+      estimatedPrice: 3200,
+      depositAmount: 600,
+      depositPaid: true,
+      depositPaidAt: new Date().toISOString(),
+      depositLink: "https://estudio-tatuajes.vercel.app/deposito?ref=COT-2026-001",
+      notes: "Sombra suave con aguja 3RL. Acreditado depósito de $600 MXN.",
+      dateRequested: new Date().toISOString().split('T')[0]
+    },
+    {
+      id: "req-102",
+      folio: "COT-2026-002",
+      clientName: "Javier Soto",
+      clientPhone: "5566778899",
+      clientAge: 30,
+      isMinor: false,
+      type: "Tatuaje",
+      bodyZone: "Pantorrilla derecha",
+      sizeCm: "20 x 15 cm",
+      description: "Cráneo neotradicional con serpiente y rosas, alto contraste.",
+      photoUrl: "https://images.unsplash.com/photo-1562962230-16e4623d36e6?auto=format&fit=crop&w=400&q=80",
+      artistId: "a1",
+      artistName: "Alex Thorne",
+      status: "cotizada",
+      estimatedPrice: 4500,
+      depositAmount: 1000,
+      depositPaid: false,
+      depositPaidAt: null,
+      depositLink: "https://estudio-tatuajes.vercel.app/deposito?ref=COT-2026-002",
+      notes: "Sesión de aprox. 4 horas.",
+      dateRequested: new Date().toISOString().split('T')[0]
+    },
+    {
+      id: "req-103",
+      folio: "COT-2026-003",
+      clientName: "Emiliano Carrillo",
+      clientPhone: "5577889900",
+      clientAge: 17,
+      isMinor: true,
+      type: "Piercing",
+      bodyZone: "Nariz (Septum)",
+      sizeCm: "Perforación estándar",
+      description: "Perforación de septum con aro circular barbell en titanio grado implante.",
+      photoUrl: "",
+      artistId: "a3",
+      artistName: "Ian Soler",
+      status: "solicitud",
+      estimatedPrice: 0,
+      depositAmount: 0,
+      depositPaid: false,
+      notes: "Menor de 18 años. Requiere padre/tutor legal con INE.",
+      dateRequested: new Date().toISOString().split('T')[0]
+    }
   ],
   appointments: [],
   cashMovements: [],
   cashClosures: [],
-  barberTips: []
+  artistTips: []
 };
 
-// Generar citas, movimientos y propinas de muestra
-(function seedInitialData() {
+// Semilla de citas de muestra
+(function seedInitialAppointments() {
   const todayStr = new Date().toISOString().split('T')[0];
-  
+
   DEFAULT_DATA.appointments = [
     {
-      id: "app-101",
+      id: "ses-101",
       clientName: "Roberto Gómez",
       clientPhone: "5533445566",
       services: [
-        { id: "s1", name: "Corte Clásico / Skin Fade", price: 180, duration: 40 },
-        { id: "s2", name: "Perfilado y Ritual de Barba", price: 140, duration: 30 }
+        { id: "s2", name: "Tatuaje Mediano (Línea & Sombra)", price: 2800, duration: 150 }
       ],
-      serviceName: "Corte Clásico + Perfilado de Barba",
-      price: 320,
-      duration: 70,
-      barberId: "b1",
-      barberName: "Carlos 'Fade' Mendoza",
+      serviceName: "Tatuaje Mediano (Línea & Sombra)",
+      price: 2800,
+      depositDeducted: 500, // Anticipo que se descontará al cobrar en el POS
+      durationMinutes: 150,
+      durationLabel: "2h 30m",
+      artistId: "a1",
+      artistName: "Alex Thorne",
+      booth: "Cabina 1",
       date: todayStr,
-      time: "10:30",
-      status: "completada",
-      notes: "Cliente puntual. Muy satisfecho."
+      time: "11:00 AM",
+      endTime: "1:30 PM",
+      status: "en_proceso", // agendada, en_proceso, realizada, retoque, cancelada
+      notes: "Sesión 2. Sombra y detalles de manga.",
+      quoteRef: "COT-2026-000"
     },
     {
-      id: "app-102",
-      clientName: "Alejandro Torres",
+      id: "ses-102",
+      clientName: "Valeria Mendoza",
       clientPhone: "5544556677",
       services: [
-        { id: "s2", name: "Perfilado y Ritual de Barba", price: 140, duration: 30 }
+        { id: "s1", name: "Tatuaje Flash / Pieza Pequeña", price: 1200, duration: 60 }
       ],
-      serviceName: "Perfilado y Ritual de Barba",
-      price: 140,
-      duration: 30,
-      barberId: "b2",
-      barberName: "Mateo 'Beard King' Silva",
+      serviceName: "Tatuaje Flash / Pieza Pequeña",
+      price: 1200,
+      depositDeducted: 300,
+      durationMinutes: 60,
+      durationLabel: "1h",
+      artistId: "a2",
+      artistName: "Maya Cruz",
+      booth: "Cabina 2",
       date: todayStr,
-      time: "11:30",
-      status: "en_proceso",
-      notes: "En sillón actualmente."
+      time: "2:00 PM",
+      endTime: "3:00 PM",
+      status: "agendada",
+      notes: "Alérgica al látex. Usar nitrilo.",
+      quoteRef: "COT-2026-001"
     },
     {
-      id: "app-103",
-      clientName: "Daniel Castillo",
-      clientPhone: "5522334455",
+      id: "ses-103",
+      clientName: "Emiliano Carrillo",
+      clientPhone: "5577889900",
       services: [
-        { id: "s1", name: "Corte Clásico / Skin Fade", price: 180, duration: 40 },
-        { id: "s4", name: "Perfilado de Cejas con Navaja", price: 60, duration: 15 }
+        { id: "s5", name: "Piercing Septum (Titanio)", price: 750, duration: 30 }
       ],
-      serviceName: "Corte Clásico + Perfilado de Cejas",
-      price: 240,
-      duration: 55,
-      barberId: "b1",
-      barberName: "Carlos 'Fade' Mendoza",
+      serviceName: "Piercing Septum (Titanio)",
+      price: 750,
+      depositDeducted: 200,
+      durationMinutes: 30,
+      durationLabel: "30m",
+      artistId: "a3",
+      artistName: "Ian Soler",
+      booth: "Cabina 3",
       date: todayStr,
-      time: "14:00",
-      status: "pendiente",
-      notes: "Primera vez en la barbería."
-    },
-    {
-      id: "app-104",
-      clientName: "Fernando Lara",
-      clientPhone: "5566778899",
-      services: [
-        { id: "s3", name: "Combo VIP (Corte + Barba + Toalla Caliente)", price: 290, duration: 60 }
-      ],
-      serviceName: "Combo VIP",
-      price: 290,
-      duration: 60,
-      barberId: "b3",
-      barberName: "David 'Scissors' Romero",
-      date: todayStr,
-      time: "15:30",
-      status: "pendiente",
-      notes: ""
+      time: "4:30 PM",
+      endTime: "5:00 PM",
+      status: "agendada",
+      notes: "Menor de edad con consentimiento y tutor legal.",
+      quoteRef: "COT-2026-003"
     }
   ];
 
   DEFAULT_DATA.cashMovements = [
     {
-      id: "mov-1",
-      timestamp: new Date(Date.now() - 3 * 3600 * 1000).toISOString(),
-      type: "venta",
-      concept: "Corte Clásico + Perfilado de Barba + Cera Pomada",
-      client: "Roberto Gómez",
-      paymentMethod: "efectivo",
-      barberId: "b1",
-      barberName: "Carlos 'Fade' Mendoza",
-      amount: 520,
-      items: [
-        { name: "Corte Clásico", price: 180, qty: 1, type: "service", id: "s1" },
-        { name: "Perfilado de Barba", price: 140, qty: 1, type: "service", id: "s2" },
-        { name: "Cera Pomada Mate", price: 200, qty: 1, type: "product", id: "p1" }
-      ]
-    },
-    {
-      id: "mov-2",
-      timestamp: new Date(Date.now() - 2 * 3600 * 1000).toISOString(),
-      type: "gasto",
-      concept: "Garrafón de agua purificada y café",
-      client: "-",
-      paymentMethod: "efectivo",
-      barberId: "admin",
-      barberName: "Caja General",
-      amount: 65,
-      items: []
+      id: "mov-01",
+      type: "fondo_inicial",
+      concept: "Apertura de turno en efectivo",
+      amount: 1500,
+      method: "Efectivo",
+      timestamp: `${todayStr}T09:00:00Z`
     }
   ];
 
-  DEFAULT_DATA.barberTips = [
+  DEFAULT_DATA.artistTips = [
     {
-      id: "tip-1",
-      barberId: "b1",
-      barberName: "Carlos 'Fade' Mendoza",
-      amount: 50,
-      client: "Roberto Gómez",
-      notes: "Propina en efectivo entregada en el sillón",
-      timestamp: new Date(Date.now() - 3 * 3600 * 1000).toISOString()
+      id: "tip-01",
+      artistId: "a1",
+      artistName: "Alex Thorne",
+      amount: 200,
+      method: "Efectivo",
+      notes: "Agradecimiento cliente Roberto",
+      timestamp: `${todayStr}T13:40:00Z`
     }
   ];
 })();
 
-// Gestor de almacenamiento
-let store = loadStore();
+// ================= CAPA DE DATOS (DATA SERVICE) =================
+let store = null;
 
-function loadStore() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed.barbers && parsed.services && parsed.config) {
-        if (!parsed.barberTips) parsed.barberTips = [];
-        if (!parsed.clients) parsed.clients = [];
-        // Limpieza de avatares con emojis si quedaron de versiones previas
-        parsed.barbers.forEach(b => {
-          if (!b.avatar || /[\u2600-\u27BF]|[\uD83C-\uD83E][\uDC00-\uDFFF]/.test(b.avatar)) {
-            b.avatar = getInitials(b.name);
-          }
-        });
-        return parsed;
+const DataService = {
+  loadStore() {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        store = JSON.parse(saved);
+        // Asegurar campos nuevos de Fase 1 si faltasen
+        if (!store.quoteRequests) store.quoteRequests = DEFAULT_DATA.quoteRequests;
+        if (!store.artists) store.artists = DEFAULT_DATA.artists;
+        return;
       }
+    } catch (e) {
+      console.warn("Error leyendo localStorage, usando DEFAULT_DATA:", e);
     }
-  } catch (e) {
-    console.error("Error cargando store:", e);
-  }
-  saveStore(DEFAULT_DATA);
-  return JSON.parse(JSON.stringify(DEFAULT_DATA));
-}
+    store = JSON.parse(JSON.stringify(DEFAULT_DATA));
+    this.saveStore();
+  },
 
-function saveStore(dataToSave = store) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
-  } catch (e) {
-    console.error("Error guardando store:", e);
+  saveStore() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+    } catch (e) {
+      console.error("Error guardando store:", e);
+    }
   }
-}
+};
 
-// ================= GESTIÓN DE SESIONES DE USUARIO =================
-let currentUser = loadSession();
+// ================= GESTIÓN DE SESIONES & ROLES =================
+let currentSession = null;
 
 function loadSession() {
   try {
-    const raw = localStorage.getItem(SESSION_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed && parsed.avatar && /[\u2600-\u27BF]|[\uD83C-\uD83E][\uDC00-\uDFFF]/.test(parsed.avatar)) {
-        parsed.avatar = parsed.role === 'admin' ? 'CG' : getInitials(parsed.name);
-      }
-      return parsed;
+    const saved = localStorage.getItem(SESSION_KEY);
+    if (saved) {
+      currentSession = JSON.parse(saved);
+      return;
     }
   } catch (e) {}
-  return null;
+  currentSession = null;
 }
 
-function saveSession(user) {
-  currentUser = user;
-  if (user) {
-    localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+function saveSession(session) {
+  currentSession = session;
+  if (session) {
+    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
   } else {
     localStorage.removeItem(SESSION_KEY);
   }
 }
 
-function handleLogin() {
+function handleLogin(e) {
+  if (e) e.preventDefault();
   const userVal = document.getElementById('login-username').value.trim().toLowerCase();
   const passVal = document.getElementById('login-password').value.trim();
 
-  // Validar si es caja/admin
-  if ((userVal === 'caja' || userVal === 'admin') && passVal === (store.config.adminPass || '123')) {
+  // Dueño / Administrador
+  if ((userVal === 'dueño' || userVal === 'admin' || userVal === 'caja') && (passVal === '123' || passVal === (store.config.adminPass || '123'))) {
     saveSession({
-      role: 'admin',
-      name: 'Caja Principal / Dueño',
-      username: userVal,
-      avatar: 'CG'
+      role: 'owner',
+      username: 'dueño',
+      name: 'Dueño / Administrador',
+      avatar: 'AD'
     });
     applyUserSession();
-    showToast("Sesión iniciada como Caja", "success");
     return;
   }
 
-  // Validar si es barbero
-  const barber = store.barbers.find(b => (b.username && b.username.toLowerCase() === userVal) || b.id === userVal);
-  if (barber && (barber.password === passVal || passVal === '123')) {
+  // Recepción / Caja
+  if (userVal === 'recepcion' && passVal === '123') {
     saveSession({
-      role: 'barber',
-      barberId: barber.id,
-      name: barber.name,
-      username: barber.username,
-      avatar: barber.avatar || getInitials(barber.name),
-      specialty: barber.specialty
+      role: 'reception',
+      username: 'recepcion',
+      name: 'Recepción & Caja',
+      avatar: 'RC'
     });
     applyUserSession();
-    showToast(`Bienvenido a tu sesión, ${barber.name}`, "success");
+    return;
+  }
+
+  // Artistas individuales
+  const artist = store.artists.find(a => (a.username || '').toLowerCase() === userVal);
+  if (artist && passVal === (artist.password || '123')) {
+    saveSession({
+      role: 'artist',
+      artistId: artist.id,
+      username: artist.username,
+      name: artist.name,
+      avatar: artist.avatar || getInitials(artist.name)
+    });
+    applyUserSession();
     return;
   }
 
   showToast("Usuario o contraseña incorrectos", "error");
 }
 
-function quickLogin(user, pass) {
-  document.getElementById('login-username').value = user;
-  document.getElementById('login-password').value = pass;
+function quickLogin(username) {
+  document.getElementById('login-username').value = username;
+  document.getElementById('login-password').value = '123';
   handleLogin();
 }
 
@@ -317,143 +459,57 @@ function logout() {
   document.getElementById('login-screen').classList.remove('hidden');
   document.getElementById('login-username').value = '';
   document.getElementById('login-password').value = '';
-  showToast("Sesión cerrada", "info");
 }
 
 function applyUserSession() {
-  const loginScreen = document.getElementById('login-screen');
-
-  if (!currentUser) {
-    loginScreen.classList.remove('hidden');
+  if (!currentSession) {
+    document.getElementById('login-screen').classList.remove('hidden');
     return;
   }
 
-  loginScreen.classList.add('hidden');
-
-  document.getElementById('header-user-name').textContent = currentUser.name;
-  document.getElementById('header-user-avatar').textContent = currentUser.avatar || (currentUser.role === 'admin' ? 'CG' : 'BP');
-  document.getElementById('header-user-role').textContent = currentUser.role === 'admin' ? 'CAJA / ADMIN' : 'BARBERO';
-  document.getElementById('sidebar-role-label').textContent = currentUser.role === 'admin' ? 'CAJA & CONTROL' : `BARBERO: ${currentUser.name.split(' ')[0]}`;
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('header-user-avatar').textContent = currentSession.avatar || 'AD';
+  document.getElementById('header-user-name').textContent = currentSession.name || 'Usuario';
+  document.getElementById('header-user-role').textContent = currentSession.role === 'owner' ? 'Dueño' : (currentSession.role === 'reception' ? 'Recepción' : 'Artista');
 
   const adminElements = document.querySelectorAll('.nav-admin-only');
-  const barberElements = document.querySelectorAll('.nav-barber-only');
+  const artistElements = document.querySelectorAll('.nav-artist-only');
 
-  // Adaptar barra inferior de navegación móvil según el rol
-  const mobDash = document.getElementById('mob-nav-dashboard');
-  const mobApp = document.getElementById('mob-nav-appointments');
-  const mobPos = document.getElementById('mob-nav-pos');
-
-  if (currentUser.role === 'admin') {
-    adminElements.forEach(el => el.style.display = '');
-    barberElements.forEach(el => el.style.display = 'none');
-    if (mobDash) {
-      mobDash.dataset.view = 'dashboard';
-      const span = mobDash.querySelector('span');
-      if (span) span.textContent = 'Tablero';
-    }
-    if (mobApp) {
-      mobApp.dataset.view = 'appointments';
-      const span = mobApp.querySelector('span');
-      if (span) span.textContent = 'Citas';
-    }
-    if (mobPos) {
-      mobPos.dataset.view = 'pos';
-      const span = mobPos.querySelector('span');
-      if (span) span.textContent = 'Cobrar';
-    }
-    switchView('dashboard');
-  } else {
+  if (currentSession.role === 'artist') {
     adminElements.forEach(el => el.style.display = 'none');
-    barberElements.forEach(el => el.style.display = '');
-    if (mobDash) {
-      mobDash.dataset.view = 'barber-portal';
-      const span = mobDash.querySelector('span');
-      if (span) span.textContent = 'Mis Citas';
-    }
-    if (mobApp) {
-      mobApp.dataset.view = 'barber-tips';
-      const span = mobApp.querySelector('span');
-      if (span) span.textContent = 'Propinas';
-    }
-    if (mobPos) {
-      mobPos.dataset.view = 'public-booking';
-      const span = mobPos.querySelector('span');
-      if (span) span.textContent = 'Reservas';
-    }
-    switchView('barber-portal');
+    artistElements.forEach(el => el.style.display = '');
+    document.getElementById('sidebar-role-label').textContent = 'Portal de Artista';
+    switchView('artist-portal');
+  } else {
+    adminElements.forEach(el => el.style.display = '');
+    artistElements.forEach(el => el.style.display = 'none');
+    document.getElementById('sidebar-role-label').textContent = 'Studio Pro MX';
+    switchView('dashboard');
   }
 
   renderAllViews();
 }
 
-// ================= UTILIDAD DE FECHAS EN ZONA HORARIA LOCAL =================
-function getLocalDateString(d = new Date()) {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
-
-// ================= VARIABLES GLOBALES DE INTERFAZ =================
-let currentView = 'dashboard';
-let currentPosCart = [];
-let currentPosTab = 'services';
-let currentDeviceMode = 'desktop';
-
-let adminSelectedDate = getLocalDateString();
-let barberSelectedDate = getLocalDateString();
-
-let modalSelectedServices = [];
-let modalSelectedBarberId = null;
-let modalSelectedDate = getLocalDateString();
-let modalSelectedTime = null;
-
-let publicSelectedServices = [];
-let publicSelectedBarberId = null;
-let publicSelectedDate = getLocalDateString();
-let publicSelectedTime = null;
-
-// ================= GESTOR DE MODO DISPOSITIVO (COMPUTADORA / CELULAR) =================
+// ================= SELECTOR DE DISPOSITIVO (COMPUTADORA / CELULAR) =================
 function initDeviceMode() {
-  const saved = localStorage.getItem('barberia_device_mode');
-  if (saved) {
-    setDeviceMode(saved, false);
-  } else {
-    // Si la pantalla es móvil, activar modo celular por defecto
-    const isMobile = window.innerWidth <= 850;
-    setDeviceMode(isMobile ? 'mobile' : 'desktop', false);
-  }
+  const saved = localStorage.getItem('ink_studio_device_mode') || 'desktop';
+  setDeviceMode(saved, false);
 }
 
 function setDeviceMode(mode, save = true) {
-  currentDeviceMode = mode;
-  if (save) {
-    localStorage.setItem('barberia_device_mode', mode);
-  }
+  if (save) localStorage.setItem('ink_studio_device_mode', mode);
 
   const isMobile = (mode === 'mobile');
+  document.body.classList.toggle('device-mobile', isMobile);
 
-  if (isMobile) {
-    document.body.classList.add('device-mobile');
-    document.body.classList.remove('device-desktop');
-    document.documentElement.classList.add('device-mobile');
-    document.documentElement.classList.remove('device-desktop');
-  } else {
-    document.body.classList.add('device-desktop');
-    document.body.classList.remove('device-mobile');
-    document.documentElement.classList.add('device-desktop');
-    document.documentElement.classList.remove('device-mobile');
-  }
-
-  // Sincronizar botones en el login y en el header
   const pcBtns = [document.getElementById('btn-mode-pc'), document.getElementById('btn-header-mode-pc')];
   const mobBtns = [document.getElementById('btn-mode-mobile'), document.getElementById('btn-header-mode-mobile')];
 
-  pcBtns.forEach(btn => { if (btn) btn.classList.toggle('active', !isMobile); });
-  mobBtns.forEach(btn => { if (btn) btn.classList.toggle('active', isMobile); });
-}
+  pcBtns.forEach(btn => btn && btn.classList.toggle('active', !isMobile));
+  mobBtns.forEach(btn => btn && btn.classList.toggle('active', isMobile));
 
-window.setDeviceMode = setDeviceMode;
+  if (!isMobile) closeMobileSidebar();
+}
 
 function openMobileSidebar() {
   const sidebar = document.getElementById('sidebar');
@@ -469,256 +525,67 @@ function closeMobileSidebar() {
   if (backdrop) backdrop.classList.remove('active');
 }
 
-function toggleMobileSidebar() {
-  const sidebar = document.getElementById('sidebar');
-  if (sidebar && sidebar.classList.contains('open')) {
-    closeMobileSidebar();
-  } else {
-    openMobileSidebar();
-  }
-}
-
-window.openMobileSidebar = openMobileSidebar;
-window.closeMobileSidebar = closeMobileSidebar;
-window.toggleMobileSidebar = toggleMobileSidebar;
-
-// ================= INICIALIZACIÓN =================
-document.addEventListener('DOMContentLoaded', () => {
-  initDeviceMode();
-  setupEventListeners();
-  applyUserSession();
-});
-
-function renderAllViews() {
-  renderDashboard();
-  renderAppointments();
-  renderPOS();
-  renderCashRegister();
-  renderBarbers();
-  renderCatalog();
-  renderClients();
-  renderPublicBooking();
-
-  if (currentUser && currentUser.role === 'barber') {
-    renderBarberPortal();
-    renderBarberTips();
-  }
-}
-
-function switchView(viewName) {
-  currentView = viewName;
-
+// ================= NAVEGACIÓN Y CAMBIO DE VISTAS =================
+function switchView(viewId) {
   document.querySelectorAll('.view-section').forEach(sec => sec.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+  document.querySelectorAll('.mob-nav-btn').forEach(btn => btn.classList.remove('active'));
 
-  const targetSection = document.getElementById(`view-${viewName}`);
-  if (targetSection) targetSection.classList.add('active');
+  const targetSec = document.getElementById(`view-${viewId}`);
+  if (targetSec) targetSec.classList.add('active');
 
-  const activeNavItem = document.querySelector(`.nav-item[data-view="${viewName}"]`);
-  if (activeNavItem) activeNavItem.classList.add('active');
+  const navItem = document.querySelector(`.nav-item[data-view="${viewId}"]`);
+  if (navItem) navItem.classList.add('active');
 
-  // Actualizar botones de la barra inferior móvil
-  document.querySelectorAll('.mob-nav-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.view === viewName);
-  });
+  const mobBtn = document.querySelector(`.mob-nav-btn[data-mob-view="${viewId}"]`);
+  if (mobBtn) mobBtn.classList.add('active');
 
+  // Actualizar títulos del encabezado
   const titles = {
-    'dashboard': { title: 'Tablero Principal', sub: 'Resumen y métricas de la barbería hoy' },
-    'appointments': { title: 'Agenda de Citas', sub: 'Control de citas del día y filtros' },
-    'barber-portal': { title: 'Citas', sub: 'Agenda y clientes asignados' },
-    'barber-tips': { title: 'Propinas', sub: 'Historial y registro de propinas' },
-    'pos': { title: 'Punto de Venta', sub: 'Cobro de cortes, servicios y productos' },
-    'cash-register': { title: 'Corte de Caja', sub: 'Fondo de caja, balance y cierres' },
-    'barbers': { title: 'Barberos & Cuentas', sub: 'Administración de cuentas y personal' },
-    'catalog': { title: 'Catálogo & Inventario', sub: 'Servicios de barbería y productos de cuidado' },
-    'clients': { title: 'Clientes', sub: 'Historial de visitas y preferencias' },
-    'public-booking': { title: 'Reserva Online', sub: 'Portal público para clientes' }
+    'dashboard': ['Tablero Principal', 'Métricas y agenda del estudio en tiempo real'],
+    'requests': ['Solicitudes de Cotización & Anticipos', 'Revisa ideas, fija precios estimados y gestiona depósitos'],
+    'appointments': ['Agenda de Sesiones', 'Calendario interactivo y citas programadas'],
+    'artist-portal': ['Mi Agenda de Sesiones', 'Tus clientes y citas asignadas'],
+    'artist-quotes': ['Mis Cotizaciones Asignadas', 'Proyectos pendientes de evaluar y cotizar'],
+    'artist-tips': ['Mis Propinas', 'Historial de propinas directas en MXN'],
+    'pos': ['Punto de Venta (POS)', 'Cobro con deducción de depósito y venta de productos'],
+    'cash-register': ['Control & Corte de Caja', 'Arqueo de gaveta y registro de movimientos'],
+    'artists': ['Artistas & Cabinas', 'Equipo de tatuadores, piercers y estaciones de trabajo'],
+    'catalog': ['Catálogo de Servicios & Joyería', 'Tarifas de sesión y stock de insumos'],
+    'clients': ['Directorio de Clientes', 'Expedientes, edades, alergias e historial'],
+    'public-booking': ['Cotización & Reserva Online', 'Formulario para que clientes soliciten su pieza']
   };
 
-  const info = titles[viewName] || { title: 'Sistema de Barbería', sub: '' };
-  document.getElementById('view-title').textContent = info.title;
-  document.getElementById('view-subtitle').textContent = info.sub;
+  const [t, sub] = titles[viewId] || ['INK Studio', 'Sistema de Gestión'];
+  document.getElementById('view-title').textContent = t;
+  document.getElementById('view-subtitle').textContent = sub;
 
   closeMobileSidebar();
-
-  if (viewName === 'appointments') renderAppointments();
-  if (viewName === 'barber-portal') renderBarberPortal();
-  if (viewName === 'barber-tips') renderBarberTips();
-  if (viewName === 'pos') renderPOS();
-  if (viewName === 'cash-register') renderCashRegister();
-  if (viewName === 'public-booking') renderPublicBooking();
+  renderAllViews();
 }
 
-// ================= COMPONENTE DE CALENDARIO PROFESIONAL =================
-function renderCustomCalendar(containerId, activeDateStr, onSelectCallback, viewDateOverride = null) {
-  const container = document.getElementById(containerId);
-  if (!container) return;
-
-  if (viewDateOverride) {
-    container._viewDate = viewDateOverride;
-  } else if (!container._viewDate) {
-    container._viewDate = activeDateStr || getLocalDateString();
-  }
-
-  // Obtenemos año y mes del estado de vista del contenedor
-  const parts = container._viewDate.split('-');
-  const year = parseInt(parts[0], 10);
-  const month = parseInt(parts[1], 10) - 1; // 0-indexed
-
-  const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
-  const dayNames = ["Do", "Lu", "Ma", "Mi", "Ju", "Vi", "Sá"];
-
-  const firstDayIndex = new Date(year, month, 1).getDay();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const todayStr = getLocalDateString();
-
-  let html = `
-    <div class="calendar-widget-box">
-      <div class="calendar-header">
-        <span class="calendar-month-label">${monthNames[month]} ${year}</span>
-        <div class="calendar-nav-buttons">
-          <button type="button" class="calendar-nav-btn" id="${containerId}-prev" title="Mes anterior">&lt;</button>
-          <button type="button" class="calendar-nav-btn" id="${containerId}-today" title="Ir al día de hoy" style="font-size:0.72rem; min-width:auto; padding:0 8px;">Hoy</button>
-          <button type="button" class="calendar-nav-btn" id="${containerId}-next" title="Mes siguiente">&gt;</button>
-        </div>
-      </div>
-      <div class="calendar-days-grid">
-  `;
-
-  dayNames.forEach(d => {
-    html += `<div class="calendar-day-name">${d}</div>`;
-  });
-
-  for (let i = 0; i < firstDayIndex; i++) {
-    html += `<div class="calendar-cell empty"></div>`;
-  }
-
-  for (let day = 1; day <= daysInMonth; day++) {
-    const dayPadded = String(day).padStart(2, '0');
-    const monthPadded = String(month + 1).padStart(2, '0');
-    const fullDate = `${year}-${monthPadded}-${dayPadded}`;
-
-    const isToday = (fullDate === todayStr);
-    const isSelected = (fullDate === activeDateStr);
-
-    let hasApps = false;
-    if (currentUser && currentUser.role === 'barber') {
-      hasApps = store.appointments.some(a => a.date === fullDate && a.barberId === currentUser.barberId && a.status !== 'cancelada');
-    } else {
-      hasApps = store.appointments.some(a => a.date === fullDate && a.status !== 'cancelada');
-    }
-
-    let cellClasses = 'calendar-cell';
-    if (isToday) cellClasses += ' today';
-    if (isSelected) cellClasses += ' selected';
-    if (hasApps) cellClasses += ' has-appointments';
-
-    html += `
-      <div class="${cellClasses}" data-date="${fullDate}" title="${fullDate}${isToday ? ' (Hoy)' : ''}${isSelected ? ' (Seleccionado)' : ''}">
-        <span class="cal-day-num">${day}</span>
-        ${hasApps ? '<span class="appointment-dot"></span>' : ''}
-      </div>
-    `;
-  }
-
-  html += `</div></div>`;
-  container.innerHTML = html;
-
-  // Clic en los días del calendario
-  container.querySelectorAll('.calendar-cell:not(.empty)').forEach(cell => {
-    cell.onclick = (e) => {
-      e.stopPropagation();
-      const selected = cell.dataset.date;
-      container._viewDate = selected;
-      onSelectCallback(selected);
-    };
-  });
-
-  // Navegación de mes anterior
-  const btnPrev = document.getElementById(`${containerId}-prev`);
-  if (btnPrev) {
-    btnPrev.onclick = (e) => {
-      e.stopPropagation();
-      const prevDate = new Date(year, month - 1, 1);
-      const prevDateStr = getLocalDateString(prevDate);
-      container._viewDate = prevDateStr;
-      renderCustomCalendar(containerId, activeDateStr, onSelectCallback, prevDateStr);
-    };
-  }
-
-  // Navegación de mes siguiente
-  const btnNext = document.getElementById(`${containerId}-next`);
-  if (btnNext) {
-    btnNext.onclick = (e) => {
-      e.stopPropagation();
-      const nextDate = new Date(year, month + 1, 1);
-      const nextDateStr = getLocalDateString(nextDate);
-      container._viewDate = nextDateStr;
-      renderCustomCalendar(containerId, activeDateStr, onSelectCallback, nextDateStr);
-    };
-  }
-
-  // Botón para volver al día actual
-  const btnToday = document.getElementById(`${containerId}-today`);
-  if (btnToday) {
-    btnToday.onclick = (e) => {
-      e.stopPropagation();
-      const todayDateStr = getLocalDateString();
-      container._viewDate = todayDateStr;
-      onSelectCallback(todayDateStr);
-    };
-  }
+// ================= RENDERIZADO GLOBAL =================
+function renderAllViews() {
+  renderDashboard();
+  renderQuoteRequests();
+  renderAppointments();
+  renderArtistPortal();
+  renderArtistTips();
+  renderPOS();
+  renderCashRegister();
+  renderArtists();
+  renderCatalog();
+  renderClients();
+  renderPublicBookingArtists();
 }
 
-// ================= COMPONENTE DE SELECTOR DE HORARIOS =================
-function renderTimeSlotsWidget(containerId, barberId, selectedDate, selectedTime, onSelectTime) {
-  const container = document.getElementById(containerId);
-  if (!container) return;
-
-  const morningSlots = ["10:00", "10:45", "11:30", "12:15", "13:00"];
-  const afternoonSlots = ["14:00", "14:45", "15:30", "16:15", "17:00", "17:45", "18:30", "19:15"];
-
-  const bookedApps = store.appointments.filter(a => a.date === selectedDate && a.barberId === barberId && a.status !== 'cancelada');
-  const bookedTimes = bookedApps.map(a => a.time);
-
-  container.innerHTML = `
-    <div class="time-shift-title">Turno Matutino</div>
-    <div class="time-slots-wrapper" id="${containerId}-morning"></div>
-    <div class="time-shift-title" style="margin-top: 8px;">Turno Vespertino</div>
-    <div class="time-slots-wrapper" id="${containerId}-afternoon"></div>
-  `;
-
-  function fillSlots(slotList, wrapperId) {
-    const wrapper = document.getElementById(wrapperId);
-    slotList.forEach(time => {
-      const isBooked = bookedTimes.includes(time);
-      const isSelected = (time === selectedTime);
-
-      const pill = document.createElement('div');
-      pill.className = `time-slot-pill ${isSelected ? 'selected' : ''} ${isBooked ? 'booked' : ''}`;
-      pill.textContent = time;
-
-      if (!isBooked) {
-        pill.onclick = () => onSelectTime(time);
-      } else {
-        pill.title = "Horario reservado";
-      }
-
-      wrapper.appendChild(pill);
-    });
-  }
-
-  fillSlots(morningSlots, `${containerId}-morning`);
-  fillSlots(afternoonSlots, `${containerId}-afternoon`);
-}
-
-// ================= RENDERIZADO: DASHBOARD (ADMIN) =================
+// ================= 1. TABLERO (DASHBOARD) =================
 function renderDashboard() {
   const todayStr = new Date().toISOString().split('T')[0];
   const todaySales = store.cashMovements.filter(m => m.timestamp.startsWith(todayStr) && m.type === 'venta');
   const totalRevenue = todaySales.reduce((acc, cur) => acc + (cur.amount || 0), 0);
   const todayApps = store.appointments.filter(a => a.date === todayStr);
-  const completedApps = todayApps.filter(a => a.status === 'completada').length;
+  const completedApps = todayApps.filter(a => a.status === 'realizada' || a.status === 'completada').length;
   const avgTicket = todaySales.length > 0 ? (totalRevenue / todaySales.length) : 0;
 
   document.getElementById('dash-stat-revenue').textContent = formatMoney(totalRevenue);
@@ -726,1756 +593,1918 @@ function renderDashboard() {
   document.getElementById('dash-stat-completed').textContent = completedApps;
   document.getElementById('dash-stat-avg-ticket').textContent = formatMoney(avgTicket);
 
-  const pendingCount = store.appointments.filter(a => a.date === todayStr && a.status === 'pendiente').length;
-  const badgeEl = document.getElementById('badge-appointments-count');
-  if (badgeEl) badgeEl.textContent = pendingCount;
+  // Badges contadores
+  const pendingQuotes = store.quoteRequests.filter(r => r.status === 'solicitud' || r.status === 'cotizada').length;
+  document.getElementById('badge-quotes-count').textContent = pendingQuotes;
+  document.getElementById('badge-appointments-count').textContent = todayApps.length;
 
+  // Agenda del día en tabla (Escritorio)
   const tbody = document.getElementById('dash-today-appointments-tbody');
+  const mobList = document.getElementById('dash-today-appointments-mobile-list');
   tbody.innerHTML = '';
+  mobList.innerHTML = '';
 
   if (todayApps.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color: var(--text-muted); padding: 24px;">No hay citas agendadas para el día de hoy.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 18px;">No hay sesiones programadas para hoy.</td></tr>`;
+    mobList.innerHTML = `<p style="text-align: center; color: var(--text-muted); padding: 14px; font-size: 0.85rem;">No hay sesiones programadas para hoy.</p>`;
   } else {
-    todayApps.sort((a,b) => a.time.localeCompare(b.time)).forEach(app => {
-      const barber = store.barbers.find(b => b.id === app.barberId) || { name: 'Sin asignar' };
+    todayApps.forEach(app => {
+      // Fila Desktop
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td><strong style="color: var(--primary); font-size: 0.95rem;">${app.time}</strong></td>
-        <td><b>${escapeHtml(app.clientName)}</b></td>
-        <td><span style="font-size:0.85rem;">${escapeHtml(app.serviceName)}</span></td>
-        <td>${escapeHtml(barber.name)}</td>
+        <td><b>${formatTime12h(app.time)} - ${formatTime12h(app.endTime || calculateEndTime(app.time, app.durationMinutes || 60))}</b></td>
+        <td><b>${escapeHtml(app.clientName)}</b><br><small style="color:var(--text-muted);">${escapeHtml(app.clientPhone)}</small></td>
+        <td>${escapeHtml(app.serviceName)}<br><small style="color:var(--accent-secondary); font-weight:600;">${app.durationLabel || '1h'}</small></td>
+        <td>${escapeHtml(app.artistName)}<br><small style="color:var(--text-muted);">${escapeHtml(app.booth || 'Cabina 1')}</small></td>
         <td>${renderStatusBadge(app.status)}</td>
         <td>
-          <div style="display:flex; gap:6px;">
-            ${app.status !== 'completada' ? `
-              <button class="btn btn-primary btn-sm" onclick="directPayAppointment('${app.id}')" title="Cobrar cita en caja">
-                Cobrar
-              </button>
-            ` : `<span style="color: var(--badge-green-text); font-size:0.8rem; font-weight:600;">Cobrado</span>`}
-          </div>
+          <button class="btn btn-primary btn-sm" onclick="directPayAppointment('${app.id}')" title="Cobrar sesión">Cobrar</button>
         </td>
       `;
       tbody.appendChild(tr);
+
+      // Tarjeta Móvil
+      const card = document.createElement('div');
+      card.className = 'mobile-app-card';
+      card.innerHTML = `
+        <div class="mobile-app-header">
+          <span class="mobile-app-time">${formatTime12h(app.time)} - ${formatTime12h(app.endTime || calculateEndTime(app.time, app.durationMinutes || 60))}</span>
+          ${renderStatusBadge(app.status)}
+        </div>
+        <div class="mobile-app-client">${escapeHtml(app.clientName)}</div>
+        <div class="mobile-app-meta">
+          <span><b>Trabajo:</b> ${escapeHtml(app.serviceName)} (${app.durationLabel || '1h'})</span>
+          <span><b>Artista & Cabina:</b> ${escapeHtml(app.artistName)} - ${escapeHtml(app.booth || 'Cabina 1')}</span>
+          ${app.depositDeducted ? `<span style="color:var(--color-success); font-weight:600;">Depósito acreditado: -$${app.depositDeducted} MXN</span>` : ''}
+        </div>
+        <div class="mobile-app-actions">
+          <button class="btn btn-primary btn-sm" style="flex:1;" onclick="directPayAppointment('${app.id}')">Cobrar en POS</button>
+          <button class="btn btn-secondary btn-sm" onclick="sendWhatsAppReminder('${app.id}')">WhatsApp</button>
+        </div>
+      `;
+      mobList.appendChild(card);
     });
   }
 
-  const barbersList = document.getElementById('dash-barbers-status-list');
-  barbersList.innerHTML = '';
-  store.barbers.forEach(barber => {
-    const inChair = todayApps.find(a => a.barberId === barber.id && a.status === 'en_proceso');
-    const div = document.createElement('div');
-    div.style.cssText = "display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: var(--bg-subtle); border-radius: 6px; border: 1px solid var(--border-default);";
-    div.innerHTML = `
+  // Estado de cabinas
+  const boothsList = document.getElementById('dash-booths-list');
+  boothsList.innerHTML = '';
+  store.artists.forEach((art, idx) => {
+    const activeApp = todayApps.find(a => a.artistId === art.id && a.status === 'en_proceso');
+    const isOccupied = !!activeApp;
+
+    const row = document.createElement('div');
+    row.style.cssText = 'background: var(--bg-subtle); border: 1px solid var(--border-default); border-radius: 6px; padding: 10px 12px; display: flex; align-items: center; justify-content: space-between;';
+    row.innerHTML = `
       <div style="display: flex; align-items: center; gap: 10px;">
-        <div class="user-session-avatar" style="width: 32px; height: 32px; font-size: 0.8rem;">${barber.avatar || getInitials(barber.name)}</div>
+        <div class="user-session-avatar" style="width: 32px; height: 32px; font-size: 0.75rem;">${art.avatar || 'AR'}</div>
         <div>
-          <strong style="color: var(--text-main); font-size: 0.88rem;">${escapeHtml(barber.name)}</strong>
-          <p style="font-size: 0.75rem; color: var(--text-secondary);">${escapeHtml(barber.specialty)}</p>
+          <b style="font-size: 0.85rem; color: var(--text-main);">${escapeHtml(art.booth || ('Cabina ' + (idx + 1)))}</b>
+          <p style="font-size: 0.75rem; color: var(--text-secondary); margin: 0;">${escapeHtml(art.name)} (${escapeHtml(art.specialty)})</p>
         </div>
       </div>
-      <div>
-        ${inChair ? `
-          <span class="badge badge-progress">En Sillón</span>
-        ` : `
-          <span class="badge badge-done">Disponible</span>
-        `}
-      </div>
+      <span class="badge ${isOccupied ? 'badge-progress' : 'badge-done'}">
+        ${isOccupied ? 'En Sesión' : 'Disponible'}
+      </span>
     `;
-    barbersList.appendChild(div);
+    boothsList.appendChild(row);
   });
 }
 
-// ================= RENDERIZADO: AGENDA DE CITAS (CAJERA / ADMIN) =================
-function renderAppointments() {
-  const barberSelect = document.getElementById('filter-appointment-barber');
-  const selectedBarber = barberSelect ? barberSelect.value : 'all';
+function renderStatusBadge(status) {
+  const map = {
+    'solicitud': '<span class="badge badge-pending">Solicitud</span>',
+    'cotizada': '<span class="badge badge-progress">Cotizada (Espera Depósito)</span>',
+    'deposito_pagado': '<span class="badge badge-done">Depósito Pagado</span>',
+    'agendada': '<span class="badge badge-pending">Agendada</span>',
+    'en_proceso': '<span class="badge badge-progress">En Cabina</span>',
+    'realizada': '<span class="badge badge-done">Realizada</span>',
+    'completada': '<span class="badge badge-done">Realizada</span>',
+    'retoque': '<span class="badge badge-touchup">Retoque</span>',
+    'cancelada': '<span class="badge badge-cancel">Cancelada</span>'
+  };
+  return map[status] || `<span class="badge badge-pending">${escapeHtml(status)}</span>`;
+}
 
-  if (barberSelect) {
-    const curVal = barberSelect.value;
-    barberSelect.innerHTML = `<option value="all">Todos los barberos</option>`;
-    store.barbers.forEach(b => {
-      barberSelect.innerHTML += `<option value="${b.id}">${escapeHtml(b.name)}</option>`;
-    });
-    if (curVal) barberSelect.value = curVal;
+// ================= 2. SOLICITUDES & COTIZACIONES (FASE 1) =================
+function renderQuoteRequests() {
+  const container = document.getElementById('quotes-container');
+  const artistContainer = document.getElementById('artist-quotes-container');
+  const filter = (document.getElementById('requests-status-filter') ? document.getElementById('requests-status-filter').value : 'all');
+
+  let list = store.quoteRequests || [];
+  if (filter !== 'all') {
+    list = list.filter(r => r.status === filter);
   }
 
-  renderCustomCalendar('admin-calendar-widget-container', adminSelectedDate, (newDate) => {
-    adminSelectedDate = newDate;
-    renderAppointments();
+  function buildCard(req) {
+    const card = document.createElement('div');
+    card.className = 'quote-card';
+    card.innerHTML = `
+      <div class="quote-card-header">
+        <span class="quote-folio">${escapeHtml(req.folio)}</span>
+        ${renderStatusBadge(req.status)}
+      </div>
+      <div>
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <h4 class="quote-client-name">${escapeHtml(req.clientName)}</h4>
+          ${req.isMinor ? '<span class="quote-tag-minor">Menor de 18 (Requiere Tutor)</span>' : `<span style="font-size:0.75rem; color:var(--text-muted);">${req.clientAge || 20} años</span>`}
+        </div>
+        <p style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px;">
+          WhatsApp: <a href="https://wa.me/52${req.clientPhone}" target="_blank" style="color:var(--accent-secondary); text-decoration:none;">${escapeHtml(req.clientPhone)}</a>
+        </p>
+      </div>
+
+      <div class="quote-details-list">
+        <div><b>Tipo:</b> ${escapeHtml(req.type || 'Tatuaje')}</div>
+        <div><b>Zona:</b> ${escapeHtml(req.bodyZone)} | <b>Tamaño:</b> ${escapeHtml(req.sizeCm)}</div>
+        <div><b>Artista Asignado:</b> ${escapeHtml(req.artistName || 'Sin asignar')}</div>
+        <div style="background: var(--bg-subtle); padding: 8px; border-radius: 4px; border: 1px solid var(--border-subtle); margin-top: 4px;">
+          <small style="color:var(--text-muted); display:block; font-weight:700;">IDEA / DISEÑO:</small>
+          <span>${escapeHtml(req.description)}</span>
+        </div>
+      </div>
+
+      ${req.photoUrl ? `
+        <div class="quote-reference-preview">
+          <a href="${req.photoUrl}" target="_blank" title="Ver referencia completa">
+            <img src="${req.photoUrl}" class="quote-ref-thumb" alt="Referencia">
+          </a>
+        </div>
+      ` : ''}
+
+      ${req.estimatedPrice > 0 ? `
+        <div class="quote-deposit-pill">
+          <div>
+            <span style="font-size:0.7rem; color:var(--text-secondary); display:block;">PRECIO COTIZADO:</span>
+            <b style="color:var(--text-main); font-size:0.95rem;">${formatMoney(req.estimatedPrice)}</b>
+          </div>
+          <div style="text-align: right;">
+            <span style="font-size:0.7rem; color:var(--text-secondary); display:block;">DEPÓSITO / ANTICIPO:</span>
+            <b style="color:${req.depositPaid ? 'var(--color-success)' : 'var(--accent-secondary)'}; font-size:0.95rem;">
+              ${formatMoney(req.depositAmount)} ${req.depositPaid ? '✓ (PAGADO)' : ''}
+            </b>
+          </div>
+        </div>
+      ` : ''}
+
+      <div class="quote-actions-row">
+        ${req.status === 'solicitud' ? `
+          <button class="btn btn-primary btn-sm" style="flex:1;" onclick="openQuoteModal('${req.id}')">Cotizar y Fijar Depósito</button>
+        ` : ''}
+        ${req.status === 'cotizada' ? `
+          <button class="btn btn-accent btn-sm" style="flex:1;" onclick="openDepositPaymentModal('${req.id}')">Ver Enlace de Pago</button>
+          <button class="btn btn-secondary btn-sm" onclick="openQuoteModal('${req.id}')">Editar</button>
+        ` : ''}
+        ${req.status === 'deposito_pagado' ? `
+          <button class="btn btn-success btn-sm" style="flex:1;" onclick="scheduleSessionFromQuote('${req.id}')">Agendar en Calendario</button>
+        ` : ''}
+        ${(req.status === 'agendada' || req.status === 'realizada') ? `
+          <span style="font-size:0.75rem; color:var(--color-success); font-weight:600; padding:4px 0;">✓ Sesión agendada en agenda</span>
+        ` : ''}
+      </div>
+    `;
+    return card;
+  }
+
+  if (container) {
+    container.innerHTML = '';
+    if (list.length === 0) {
+      container.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 30px;">No se encontraron solicitudes con el filtro seleccionado.</p>`;
+    } else {
+      list.forEach(req => container.appendChild(buildCard(req)));
+    }
+  }
+
+  if (artistContainer && currentSession && currentSession.role === 'artist') {
+    artistContainer.innerHTML = '';
+    const myQuotes = (store.quoteRequests || []).filter(r => r.artistId === currentSession.artistId);
+    if (document.getElementById('badge-artist-quotes-count')) {
+      document.getElementById('badge-artist-quotes-count').textContent = myQuotes.filter(r => r.status === 'solicitud').length;
+    }
+    if (myQuotes.length === 0) {
+      artistContainer.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 30px;">No tienes cotizaciones asignadas actualmente.</p>`;
+    } else {
+      myQuotes.forEach(req => artistContainer.appendChild(buildCard(req)));
+    }
+  }
+}
+
+function openNewQuoteModal() {
+  switchView('public-booking');
+}
+
+function openQuoteModal(requestId) {
+  const req = (store.quoteRequests || []).find(r => r.id === requestId);
+  if (!req) return;
+
+  document.getElementById('modal-quote-id').value = req.id;
+  document.getElementById('modal-quote-folio').textContent = req.folio;
+  document.getElementById('modal-quote-status').innerHTML = renderStatusBadge(req.status);
+  document.getElementById('modal-quote-client-info').textContent = `Cliente: ${req.clientName} (${req.clientAge || 20} años)${req.isMinor ? ' - MENOR DE EDAD' : ''}`;
+  document.getElementById('modal-quote-body-info').textContent = `Tipo: ${req.type} | Zona: ${req.bodyZone} | Tamaño: ${req.sizeCm}`;
+  document.getElementById('modal-quote-desc').textContent = req.description;
+
+  const refBox = document.getElementById('modal-quote-ref-container');
+  const imgBox = document.getElementById('modal-quote-ref-img-box');
+  if (req.photoUrl) {
+    refBox.style.display = 'block';
+    imgBox.innerHTML = `<img src="${req.photoUrl}" style="max-height: 120px; border-radius: 4px; border: 1px solid var(--border-default);">`;
+  } else {
+    refBox.style.display = 'none';
+    imgBox.innerHTML = '';
+  }
+
+  document.getElementById('quote-form-price').value = req.estimatedPrice || '';
+  document.getElementById('quote-form-deposit').value = req.depositAmount || '';
+  document.getElementById('quote-form-notes').value = req.notes || '';
+
+  // Selector de artistas
+  const selectArt = document.getElementById('quote-form-artist');
+  selectArt.innerHTML = '';
+  store.artists.forEach(art => {
+    const opt = document.createElement('option');
+    opt.value = art.id;
+    opt.textContent = `${art.name} (${art.specialty})`;
+    if (req.artistId === art.id) opt.selected = true;
+    selectArt.appendChild(opt);
   });
 
-  document.getElementById('admin-citas-header-title').textContent = `Citas para el ${adminSelectedDate}`;
+  openModal('modal-quote-request');
+}
 
-  let filtered = store.appointments.filter(a => a.date === adminSelectedDate);
-  if (selectedBarber !== 'all') {
-    filtered = filtered.filter(a => a.barberId === selectedBarber);
+function calculateSuggestedDeposit(priceVal) {
+  const price = Number(priceVal) || 0;
+  if (price > 0) {
+    // 20% redondeado a centenas
+    const deposit = Math.round((price * 0.25) / 50) * 50;
+    document.getElementById('quote-form-deposit').value = Math.max(deposit, 200);
   }
+}
 
-  const tbody = document.getElementById('appointments-tbody');
-  tbody.innerHTML = '';
+function saveQuoteFromModal() {
+  const reqId = document.getElementById('modal-quote-id').value;
+  const req = (store.quoteRequests || []).find(r => r.id === reqId);
+  if (!req) return;
 
-  if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color: var(--text-muted); padding: 32px;">No hay citas registradas para esta fecha y filtro.</td></tr>`;
+  const price = Number(document.getElementById('quote-form-price').value);
+  const deposit = Number(document.getElementById('quote-form-deposit').value);
+  const artistId = document.getElementById('quote-form-artist').value;
+  const artist = store.artists.find(a => a.id === artistId);
+  const duration = document.getElementById('quote-form-duration').value;
+  const notes = document.getElementById('quote-form-notes').value.trim();
+
+  if (!price || price <= 0) {
+    showToast("Ingresa un precio cotizado válido", "error");
+    return;
+  }
+  if (!deposit || deposit <= 0) {
+    showToast("Ingresa el monto del depósito requerido", "error");
     return;
   }
 
-  filtered.sort((a,b) => a.time.localeCompare(b.time)).forEach(app => {
-    const barber = store.barbers.find(b => b.id === app.barberId) || { name: 'Desconocido' };
+  req.estimatedPrice = price;
+  req.depositAmount = deposit;
+  req.artistId = artistId;
+  req.artistName = artist ? artist.name : '';
+  req.durationEstimated = duration;
+  req.notes = notes;
+  req.status = req.depositPaid ? 'deposito_pagado' : 'cotizada';
+  req.depositLink = `https://estudio-tatuajes.vercel.app/deposito?ref=${req.folio}`;
+
+  DataService.saveStore();
+  closeModal('modal-quote-request');
+  renderQuoteRequests();
+  showToast(`Cotización guardada para ${req.clientName}. Se generó el enlace de anticipo.`, "success");
+
+  // Abrir de inmediato el modal de enlace para compartir
+  if (!req.depositPaid) {
+    openDepositPaymentModal(req.id);
+  }
+}
+
+function openDepositPaymentModal(requestId) {
+  const req = (store.quoteRequests || []).find(r => r.id === requestId);
+  if (!req) return;
+
+  window._activeDepositReqId = req.id;
+  document.getElementById('dep-modal-amount').textContent = formatMoney(req.depositAmount || 0);
+  document.getElementById('dep-modal-concept').textContent = `Anticipo para sesión de ${req.clientName} (${req.folio})`;
+  document.getElementById('dep-modal-link-input').value = req.depositLink || `https://estudio-tatuajes.vercel.app/deposito?ref=${req.folio}`;
+
+  const badge = document.getElementById('dep-modal-status-badge');
+  badge.className = req.depositPaid ? 'badge badge-done' : 'badge badge-progress';
+  badge.textContent = req.depositPaid ? 'Depósito Pagado ✓' : 'Esperando Depósito';
+
+  const msg = `¡Hola ${req.clientName}! Te compartimos tu cotización oficial de INK & PIERCING STUDIO para tu proyecto (${req.folio}):\n\nTotal estimado: ${formatMoney(req.estimatedPrice)}\nAnticipo requerido para agendar: ${formatMoney(req.depositAmount)}\n\nPuedes pagar tu anticipo seguro en este enlace: ${req.depositLink}\n\n¡Al confirmarse tu depósito agendaremos de inmediato tu sesión!`;
+  document.getElementById('dep-modal-whatsapp-preview').textContent = msg;
+
+  const confirmBtn = document.getElementById('btn-confirm-deposit-auto');
+  if (confirmBtn) {
+    confirmBtn.style.display = req.depositPaid ? 'none' : 'block';
+  }
+
+  openModal('modal-deposit-payment');
+}
+
+function copyDepositLink() {
+  const input = document.getElementById('dep-modal-link-input');
+  input.select();
+  input.setSelectionRange(0, 99999);
+  try {
+    navigator.clipboard.writeText(input.value);
+    showToast("Enlace de pago copiado al portapapeles", "success");
+  } catch (e) {
+    document.execCommand('copy');
+    showToast("Enlace copiado", "success");
+  }
+}
+
+function sendDepositWhatsApp() {
+  const reqId = window._activeDepositReqId;
+  const req = (store.quoteRequests || []).find(r => r.id === reqId);
+  if (!req) return;
+
+  const msg = `¡Hola ${req.clientName}! Te compartimos tu cotización oficial de INK & PIERCING STUDIO para tu proyecto (${req.folio}):%0A%0A*Total estimado:* ${formatMoney(req.estimatedPrice)}%0A*Anticipo requerido:* ${formatMoney(req.depositAmount)}%0A%0APuedes liquidar tu anticipo en este enlace seguro:%0A${encodeURIComponent(req.depositLink)}%0A%0AUna vez acreditado fijaremos fecha y hora en cabina.`;
+  window.open(`https://wa.me/52${req.clientPhone}?text=${msg}`, '_blank');
+}
+
+// Confirmar pago del depósito (Simulación de Webhook de Pasarela)
+function confirmDepositPayment() {
+  const reqId = window._activeDepositReqId;
+  const req = (store.quoteRequests || []).find(r => r.id === reqId);
+  if (!req) return;
+
+  req.depositPaid = true;
+  req.depositPaidAt = new Date().toISOString();
+  req.status = 'deposito_pagado';
+
+  // Registrar movimiento de anticipo en caja
+  store.cashMovements.push({
+    id: 'mov-' + Date.now(),
+    type: 'anticipo',
+    concept: `Anticipo recibido (${req.folio} - ${req.clientName})`,
+    amount: req.depositAmount,
+    method: 'Transferencia',
+    timestamp: new Date().toISOString()
+  });
+
+  DataService.saveStore();
+  closeModal('modal-deposit-payment');
+  renderQuoteRequests();
+  renderCashRegister();
+  showToast(`¡Pago de depósito confirmado para ${req.clientName}! Ya puedes agendar la sesión.`, "success");
+
+  // Ofrecer agendar directamente
+  setTimeout(() => {
+    scheduleSessionFromQuote(req.id);
+  }, 400);
+}
+
+// Abrir modal de agendar con los datos de la cotización prellenados
+function scheduleSessionFromQuote(requestId) {
+  const req = (store.quoteRequests || []).find(r => r.id === requestId);
+  if (!req) return;
+
+  openNewAppointmentModal();
+
+  document.getElementById('app-form-client').value = req.clientName;
+  document.getElementById('app-form-phone').value = req.clientPhone;
+  document.getElementById('app-form-notes').value = `Cotización ${req.folio}: ${req.description}`;
+
+  // Mostrar anticipo acreditado
+  const depRow = document.getElementById('modal-deposit-row');
+  if (depRow) {
+    depRow.style.display = 'block';
+    document.getElementById('app-form-deposit-display').value = `${formatMoney(req.depositAmount)} (Acreditado - Se descontará al liquidar en POS)`;
+  }
+
+  // Guardar referencia en el modal
+  window._quoteScheduledRef = req;
+
+  // Seleccionar artista si está asignado
+  if (req.artistId) {
+    selectModalArtist(req.artistId);
+  }
+}
+
+// Envío del formulario público
+function submitPublicBooking(e) {
+  e.preventDefault();
+  const name = document.getElementById('pb-client-name').value.trim();
+  const phone = document.getElementById('pb-client-phone').value.trim();
+  const age = parseInt(document.getElementById('pb-client-age').value, 10);
+  const type = document.getElementById('pb-service-type').value;
+  const zone = document.getElementById('pb-body-zone').value.trim();
+  const size = document.getElementById('pb-size-cm').value.trim();
+  const artistId = document.getElementById('pb-artist-select').value;
+  const desc = document.getElementById('pb-description').value.trim();
+  const photoUrl = document.getElementById('pb-photo-url').value.trim();
+
+  const isMinor = age < 18;
+  const folioNum = (store.quoteRequests.length + 1).toString().padStart(3, '0');
+  const folio = `COT-2026-${folioNum}`;
+
+  const artist = store.artists.find(a => a.id === artistId);
+
+  const newReq = {
+    id: 'req-' + Date.now(),
+    folio: folio,
+    clientName: name,
+    clientPhone: phone,
+    clientAge: age,
+    isMinor: isMinor,
+    type: type,
+    bodyZone: zone,
+    sizeCm: size,
+    description: desc,
+    photoUrl: photoUrl,
+    artistId: artistId || (store.artists[0] ? store.artists[0].id : ''),
+    artistName: artist ? artist.name : 'Por Asignar',
+    status: 'solicitud',
+    estimatedPrice: 0,
+    depositAmount: 0,
+    depositPaid: false,
+    depositLink: `https://estudio-tatuajes.vercel.app/deposito?ref=${folio}`,
+    notes: '',
+    dateRequested: new Date().toISOString().split('T')[0]
+  };
+
+  store.quoteRequests.unshift(newReq);
+
+  // Asegurar registro del cliente en el directorio
+  const existingClient = store.clients.find(c => c.phone === phone);
+  if (!existingClient) {
+    store.clients.push({
+      id: 'c-' + Date.now(),
+      name: name,
+      age: age,
+      phone: phone,
+      allergies: isMinor ? 'Menor de edad (Requiere tutor)' : 'Ninguna',
+      visits: 0,
+      totalSpent: 0,
+      isMinor: isMinor,
+      notes: `Solicitud ${folio} registrada.`
+    });
+  }
+
+  DataService.saveStore();
+
+  document.getElementById('public-booking-form').reset();
+  document.getElementById('pb-minor-warning').style.display = 'none';
+
+  showToast(`¡Solicitud ${folio} enviada con éxito! Te contactaremos por WhatsApp con tu cotización.`, "success");
+  switchView('requests');
+}
+
+function handleAgeCheck(val) {
+  const age = parseInt(val, 10);
+  const warn = document.getElementById('pb-minor-warning');
+  if (age && age < 18) {
+    warn.style.display = 'block';
+  } else {
+    warn.style.display = 'none';
+  }
+}
+
+function renderPublicBookingArtists() {
+  const sel = document.getElementById('pb-artist-select');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Cualquier artista disponible según estilo</option>';
+  store.artists.forEach(art => {
+    const opt = document.createElement('option');
+    opt.value = art.id;
+    opt.textContent = `${art.name} (${art.specialty})`;
+    sel.appendChild(opt);
+  });
+}
+
+// ================= 3. AGENDA & CALENDARIO INTERACTIVO (DURACIÓN LIBRE + 12H) =================
+let selectedCalendarDate = new Date().toISOString().split('T')[0];
+let selectedModalArtistId = '';
+let selectedModalTime = '11:00 AM';
+let selectedModalDurationMinutes = 120; // 2 horas default
+let selectedModalServices = [];
+
+function renderAppointments() {
+  const tbody = document.getElementById('appointments-tbody');
+  const mobList = document.getElementById('appointments-mobile-list');
+  const filterArtist = document.getElementById('appointments-filter-artist') ? document.getElementById('appointments-filter-artist').value : 'all';
+
+  // Llenar selector de filtro por artista
+  const selectArt = document.getElementById('appointments-filter-artist');
+  if (selectArt && selectArt.options.length <= 1) {
+    store.artists.forEach(a => {
+      const opt = document.createElement('option');
+      opt.value = a.id;
+      opt.textContent = a.name;
+      selectArt.appendChild(opt);
+    });
+  }
+
+  // Actualizar calendario
+  renderCalendarWidget('appointments-calendar-container', selectedCalendarDate, (d) => {
+    selectedCalendarDate = d;
+    renderAppointments();
+  });
+
+  // Título del día seleccionado
+  const dateObj = new Date(selectedCalendarDate + 'T00:00:00');
+  const dateFormatted = dateObj.toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  document.getElementById('appointments-day-title').textContent = `Sesiones para el ${dateFormatted}`;
+
+  let apps = store.appointments.filter(a => a.date === selectedCalendarDate);
+  if (filterArtist !== 'all') {
+    apps = apps.filter(a => a.artistId === filterArtist);
+  }
+
+  tbody.innerHTML = '';
+  mobList.innerHTML = '';
+
+  if (apps.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:24px;">No hay sesiones agendadas para este día.</td></tr>`;
+    mobList.innerHTML = `<p style="text-align:center; color:var(--text-muted); padding:16px; font-size:0.85rem;">No hay sesiones agendadas para este día.</p>`;
+    return;
+  }
+
+  apps.forEach(app => {
+    const endTimeStr = app.endTime || calculateEndTime(app.time, app.durationMinutes || 60);
+
+    // Desktop
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td><strong style="color: var(--primary); font-size: 0.95rem;">${app.time}</strong></td>
+      <td><b>${formatTime12h(app.time)} - ${formatTime12h(endTimeStr)}</b></td>
+      <td><b>${escapeHtml(app.clientName)}</b><br><small style="color:var(--text-muted);">${escapeHtml(app.clientPhone)}</small></td>
+      <td>${escapeHtml(app.serviceName)}<br><small style="color:var(--accent-secondary); font-weight:600;">${app.durationLabel || '1h'}</small></td>
+      <td>${escapeHtml(app.artistName)}<br><small style="color:var(--text-muted);">${escapeHtml(app.booth || 'Cabina 1')}</small></td>
+      <td>${app.depositDeducted ? `<span style="color:var(--color-success); font-weight:700;">-${formatMoney(app.depositDeducted)}</span>` : '<span style="color:var(--text-muted);">$0</span>'}</td>
       <td>
-        <b>${escapeHtml(app.clientName)}</b>
-        ${app.notes ? `<div style="font-size: 0.75rem; color: var(--text-muted);">${escapeHtml(app.notes)}</div>` : ''}
-      </td>
-      <td>
-        <span>${escapeHtml(app.clientPhone || 'Sin tel')}</span>
-        ${app.clientPhone ? `
-          <button class="btn btn-secondary btn-sm" style="padding: 2px 6px; margin-left: 6px; font-size: 0.7rem;" onclick="sendWhatsAppReminder('${app.id}')">WhatsApp</button>
-        ` : ''}
-      </td>
-      <td><span style="font-size: 0.88rem;">${escapeHtml(app.serviceName)}</span></td>
-      <td>${escapeHtml(barber.name)}</td>
-      <td><strong>${formatMoney(app.price)}</strong></td>
-      <td>
-        <select class="form-select" style="padding: 4px 8px; font-size: 0.8rem; width: auto;" onchange="handleAdminStatusChange('${app.id}', this.value)">
-          <option value="pendiente" ${app.status === 'pendiente' ? 'selected' : ''}>En Espera</option>
-          <option value="en_proceso" ${app.status === 'en_proceso' ? 'selected' : ''}>En Sillón</option>
-          <option value="completada" ${app.status === 'completada' ? 'selected' : ''}>Completar y Cobrar</option>
+        <select class="form-select" style="font-size:0.75rem; padding:3px 6px;" onchange="updateAppointmentStatus('${app.id}', this.value)">
+          <option value="agendada" ${app.status === 'agendada' ? 'selected' : ''}>Agendada</option>
+          <option value="en_proceso" ${app.status === 'en_proceso' ? 'selected' : ''}>En Cabina</option>
+          <option value="realizada" ${app.status === 'realizada' ? 'selected' : ''}>Realizada</option>
+          <option value="retoque" ${app.status === 'retoque' ? 'selected' : ''}>Retoque</option>
           <option value="cancelada" ${app.status === 'cancelada' ? 'selected' : ''}>Cancelada</option>
         </select>
       </td>
       <td>
-        <div style="display: flex; gap: 6px;">
-          ${app.status !== 'completada' ? `
-            <button class="btn btn-primary btn-sm" onclick="directPayAppointment('${app.id}')">Cobrar</button>
-          ` : `<span style="color: var(--badge-green-text); font-size:0.75rem; font-weight:bold;">Cobrado</span>`}
-          <button class="btn btn-danger btn-sm" onclick="deleteAppointment('${app.id}')" title="Eliminar cita">Eliminar</button>
+        <div style="display: flex; gap: 4px;">
+          <button class="btn btn-primary btn-sm" onclick="directPayAppointment('${app.id}')" title="Cobrar sesión">Cobrar</button>
+          <button class="btn btn-secondary btn-sm" onclick="sendWhatsAppReminder('${app.id}')" title="Enviar WhatsApp">WA</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteAppointment('${app.id}')" title="Eliminar">&times;</button>
         </div>
       </td>
     `;
     tbody.appendChild(tr);
-  });
-}
 
-// Cuando la cajera cambia el estado de la cita
-function handleAdminStatusChange(appId, newStatus) {
-  if (newStatus === 'completada') {
-    directPayAppointment(appId);
-    showToast("Cita marcada como completada. Redirigiendo a cobrar en caja...", "info");
-  } else {
-    updateAppointmentStatus(appId, newStatus);
-  }
+    // Mobile
+    const card = document.createElement('div');
+    card.className = 'mobile-app-card';
+    card.innerHTML = `
+      <div class="mobile-app-header">
+        <span class="mobile-app-time">${formatTime12h(app.time)} - ${formatTime12h(endTimeStr)}</span>
+        ${renderStatusBadge(app.status)}
+      </div>
+      <div class="mobile-app-client">${escapeHtml(app.clientName)}</div>
+      <div class="mobile-app-meta">
+        <span><b>Servicio:</b> ${escapeHtml(app.serviceName)} (${app.durationLabel || '1h'})</span>
+        <span><b>Artista:</b> ${escapeHtml(app.artistName)} - ${escapeHtml(app.booth || 'Cabina 1')}</span>
+        ${app.depositDeducted ? `<span style="color:var(--color-success); font-weight:700;">Anticipo acreditado: -${formatMoney(app.depositDeducted)}</span>` : ''}
+        ${app.notes ? `<span style="color:var(--text-muted); font-size:0.75rem;">Nota: ${escapeHtml(app.notes)}</span>` : ''}
+      </div>
+      <div class="mobile-app-actions">
+        <button class="btn btn-primary btn-sm" style="flex:1;" onclick="directPayAppointment('${app.id}')">Cobrar en POS</button>
+        <button class="btn btn-secondary btn-sm" onclick="sendWhatsAppReminder('${app.id}')">Recordar WA</button>
+      </div>
+    `;
+    mobList.appendChild(card);
+  });
 }
 
 function updateAppointmentStatus(appId, newStatus) {
   const app = store.appointments.find(a => a.id === appId);
-  if (app) {
-    app.status = newStatus;
-    saveStore();
-    renderDashboard();
-    renderAppointments();
-    if (currentUser && currentUser.role === 'barber') renderBarberPortal();
-    showToast(`Estado actualizado: ${newStatus}`, 'info');
-  }
+  if (!app) return;
+  app.status = newStatus;
+  DataService.saveStore();
+  renderAppointments();
+  renderDashboard();
+  showToast(`Estado actualizado a ${newStatus}`, "info");
 }
 
 function deleteAppointment(appId) {
-  if (confirm("¿Estás seguro de que deseas eliminar esta cita?")) {
-    store.appointments = store.appointments.filter(a => a.id !== appId);
-    saveStore();
-    renderDashboard();
-    renderAppointments();
-    showToast("Cita eliminada", "info");
-  }
+  if (!confirm("¿Deseas eliminar esta cita de la agenda?")) return;
+  store.appointments = store.appointments.filter(a => a.id !== appId);
+  DataService.saveStore();
+  renderAppointments();
+  renderDashboard();
+  showToast("Sesión eliminada de la agenda", "info");
 }
 
 function sendWhatsAppReminder(appId) {
   const app = store.appointments.find(a => a.id === appId);
-  if (!app || !app.clientPhone) return;
-
-  const cleanPhone = app.clientPhone.replace(/\D/g, '');
-  const msg = encodeURIComponent(
-    `¡Hola ${app.clientName}! Te recordamos tu cita en *${store.config.shopName}* para hoy a las *${app.time} hrs* (${app.serviceName}). ¡Te esperamos!`
-  );
-  window.open(`https://wa.me/${cleanPhone}?text=${msg}`, '_blank');
+  if (!app) return;
+  const msg = `¡Hola ${app.clientName}! Te recordamos tu cita en *INK & PIERCING STUDIO*:%0A%0A*Fecha:* ${app.date}%0A*Horario:* ${formatTime12h(app.time)}%0A*Artista:* ${app.artistName}%0A*Cabina:* ${app.booth || 'Cabina 1'}%0A%0A*Instrucciones previas:*%0A- Ven bien hidratado(a) y con comida previa.%0A- No tomes alcohol ni aspirinas 24 horas antes.%0A- Ropa cómoda que permita acceso a la zona.%0A%0A¡Te esperamos con gusto!`;
+  window.open(`https://wa.me/52${app.clientPhone}?text=${msg}`, '_blank');
 }
 
-// ================= RENDERIZADO: PORTAL EXCLUSIVO DE BARBERO =================
-function renderBarberPortal() {
-  if (!currentUser || currentUser.role !== 'barber') return;
+// ================= MODAL AGENDAR NUEVA CITA / SESIÓN =================
+function openNewAppointmentModal() {
+  selectedModalServices = [];
+  selectedModalArtistId = store.artists[0] ? store.artists[0].id : '';
+  selectedModalTime = '11:00 AM';
+  selectedModalDurationMinutes = 120;
+  window._quoteScheduledRef = null;
 
-  const barberId = currentUser.barberId;
-  const todayStr = new Date().toISOString().split('T')[0];
+  document.getElementById('app-form-client').value = '';
+  document.getElementById('app-form-phone').value = '';
+  document.getElementById('app-form-notes').value = '';
+  document.getElementById('app-form-custom-duration').value = '120';
+  document.getElementById('modal-deposit-row').style.display = 'none';
 
-  const todayApps = store.appointments.filter(a => a.barberId === barberId && a.date === todayStr);
-  const doneApps = todayApps.filter(a => a.status === 'completada');
+  renderModalServicesPicker();
+  renderModalArtistPicker();
+  renderModalCalendar();
+  renderModalTimePicker();
+  updateModalTimeRange();
 
-  const myTipsToday = (store.barberTips || [])
-    .filter(t => t.barberId === barberId && t.timestamp && t.timestamp.startsWith(todayStr))
-    .reduce((sum, t) => sum + (t.amount || 0), 0);
-
-  document.getElementById('barber-portal-stat-apps').textContent = todayApps.length;
-  document.getElementById('barber-portal-stat-done').textContent = doneApps.length;
-  document.getElementById('barber-portal-stat-tips').textContent = formatMoney(myTipsToday);
-
-  renderCustomCalendar('barber-calendar-widget-container', barberSelectedDate, (newDate) => {
-    barberSelectedDate = newDate;
-    document.getElementById('barber-selected-date-label').textContent = (newDate === todayStr) ? "Hoy (" + newDate + ")" : newDate;
-    renderBarberPortal();
-  });
-
-  document.getElementById('barber-citas-header-title').textContent = (barberSelectedDate === todayStr)
-    ? `Citas de Hoy (${barberSelectedDate})`
-    : `Citas del ${barberSelectedDate}`;
-
-  const dateApps = store.appointments.filter(a => a.barberId === barberId && a.date === barberSelectedDate);
-  const tbody = document.getElementById('barber-my-appointments-tbody');
-  tbody.innerHTML = '';
-
-  if (dateApps.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color: var(--text-muted); padding: 32px;">No tienes citas registradas para esta fecha.</td></tr>`;
-    return;
-  }
-
-  dateApps.sort((a,b) => a.time.localeCompare(b.time)).forEach(app => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td><strong style="color: var(--primary); font-size: 0.95rem;">${app.time}</strong></td>
-      <td>
-        <b>${escapeHtml(app.clientName)}</b>
-        ${app.notes ? `<div style="font-size: 0.75rem; color: var(--text-muted);">${escapeHtml(app.notes)}</div>` : ''}
-      </td>
-      <td>
-        <span>${escapeHtml(app.clientPhone || 'Sin tel')}</span>
-        ${app.clientPhone ? `
-          <button class="btn btn-secondary btn-sm" style="padding: 2px 6px; margin-left: 6px; font-size: 0.7rem;" onclick="sendWhatsAppReminder('${app.id}')">Recordatorio</button>
-        ` : ''}
-      </td>
-      <td><span style="font-size: 0.88rem;">${escapeHtml(app.serviceName)}</span></td>
-      <td><strong>${formatMoney(app.price)}</strong></td>
-      <td>
-        ${renderStatusBadge(app.status)}
-      </td>
-      <td>
-        <button class="btn btn-secondary btn-sm" onclick="openBarberTipModal('${escapeHtml(app.clientName)}')">
-          + Propina
-        </button>
-      </td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-
-// ================= RENDERIZADO: PROPINAS DEL BARBERO =================
-function renderBarberTips() {
-  if (!currentUser || currentUser.role !== 'barber') return;
-
-  const barberId = currentUser.barberId;
-  const todayStr = new Date().toISOString().split('T')[0];
-
-  const myTips = (store.barberTips || []).filter(t => t.barberId === barberId);
-  const myTipsToday = myTips.filter(t => t.timestamp && t.timestamp.startsWith(todayStr));
-
-  const totalToday = myTipsToday.reduce((sum, t) => sum + (t.amount || 0), 0);
-  const totalAll = myTips.reduce((sum, t) => sum + (t.amount || 0), 0);
-
-  document.getElementById('barber-tips-today-total').textContent = formatMoney(totalToday);
-  document.getElementById('barber-tips-all-total').textContent = formatMoney(totalAll);
-
-  const tbody = document.getElementById('barber-tips-history-tbody');
-  tbody.innerHTML = '';
-
-  if (myTips.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 24px; color: var(--text-muted);">Aún no has registrado propinas. Haz clic en '+ Registrar Nueva Propina'.</td></tr>`;
-    return;
-  }
-
-  myTips.slice().reverse().forEach(tip => {
-    const timeFormatted = new Date(tip.timestamp).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' });
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td><strong>${timeFormatted}</strong></td>
-      <td><b>${escapeHtml(tip.client || 'Cliente')}</b></td>
-      <td><strong style="color: var(--badge-green-text); font-size: 1rem;">+${formatMoney(tip.amount)}</strong></td>
-      <td style="color: var(--text-secondary);">${escapeHtml(tip.notes || '-')}</td>
-      <td>
-        <button class="btn btn-danger btn-sm" onclick="deleteBarberTip('${tip.id}')">Eliminar</button>
-      </td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-
-function openBarberTipModal(clientName = '') {
-  document.getElementById('tip-form-amount').value = '';
-  document.getElementById('tip-form-client').value = clientName || '';
-  document.getElementById('tip-form-notes').value = '';
-  openModal('modal-barber-tip');
-}
-
-function saveBarberTipFromModal() {
-  const amount = parseFloat(document.getElementById('tip-form-amount').value);
-  const client = document.getElementById('tip-form-client').value.trim() || 'Cliente';
-  const notes = document.getElementById('tip-form-notes').value.trim();
-
-  if (isNaN(amount) || amount <= 0) {
-    showToast("Por favor ingresa un monto de propina válido", "error");
-    return;
-  }
-
-  if (!currentUser || currentUser.role !== 'barber') {
-    showToast("Solo los barberos pueden capturar sus propinas personales", "error");
-    return;
-  }
-
-  const newTip = {
-    id: `tip-${Date.now()}`,
-    barberId: currentUser.barberId,
-    barberName: currentUser.name,
-    amount: amount,
-    client: client,
-    notes: notes,
-    timestamp: new Date().toISOString()
-  };
-
-  if (!store.barberTips) store.barberTips = [];
-  store.barberTips.push(newTip);
-
-  saveStore();
-  closeModal('modal-barber-tip');
-  renderBarberPortal();
-  renderBarberTips();
-  showToast(`Propina de ${formatMoney(amount)} registrada con éxito`, "success");
-}
-
-function deleteBarberTip(tipId) {
-  if (confirm("¿Deseas eliminar este registro de propina?")) {
-    store.barberTips = store.barberTips.filter(t => t.id !== tipId);
-    saveStore();
-    renderBarberPortal();
-    renderBarberTips();
-    showToast("Propina eliminada", "info");
-  }
-}
-
-// ================= COMPONENTE DE SELECCIÓN MÚLTIPLE DE SERVICIOS =================
-function renderMultiServicesPicker(containerId, summaryTextId, summaryPriceId, selectedServicesArray, onToggleCallback) {
-  const container = document.getElementById(containerId);
-  if (!container) return;
-
-  container.innerHTML = '';
-  store.services.forEach(srv => {
-    const isSelected = selectedServicesArray.some(s => s.id === srv.id);
-    const item = document.createElement('div');
-    item.className = `service-select-item ${isSelected ? 'selected' : ''}`;
-    item.innerHTML = `
-      <div class="custom-checkbox">${isSelected ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"><polyline points="20 6 9 17 4 12"></polyline></svg>' : ''}</div>
-      <div class="service-select-info">
-        <div class="service-select-title">${escapeHtml(srv.name)}</div>
-        <div class="service-select-meta">
-          <span class="service-select-duration">${srv.duration} min</span>
-          <span class="service-select-price">${formatMoney(srv.price)}</span>
-        </div>
-      </div>
-    `;
-
-    item.onclick = () => onToggleCallback(srv);
-    container.appendChild(item);
-  });
-
-  const totalCount = selectedServicesArray.length;
-  const totalPrice = selectedServicesArray.reduce((acc, s) => acc + s.price, 0);
-  const totalDuration = selectedServicesArray.reduce((acc, s) => acc + s.duration, 0);
-
-  const summaryText = document.getElementById(summaryTextId);
-  const summaryPrice = document.getElementById(summaryPriceId);
-
-  if (summaryText && summaryPrice) {
-    if (totalCount === 0) {
-      summaryText.textContent = "Ningún servicio seleccionado";
-      summaryPrice.textContent = "$0.00";
-    } else {
-      summaryText.textContent = `${totalCount} servicio(s) seleccionado(s) • ${totalDuration} min`;
-      summaryPrice.textContent = formatMoney(totalPrice);
-    }
-  }
-}
-
-// ================= MODAL DE CITAS =================
-function openNewAppointmentModal(prefillClient = null) {
-  document.getElementById('modal-appointment-title').textContent = "Agendar Nueva Cita";
-  const nameInput = document.getElementById('app-form-client');
-  const phoneInput = document.getElementById('app-form-phone');
-
-  if (prefillClient) {
-    nameInput.value = prefillClient.name;
-    phoneInput.value = prefillClient.phone || '';
-  } else {
-    nameInput.value = '';
-    phoneInput.value = '';
-  }
-
-  if (currentUser && currentUser.role === 'barber') {
-    modalSelectedBarberId = currentUser.barberId;
-  } else if (!modalSelectedBarberId && store.barbers.length > 0) {
-    modalSelectedBarberId = store.barbers[0].id;
-  }
-
-  if (modalSelectedServices.length === 0 && store.services.length > 0) {
-    modalSelectedServices = [store.services[0]];
-  }
-
-  modalSelectedDate = new Date().toISOString().split('T')[0];
-  modalSelectedTime = "11:00";
-  document.getElementById('app-form-notes').value = prefillClient ? (prefillClient.notes || '') : '';
-
-  renderModalAppointmentComponents();
   openModal('modal-appointment');
 }
 
-function renderModalAppointmentComponents() {
-  renderMultiServicesPicker(
-    'modal-services-picker',
-    'modal-services-summary-text',
-    'modal-services-summary-price',
-    modalSelectedServices,
-    (toggledSrv) => {
-      const idx = modalSelectedServices.findIndex(s => s.id === toggledSrv.id);
-      if (idx > -1) {
-        modalSelectedServices.splice(idx, 1);
-      } else {
-        modalSelectedServices.push(toggledSrv);
-      }
-      renderModalAppointmentComponents();
-    }
-  );
+function renderModalServicesPicker() {
+  const container = document.getElementById('modal-services-picker');
+  container.innerHTML = '';
 
-  const barberContainer = document.getElementById('modal-barber-picker');
-  barberContainer.innerHTML = '';
-  store.barbers.forEach(b => {
-    const isSelected = (b.id === modalSelectedBarberId);
+  store.services.forEach(srv => {
+    const isSelected = selectedModalServices.some(s => s.id === srv.id);
+    const item = document.createElement('div');
+    item.className = `service-select-item ${isSelected ? 'selected' : ''}`;
+    item.innerHTML = `
+      <div class="custom-checkbox">${isSelected ? '✓' : ''}</div>
+      <div style="flex: 1;">
+        <div class="service-select-title">${escapeHtml(srv.name)}</div>
+        <div class="service-select-meta">
+          <span class="service-select-price">${formatMoney(srv.price)}</span>
+          <span class="service-select-duration">${srv.duration || 60}m</span>
+        </div>
+      </div>
+    `;
+    item.onclick = () => {
+      if (isSelected) {
+        selectedModalServices = selectedModalServices.filter(s => s.id !== srv.id);
+      } else {
+        selectedModalServices.push(srv);
+      }
+      renderModalServicesPicker();
+      updateModalServicesSummary();
+    };
+    container.appendChild(item);
+  });
+  updateModalServicesSummary();
+}
+
+function updateModalServicesSummary() {
+  const count = selectedModalServices.length;
+  const totalPrice = selectedModalServices.reduce((a, s) => a + (s.price || 0), 0);
+  document.getElementById('modal-services-summary-text').textContent = `${count} servicio(s) seleccionado(s)`;
+  document.getElementById('modal-services-summary-price').textContent = formatMoney(totalPrice);
+}
+
+function renderModalArtistPicker() {
+  const container = document.getElementById('modal-artist-picker');
+  container.innerHTML = '';
+
+  store.artists.forEach(art => {
+    const isSelected = (art.id === selectedModalArtistId);
     const card = document.createElement('div');
     card.className = `barber-picker-card ${isSelected ? 'selected' : ''}`;
     card.innerHTML = `
-      <div class="user-session-avatar" style="width: 32px; height: 32px; margin: 0 auto 6px; font-size: 0.8rem;">${b.avatar || getInitials(b.name)}</div>
-      <div class="name">${escapeHtml(b.name)}</div>
-      <div class="role">${escapeHtml(b.specialty)}</div>
+      <div class="avatar-badge">${art.avatar || 'AR'}</div>
+      <div class="name">${escapeHtml(art.name)}</div>
+      <div class="role">${escapeHtml(art.specialty)}</div>
     `;
-    card.onclick = () => {
-      modalSelectedBarberId = b.id;
-      renderModalAppointmentComponents();
-    };
-    barberContainer.appendChild(card);
+    card.onclick = () => selectModalArtist(art.id);
+    container.appendChild(card);
   });
+}
 
-  renderCustomCalendar('modal-calendar-widget-container', modalSelectedDate, (newDate) => {
-    modalSelectedDate = newDate;
-    renderModalAppointmentComponents();
+function selectModalArtist(artistId) {
+  selectedModalArtistId = artistId;
+  renderModalArtistPicker();
+  renderModalTimePicker();
+}
+
+function renderModalCalendar() {
+  renderCalendarWidget('modal-calendar-widget-container', selectedCalendarDate, (d) => {
+    selectedCalendarDate = d;
+    renderModalCalendar();
+    renderModalTimePicker();
+    updateModalTimeRange();
   });
+}
 
-  renderTimeSlotsWidget(
-    'modal-time-picker-container',
-    modalSelectedBarberId,
-    modalSelectedDate,
-    modalSelectedTime,
-    (time) => {
-      modalSelectedTime = time;
-      renderModalAppointmentComponents();
+// Selector de horas en formato 12 Horas
+function renderModalTimePicker() {
+  const container = document.getElementById('modal-time-picker-container');
+  if (!container) return;
+
+  const slots = [
+    "10:00 AM", "11:00 AM", "12:00 PM",
+    "1:00 PM", "2:00 PM", "3:00 PM", "4:00 PM",
+    "5:00 PM", "6:00 PM", "7:00 PM"
+  ];
+
+  // Identificar horarios ocupados para el artista en la fecha seleccionada
+  const bookedSlots = store.appointments
+    .filter(a => a.date === selectedCalendarDate && a.artistId === selectedModalArtistId && a.status !== 'cancelada')
+    .map(a => formatTime12h(a.time));
+
+  container.innerHTML = `
+    <div class="time-shift-title">Horarios Disponibles (12 Horas)</div>
+    <div class="time-slots-wrapper" id="modal-time-slots-wrapper"></div>
+  `;
+
+  const wrapper = document.getElementById('modal-time-slots-wrapper');
+  slots.forEach(slot => {
+    const isBooked = bookedSlots.includes(slot);
+    const isSelected = (slot === selectedModalTime);
+
+    const pill = document.createElement('div');
+    pill.className = `time-slot-pill ${isSelected ? 'selected' : ''} ${isBooked ? 'booked' : ''}`;
+    pill.textContent = slot;
+
+    if (!isBooked) {
+      pill.onclick = () => {
+        selectedModalTime = slot;
+        renderModalTimePicker();
+        updateModalTimeRange();
+      };
+    } else {
+      pill.title = "Horario reservado";
     }
-  );
+
+    wrapper.appendChild(pill);
+  });
+}
+
+// Duración de sesión flexible (presets & personalizada)
+function selectDurationPreset(minutes, label) {
+  selectedModalDurationMinutes = minutes;
+  document.getElementById('app-form-custom-duration').value = minutes;
+  document.querySelectorAll('.duration-pill').forEach(p => p.classList.remove('active'));
+  if (event && event.target) event.target.classList.add('active');
+  updateModalTimeRange();
+}
+
+function handleCustomDurationChange(val) {
+  const minutes = parseInt(val, 10) || 60;
+  selectedModalDurationMinutes = minutes;
+  document.querySelectorAll('.duration-pill').forEach(p => p.classList.remove('active'));
+  updateModalTimeRange();
+}
+
+function updateModalTimeRange() {
+  const end = calculateEndTime(selectedModalTime, selectedModalDurationMinutes);
+  const label = formatDurationLabel(selectedModalDurationMinutes);
+  document.getElementById('modal-time-range-preview').textContent = `${selectedModalTime} - ${end} (${label})`;
+  document.getElementById('app-duration-summary-text').textContent = `Duración fijada: ${label}`;
 }
 
 function saveAppointmentFromModal() {
-  const name = document.getElementById('app-form-client').value.trim();
-  const phone = document.getElementById('app-form-phone').value.trim();
+  const clientName = document.getElementById('app-form-client').value.trim();
+  const clientPhone = document.getElementById('app-form-phone').value.trim();
   const notes = document.getElementById('app-form-notes').value.trim();
 
-  if (!name) {
+  if (!clientName) {
     showToast("Ingresa el nombre del cliente", "error");
     return;
   }
-  if (modalSelectedServices.length === 0) {
-    showToast("Selecciona al menos un servicio", "error");
+  if (!selectedModalArtistId) {
+    showToast("Selecciona un artista", "error");
     return;
   }
-  if (!modalSelectedBarberId) {
-    showToast("Selecciona al barbero asignado", "error");
-    return;
-  }
-  if (!modalSelectedTime) {
-    showToast("Selecciona un horario disponible", "error");
+  if (selectedModalServices.length === 0) {
+    showToast("Selecciona al menos un servicio o tipo de sesión", "error");
     return;
   }
 
-  const barber = store.barbers.find(b => b.id === modalSelectedBarberId);
-  const totalPrice = modalSelectedServices.reduce((acc, s) => acc + s.price, 0);
-  const totalDuration = modalSelectedServices.reduce((acc, s) => acc + s.duration, 0);
-  const serviceName = modalSelectedServices.map(s => s.name).join(' + ');
+  const artist = store.artists.find(a => a.id === selectedModalArtistId);
+  const totalPrice = selectedModalServices.reduce((a, s) => a + (s.price || 0), 0);
+  const serviceName = selectedModalServices.map(s => s.name).join(" + ");
+
+  // Si vino de una cotización con anticipo acreditado
+  let depositDeducted = 0;
+  let quoteRef = '';
+  if (window._quoteScheduledRef) {
+    depositDeducted = window._quoteScheduledRef.depositAmount || 0;
+    quoteRef = window._quoteScheduledRef.folio || '';
+    window._quoteScheduledRef.status = 'agendada';
+  }
+
+  const endTimeStr = calculateEndTime(selectedModalTime, selectedModalDurationMinutes);
 
   const newApp = {
-    id: `app-${Date.now()}`,
-    clientName: name,
-    clientPhone: phone,
-    services: JSON.parse(JSON.stringify(modalSelectedServices)),
+    id: 'ses-' + Date.now(),
+    clientName: clientName,
+    clientPhone: clientPhone,
+    services: selectedModalServices,
     serviceName: serviceName,
     price: totalPrice,
-    duration: totalDuration,
-    barberId: modalSelectedBarberId,
-    barberName: barber ? barber.name : "Barbero",
-    date: modalSelectedDate,
-    time: modalSelectedTime,
-    status: "pendiente",
-    notes: notes
-  };
-
-  store.appointments.push(newApp);
-  saveStore();
-  closeModal('modal-appointment');
-
-  if (currentUser && currentUser.role === 'barber') {
-    renderBarberPortal();
-  } else {
-    renderAppointments();
-    renderDashboard();
-  }
-
-  showToast(`Cita agendada para ${name} (${modalSelectedTime} hrs)`, "success");
-}
-
-// ================= RENDERIZADO: RESERVA ONLINE =================
-function renderPublicBooking() {
-  if (publicSelectedServices.length === 0 && store.services.length > 0) {
-    publicSelectedServices = [store.services[0]];
-  }
-
-  if (!publicSelectedBarberId && store.barbers.length > 0) {
-    publicSelectedBarberId = store.barbers[0].id;
-  }
-
-  renderMultiServicesPicker(
-    'public-services-picker',
-    'public-services-summary-text',
-    'public-services-summary-price',
-    publicSelectedServices,
-    (srv) => {
-      const idx = publicSelectedServices.findIndex(s => s.id === srv.id);
-      if (idx > -1) {
-        publicSelectedServices.splice(idx, 1);
-      } else {
-        publicSelectedServices.push(srv);
-      }
-      renderPublicBooking();
-    }
-  );
-
-  const summaryPill = document.getElementById('public-services-summary');
-  if (summaryPill) summaryPill.style.display = publicSelectedServices.length > 0 ? 'flex' : 'none';
-
-  const barbersGrid = document.getElementById('public-book-barbers-grid');
-  barbersGrid.innerHTML = '';
-  store.barbers.forEach(b => {
-    const isSelected = (b.id === publicSelectedBarberId);
-    const card = document.createElement('div');
-    card.className = `barber-picker-card ${isSelected ? 'selected' : ''}`;
-    card.innerHTML = `
-      <div class="user-session-avatar" style="width: 36px; height: 36px; margin: 0 auto 6px; font-size: 0.9rem;">${b.avatar || getInitials(b.name)}</div>
-      <div class="name">${escapeHtml(b.name)}</div>
-      <div class="role">${escapeHtml(b.specialty)}</div>
-    `;
-    card.onclick = () => {
-      publicSelectedBarberId = b.id;
-      renderPublicBooking();
-    };
-    barbersGrid.appendChild(card);
-  });
-
-  renderCustomCalendar('public-calendar-widget-container', publicSelectedDate, (newDate) => {
-    publicSelectedDate = newDate;
-    renderPublicBooking();
-  });
-
-  if (!publicSelectedTime) publicSelectedTime = "11:30";
-  renderTimeSlotsWidget(
-    'public-time-picker-container',
-    publicSelectedBarberId,
-    publicSelectedDate,
-    publicSelectedTime,
-    (time) => {
-      publicSelectedTime = time;
-      renderPublicBooking();
-    }
-  );
-}
-
-function submitPublicBooking() {
-  const name = document.getElementById('public-book-client-name').value.trim();
-  const phone = document.getElementById('public-book-client-phone').value.trim();
-  const notes = document.getElementById('public-book-client-notes').value.trim();
-
-  if (!name || !phone) {
-    showToast("Por favor ingresa tu nombre y WhatsApp", "error");
-    return;
-  }
-  if (publicSelectedServices.length === 0) {
-    showToast("Selecciona al menos un servicio", "error");
-    return;
-  }
-  if (!publicSelectedTime) {
-    showToast("Selecciona un horario disponible", "error");
-    return;
-  }
-
-  const barber = store.barbers.find(b => b.id === publicSelectedBarberId);
-  const totalPrice = publicSelectedServices.reduce((acc, s) => acc + s.price, 0);
-  const totalDuration = publicSelectedServices.reduce((acc, s) => acc + s.duration, 0);
-  const serviceName = publicSelectedServices.map(s => s.name).join(' + ');
-
-  const newApp = {
-    id: `app-${Date.now()}`,
-    clientName: name,
-    clientPhone: phone,
-    services: JSON.parse(JSON.stringify(publicSelectedServices)),
-    serviceName: serviceName,
-    price: totalPrice,
-    duration: totalDuration,
-    barberId: publicSelectedBarberId,
-    barberName: barber ? barber.name : "Barbero",
-    date: publicSelectedDate,
-    time: publicSelectedTime,
-    status: "pendiente",
-    notes: notes
+    depositDeducted: depositDeducted,
+    durationMinutes: selectedModalDurationMinutes,
+    durationLabel: formatDurationLabel(selectedModalDurationMinutes),
+    artistId: selectedModalArtistId,
+    artistName: artist ? artist.name : '',
+    booth: artist ? (artist.booth || 'Cabina 1') : 'Cabina 1',
+    date: selectedCalendarDate,
+    time: selectedModalTime,
+    endTime: endTimeStr,
+    status: 'agendada',
+    notes: notes,
+    quoteRef: quoteRef
   };
 
   store.appointments.push(newApp);
 
-  if (!store.clients.some(c => c.phone === phone)) {
-    store.clients.push({
-      id: `c-${Date.now()}`,
-      name: name,
-      phone: phone,
-      visits: 0,
+  // Asegurar registro en clientes
+  let client = store.clients.find(c => c.phone === clientPhone);
+  if (!client) {
+    client = {
+      id: 'c-' + Date.now(),
+      name: clientName,
+      phone: clientPhone,
+      age: 25,
+      allergies: 'Ninguna',
+      visits: 1,
       totalSpent: 0,
       notes: notes
-    });
+    };
+    store.clients.push(client);
+  } else {
+    client.visits = (client.visits || 0) + 1;
   }
 
-  saveStore();
+  DataService.saveStore();
+  closeModal('modal-appointment');
   renderAppointments();
   renderDashboard();
-
-  const shopPhone = store.config.phone || "525512345678";
-  const msg = encodeURIComponent(
-    `¡Hola! Acabo de agendar una cita en *${store.config.shopName}*:\n\n*Cliente:* ${name}\n*Servicios:* ${serviceName} ($${totalPrice})\n*Barbero:* ${newApp.barberName}\n*Fecha:* ${publicSelectedDate} a las ${publicSelectedTime} hrs\n*Notas:* ${notes || 'Ninguna'}\n\nPor favor confirmen mi cita.`
-  );
-
-  showToast("¡Cita agendada con éxito!", "success");
-
-  document.getElementById('public-book-client-name').value = '';
-  document.getElementById('public-book-client-phone').value = '';
-  document.getElementById('public-book-client-notes').value = '';
-
-  window.open(`https://wa.me/${shopPhone}?text=${msg}`, '_blank');
+  renderQuoteRequests();
+  showToast(`Sesión agendada para ${clientName} el ${selectedCalendarDate} a las ${selectedModalTime}`, "success");
 }
 
-// ================= RENDERIZADO: PUNTO DE VENTA (POS) =================
+// ================= COMPONENTE REUTILIZABLE: CALENDARIO WIDGET =================
+function renderCalendarWidget(containerId, activeDateStr, onDateSelect) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const [y, m, d] = activeDateStr.split('-').map(Number);
+  const currentMonthDate = new Date(y, m - 1, 1);
+  const monthName = currentMonthDate.toLocaleDateString('es-MX', { month: 'long', year: 'numeric' });
+
+  // Citas agendadas para pintar puntos en el calendario
+  const bookedDates = store.appointments.map(a => a.date);
+
+  container.innerHTML = `
+    <div class="calendar-widget-box">
+      <div class="calendar-widget-header">
+        <span class="calendar-widget-title">${monthName}</span>
+        <div class="calendar-nav-buttons">
+          <button type="button" class="calendar-nav-btn" id="${containerId}-prev" title="Mes anterior">&lt;</button>
+          <button type="button" class="calendar-nav-btn" id="${containerId}-next" title="Mes siguiente">&gt;</button>
+        </div>
+      </div>
+      <div class="calendar-weekdays-row" style="display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; margin-bottom: 4px;">
+        <div class="calendar-day-name">Do</div>
+        <div class="calendar-day-name">Lu</div>
+        <div class="calendar-day-name">Ma</div>
+        <div class="calendar-day-name">Mi</div>
+        <div class="calendar-day-name">Ju</div>
+        <div class="calendar-day-name">Vi</div>
+        <div class="calendar-day-name">Sá</div>
+      </div>
+      <div class="calendar-days-grid" id="${containerId}-grid"></div>
+    </div>
+  `;
+
+  document.getElementById(`${containerId}-prev`).onclick = () => {
+    const prevMonth = new Date(y, m - 2, 1);
+    const newDateStr = prevMonth.toISOString().split('T')[0];
+    renderCalendarWidget(containerId, newDateStr, onDateSelect);
+  };
+
+  document.getElementById(`${containerId}-next`).onclick = () => {
+    const nextMonth = new Date(y, m, 1);
+    const newDateStr = nextMonth.toISOString().split('T')[0];
+    renderCalendarWidget(containerId, newDateStr, onDateSelect);
+  };
+
+  const grid = document.getElementById(`${containerId}-grid`);
+  const firstDayIndex = currentMonthDate.getDay();
+  const daysInMonth = new Date(y, m, 0).getDate();
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  // Celdas vacías al inicio
+  for (let i = 0; i < firstDayIndex; i++) {
+    const empty = document.createElement('div');
+    empty.className = 'cal-day-cell empty';
+    grid.appendChild(empty);
+  }
+
+  // Días del mes
+  for (let dayNum = 1; dayNum <= daysInMonth; dayNum++) {
+    const dayStr = `${y}-${m < 10 ? '0' + m : m}-${dayNum < 10 ? '0' + dayNum : dayNum}`;
+    const isSelected = (dayStr === activeDateStr);
+    const isToday = (dayStr === todayStr);
+    const hasAppointments = bookedDates.includes(dayStr);
+
+    const cell = document.createElement('div');
+    cell.className = `cal-day-cell ${isSelected ? 'selected' : ''} ${isToday ? 'today' : ''}`;
+    cell.innerHTML = `
+      <span class="cal-day-num">${dayNum}</span>
+      ${hasAppointments ? '<span class="appointment-dot"></span>' : ''}
+    `;
+
+    cell.onclick = () => {
+      onDateSelect(dayStr);
+    };
+
+    grid.appendChild(cell);
+  }
+}
+
+// ================= 4. PORTAL DEL ARTISTA =================
+function renderArtistPortal() {
+  if (!currentSession || currentSession.role !== 'artist') return;
+  const tbody = document.getElementById('artist-my-appointments-tbody');
+  const mobList = document.getElementById('artist-my-appointments-mobile-list');
+  if (!tbody) return;
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  const myApps = store.appointments.filter(a => a.artistId === currentSession.artistId && a.date === todayStr);
+
+  document.getElementById('artist-portal-title').textContent = `Mi Agenda de Hoy (${currentSession.name})`;
+
+  tbody.innerHTML = '';
+  mobList.innerHTML = '';
+
+  if (myApps.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 20px;">No tienes citas asignadas para hoy.</td></tr>`;
+    mobList.innerHTML = `<p style="text-align: center; color: var(--text-muted); padding: 16px;">No tienes citas asignadas para hoy.</p>`;
+    return;
+  }
+
+  myApps.forEach(app => {
+    const endTimeStr = app.endTime || calculateEndTime(app.time, app.durationMinutes || 60);
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><b>${formatTime12h(app.time)} - ${formatTime12h(endTimeStr)}</b></td>
+      <td><b>${escapeHtml(app.clientName)}</b><br><small style="color:var(--text-muted);">${escapeHtml(app.clientPhone)}</small></td>
+      <td>${escapeHtml(app.serviceName)} (${app.durationLabel || '1h'})</td>
+      <td>${escapeHtml(app.booth || 'Cabina 1')}</td>
+      <td>${renderStatusBadge(app.status)}</td>
+      <td><small style="color:var(--text-secondary);">${escapeHtml(app.notes || 'Sin especificaciones')}</small></td>
+    `;
+    tbody.appendChild(tr);
+
+    const card = document.createElement('div');
+    card.className = 'mobile-app-card';
+    card.innerHTML = `
+      <div class="mobile-app-header">
+        <span class="mobile-app-time">${formatTime12h(app.time)} - ${formatTime12h(endTimeStr)}</span>
+        ${renderStatusBadge(app.status)}
+      </div>
+      <div class="mobile-app-client">${escapeHtml(app.clientName)}</div>
+      <div class="mobile-app-meta">
+        <span><b>Trabajo:</b> ${escapeHtml(app.serviceName)} (${app.durationLabel || '1h'})</span>
+        <span><b>Cabina:</b> ${escapeHtml(app.booth || 'Cabina 1')}</span>
+        ${app.notes ? `<span><b>Notas:</b> ${escapeHtml(app.notes)}</span>` : ''}
+      </div>
+    `;
+    mobList.appendChild(card);
+  });
+}
+
+function renderArtistTips() {
+  const tbody = document.getElementById('artist-tips-tbody');
+  if (!tbody) return;
+
+  const isArtist = (currentSession && currentSession.role === 'artist');
+  let tips = store.artistTips || [];
+  if (isArtist) {
+    tips = tips.filter(t => t.artistId === currentSession.artistId);
+  }
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  const todayTips = tips.filter(t => t.timestamp.startsWith(todayStr));
+  const sumToday = todayTips.reduce((a, t) => a + (t.amount || 0), 0);
+  const sumTotal = tips.reduce((a, t) => a + (t.amount || 0), 0);
+
+  if (document.getElementById('artist-tips-today')) document.getElementById('artist-tips-today').textContent = formatMoney(sumToday);
+  if (document.getElementById('artist-tips-total')) document.getElementById('artist-tips-total').textContent = formatMoney(sumTotal);
+
+  tbody.innerHTML = '';
+  if (tips.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 18px;">No hay propinas registradas.</td></tr>`;
+    return;
+  }
+
+  tips.forEach(t => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${new Date(t.timestamp).toLocaleDateString('es-MX')} ${new Date(t.timestamp).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}</td>
+      <td><b style="color:var(--color-success);">${formatMoney(t.amount)}</b></td>
+      <td><span class="badge badge-done">${escapeHtml(t.method)}</span></td>
+      <td>${escapeHtml(t.notes || '-')}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function openArtistTipModal() {
+  const sel = document.getElementById('tip-form-artist');
+  sel.innerHTML = '';
+  store.artists.forEach(a => {
+    const opt = document.createElement('option');
+    opt.value = a.id;
+    opt.textContent = a.name;
+    if (currentSession && currentSession.artistId === a.id) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  document.getElementById('tip-form-amount').value = '';
+  document.getElementById('tip-form-notes').value = '';
+  openModal('modal-artist-tip');
+}
+
+function saveArtistTipFromModal() {
+  const artistId = document.getElementById('tip-form-artist').value;
+  const amount = Number(document.getElementById('tip-form-amount').value);
+  const method = document.getElementById('tip-form-method').value;
+  const notes = document.getElementById('tip-form-notes').value.trim();
+
+  if (!amount || amount <= 0) {
+    showToast("Ingresa un monto válido de propina", "error");
+    return;
+  }
+
+  const artist = store.artists.find(a => a.id === artistId);
+
+  store.artistTips.unshift({
+    id: 'tip-' + Date.now(),
+    artistId: artistId,
+    artistName: artist ? artist.name : '',
+    amount: amount,
+    method: method,
+    notes: notes,
+    timestamp: new Date().toISOString()
+  });
+
+  DataService.saveStore();
+  closeModal('modal-artist-tip');
+  renderArtistTips();
+  showToast(`Propina de ${formatMoney(amount)} registrada con éxito`, "success");
+}
+
+// ================= 5. PUNTO DE VENTA (POS CON DEDUCCIÓN DE ANTICIPO) =================
+let posCart = [];
+let posDeductedDeposit = 0; // Descuento de anticipo de la cita
+let posActiveAppointment = null;
+
 function renderPOS() {
-  const barberSelect = document.getElementById('pos-barber-select');
-  if (barberSelect) {
-    const curVal = barberSelect.value;
-    barberSelect.innerHTML = '';
-    store.barbers.forEach(b => {
-      barberSelect.innerHTML += `<option value="${b.id}">${escapeHtml(b.name)}</option>`;
-    });
-    if (curVal) barberSelect.value = curVal;
-  }
-
-  const grid = document.getElementById('pos-items-grid');
-  grid.innerHTML = '';
-
-  if (currentPosTab === 'services') {
-    store.services.forEach(srv => {
-      const card = document.createElement('div');
-      card.className = 'pos-item-card';
-      card.onclick = () => addPosItemToCart({ id: srv.id, name: srv.name, price: srv.price, type: 'service' });
-      card.innerHTML = `
-        <div>
-          <div class="pos-item-title">${escapeHtml(srv.name)}</div>
-          <div class="pos-item-sub">${srv.duration} min • ${escapeHtml(srv.category || 'Servicio')}</div>
-        </div>
-        <div class="pos-item-price">${formatMoney(srv.price)}</div>
-      `;
-      grid.appendChild(card);
-    });
-  } else {
-    store.products.forEach(prod => {
-      const card = document.createElement('div');
-      card.className = 'pos-item-card';
-      card.onclick = () => {
-        if (prod.stock <= 0) {
-          showToast(`Sin stock (${prod.name})`, 'error');
-          return;
-        }
-        addPosItemToCart({ id: prod.id, name: prod.name, price: prod.price, type: 'product' });
-      };
-      card.innerHTML = `
-        <div>
-          <div class="pos-item-title">${escapeHtml(prod.name)}</div>
-          <div class="pos-item-sub" style="color: ${prod.stock <= 3 ? 'var(--badge-red-text)' : 'var(--text-muted)'}; font-weight: 600;">
-            Stock: ${prod.stock} u.
-          </div>
-        </div>
-        <div class="pos-item-price">${formatMoney(prod.price)}</div>
-      `;
-      grid.appendChild(card);
-    });
-  }
-
+  filterPosCatalog('all');
+  populatePosAppointmentSelector();
   renderPosCart();
 }
 
-function addPosItemToCart(item) {
-  const existing = currentPosCart.find(i => i.id === item.id);
+function populatePosAppointmentSelector() {
+  const sel = document.getElementById('pos-select-appointment');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">-- Seleccionar cita de la agenda para cobrar --</option>';
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  const apps = store.appointments.filter(a => a.date === todayStr && a.status !== 'cancelada');
+
+  apps.forEach(app => {
+    const opt = document.createElement('option');
+    opt.value = app.id;
+    opt.textContent = `${formatTime12h(app.time)} | ${app.clientName} - ${app.serviceName} (${formatMoney(app.price)})`;
+    sel.appendChild(opt);
+  });
+}
+
+function filterPosCatalog(category) {
+  document.querySelectorAll('.pos-tab-btn').forEach(btn => btn.classList.remove('active'));
+  if (event && event.target && event.target.classList.contains('pos-tab-btn')) {
+    event.target.classList.add('active');
+  }
+
+  const container = document.getElementById('pos-items-container');
+  if (!container) return;
+  container.innerHTML = '';
+
+  let items = [];
+  if (category === 'all' || category === 'Tatuaje' || category === 'Piercing') {
+    const srvs = (category === 'all') ? store.services : store.services.filter(s => s.category === category);
+    srvs.forEach(s => items.push({ ...s, itemType: 'service' }));
+  }
+  if (category === 'all' || category === 'Aftercare' || category === 'Joyería') {
+    const prods = (category === 'all') ? store.products : store.products.filter(p => p.category === category);
+    prods.forEach(p => items.push({ ...p, itemType: 'product' }));
+  }
+
+  items.forEach(it => {
+    const card = document.createElement('div');
+    card.className = 'pos-item-card';
+    card.innerHTML = `
+      <div>
+        <h4>${escapeHtml(it.name)}</h4>
+        <span class="meta">${escapeHtml(it.category || '')} ${it.stock !== undefined ? `| Stock: ${it.stock}` : ''}</span>
+      </div>
+      <div class="price">${formatMoney(it.price)}</div>
+    `;
+    card.onclick = () => addPosItem(it);
+    container.appendChild(card);
+  });
+}
+
+function addPosItem(item) {
+  const existing = posCart.find(i => i.id === item.id && i.itemType === item.itemType);
   if (existing) {
-    if (item.type === 'product') {
-      const prodInStore = store.products.find(p => p.id === item.id);
-      if (prodInStore && existing.qty >= prodInStore.stock) {
-        showToast("No hay más stock disponible", "error");
-        return;
-      }
-    }
     existing.qty += 1;
   } else {
-    currentPosCart.push({ ...item, qty: 1 });
+    posCart.push({
+      id: item.id,
+      name: item.name,
+      price: item.price,
+      itemType: item.itemType,
+      qty: 1
+    });
   }
   renderPosCart();
 }
 
-function changeCartQty(id, delta) {
-  const item = currentPosCart.find(i => i.id === id);
-  if (!item) return;
-
-  if (delta > 0 && item.type === 'product') {
-    const prodInStore = store.products.find(p => p.id === id);
-    if (prodInStore && item.qty >= prodInStore.stock) {
-      showToast("No hay más unidades en stock", "error");
-      return;
-    }
-  }
-
-  item.qty += delta;
-  if (item.qty <= 0) {
-    currentPosCart = currentPosCart.filter(i => i.id !== id);
+function changePosQty(index, delta) {
+  if (!posCart[index]) return;
+  posCart[index].qty += delta;
+  if (posCart[index].qty <= 0) {
+    posCart.splice(index, 1);
   }
   renderPosCart();
+}
+
+function clearPosCart() {
+  posCart = [];
+  posDeductedDeposit = 0;
+  posActiveAppointment = null;
+  if (document.getElementById('pos-select-appointment')) {
+    document.getElementById('pos-select-appointment').value = '';
+  }
+  renderPosCart();
+}
+
+// Carga automática de cita al POS con deducción de depósito
+function loadAppointmentToPos(appId) {
+  if (!appId) {
+    clearPosCart();
+    return;
+  }
+  const app = store.appointments.find(a => a.id === appId);
+  if (!app) return;
+
+  posCart = [];
+  posActiveAppointment = app;
+
+  // Añadir servicios de la cita
+  if (app.services && app.services.length > 0) {
+    app.services.forEach(s => {
+      posCart.push({
+        id: s.id,
+        name: s.name,
+        price: s.price,
+        itemType: 'service',
+        qty: 1
+      });
+    });
+  } else {
+    posCart.push({
+      id: 'srv-custom',
+      name: app.serviceName || 'Sesión de Tatuaje',
+      price: app.price || 0,
+      itemType: 'service',
+      qty: 1
+    });
+  }
+
+  // Deducción automática del depósito / anticipo
+  posDeductedDeposit = app.depositDeducted || 0;
+
+  renderPosCart();
+  showToast(`Cita de ${app.clientName} cargada al POS. Anticipo acreditado: -${formatMoney(posDeductedDeposit)}`, "info");
+}
+
+function directPayAppointment(appId) {
+  switchView('pos');
+  const sel = document.getElementById('pos-select-appointment');
+  if (sel) {
+    sel.value = appId;
+    loadAppointmentToPos(appId);
+  }
 }
 
 function renderPosCart() {
-  const cartContainer = document.getElementById('pos-cart-list');
-  cartContainer.innerHTML = '';
+  const container = document.getElementById('pos-cart-items-container');
+  if (!container) return;
 
-  if (currentPosCart.length === 0) {
-    cartContainer.innerHTML = `
-      <p style="text-align: center; color: var(--text-muted); font-size: 0.85rem; padding: 24px 0;">
-        Haz clic en un servicio o producto para agregarlo al ticket.
-      </p>
-    `;
-    updatePosTotals(0);
+  container.innerHTML = '';
+  if (posCart.length === 0) {
+    container.innerHTML = `<p style="text-align: center; color: var(--text-muted); font-size: 0.8rem; padding: 20px 0;">No hay ítems en la orden</p>`;
+    document.getElementById('pos-summary-subtotal').textContent = '$0.00 MXN';
+    document.getElementById('pos-deposit-deduction-row').style.display = 'none';
+    document.getElementById('pos-summary-total').textContent = '$0.00 MXN';
     return;
   }
 
   let subtotal = 0;
-  currentPosCart.forEach(item => {
+  posCart.forEach((item, idx) => {
     const itemTotal = item.price * item.qty;
     subtotal += itemTotal;
 
     const row = document.createElement('div');
-    row.className = 'ticket-item-row';
+    row.className = 'ticket-item';
     row.innerHTML = `
-      <div class="ticket-item-info">
+      <div class="ticket-item-details">
         <div class="ticket-item-name">${escapeHtml(item.name)}</div>
         <div class="ticket-item-price">${formatMoney(item.price)} x ${item.qty} = <b>${formatMoney(itemTotal)}</b></div>
       </div>
       <div class="ticket-item-actions">
-        <button class="btn-qty" onclick="changeCartQty('${item.id}', -1)">-</button>
-        <span style="font-weight: bold; font-size: 0.9rem; min-width: 16px; text-align: center;">${item.qty}</span>
-        <button class="btn-qty" onclick="changeCartQty('${item.id}', 1)">+</button>
+        <button class="btn-qty" onclick="changePosQty(${idx}, -1)">-</button>
+        <span style="font-size:0.85rem; font-weight:700; min-width:18px; text-align:center;">${item.qty}</span>
+        <button class="btn-qty" onclick="changePosQty(${idx}, 1)">+</button>
       </div>
     `;
-    cartContainer.appendChild(row);
+    container.appendChild(row);
   });
 
-  updatePosTotals(subtotal);
-}
-
-function updatePosTotals(subtotal) {
-  const discount = parseFloat(document.getElementById('pos-discount-input').value) || 0;
-  const total = Math.max(0, subtotal - discount);
-
-  document.getElementById('pos-subtotal').textContent = formatMoney(subtotal);
-  document.getElementById('pos-total').textContent = formatMoney(total);
-}
-
-// Cargar cita en caja y cambiar vista
-function directPayAppointment(appId) {
-  const app = store.appointments.find(a => a.id === appId);
-  if (!app) return;
-
-  switchView('pos');
-
-  document.getElementById('pos-client-name').value = app.clientName;
-  document.getElementById('pos-barber-select').value = app.barberId;
-
-  currentPosCart = [];
-  if (app.services && app.services.length > 0) {
-    app.services.forEach(s => {
-      currentPosCart.push({
-        id: s.id,
-        name: s.name,
-        price: s.price,
-        qty: 1,
-        type: 'service',
-        linkedAppointmentId: app.id
-      });
-    });
+  const depositRow = document.getElementById('pos-deposit-deduction-row');
+  if (posDeductedDeposit > 0) {
+    depositRow.style.display = 'flex';
+    document.getElementById('pos-summary-deposit').textContent = `-${formatMoney(posDeductedDeposit)}`;
   } else {
-    currentPosCart.push({
-      id: app.serviceId || 's1',
-      name: app.serviceName,
-      price: app.price,
-      qty: 1,
-      type: 'service',
-      linkedAppointmentId: app.id
-    });
+    depositRow.style.display = 'none';
   }
 
-  renderPosCart();
-  showToast(`Cita de ${app.clientName} cargada en caja para cobro directo`, 'info');
+  const finalTotal = Math.max(0, subtotal - posDeductedDeposit);
+
+  document.getElementById('pos-summary-subtotal').textContent = formatMoney(subtotal);
+  document.getElementById('pos-summary-total').textContent = formatMoney(finalTotal);
 }
 
-function checkoutPOS() {
-  if (currentPosCart.length === 0) {
-    showToast("Agrega servicios o productos para cobrar", "error");
+// Modal de Checkout / Cobro Final
+function openCheckoutModal() {
+  if (posCart.length === 0) {
+    showToast("Agrega servicios o productos a la orden", "error");
     return;
   }
 
-  const clientNameInput = document.getElementById('pos-client-name').value.trim();
-  const clientName = clientNameInput || "Cliente General";
-  const barberId = document.getElementById('pos-barber-select').value;
-  const barber = store.barbers.find(b => b.id === barberId);
-  const paymentMethod = document.getElementById('pos-payment-method').value;
+  const subtotal = posCart.reduce((a, b) => a + (b.price * b.qty), 0);
+  const total = Math.max(0, subtotal - posDeductedDeposit);
 
-  const discount = parseFloat(document.getElementById('pos-discount-input').value) || 0;
-  let subtotal = 0;
+  document.getElementById('checkout-total-display').textContent = formatMoney(total);
 
-  currentPosCart.forEach(item => {
-    subtotal += item.price * item.qty;
-
-    if (item.type === 'product') {
-      const prodInStore = store.products.find(p => p.id === item.id);
-      if (prodInStore) prodInStore.stock = Math.max(0, prodInStore.stock - item.qty);
-    }
-
-    if (item.linkedAppointmentId) {
-      const linkedApp = store.appointments.find(a => a.id === item.linkedAppointmentId);
-      if (linkedApp) linkedApp.status = 'completada';
-    }
-  });
-
-  const total = Math.max(0, subtotal - discount);
-
-  const movement = {
-    id: `mov-${Date.now()}`,
-    timestamp: new Date().toISOString(),
-    type: "venta",
-    concept: currentPosCart.map(i => `${i.name} (x${i.qty})`).join(', '),
-    client: clientName,
-    paymentMethod: paymentMethod,
-    barberId: barberId,
-    barberName: barber ? barber.name : "Sin Asignar",
-    subtotal: subtotal,
-    discount: discount,
-    amount: total,
-    items: JSON.parse(JSON.stringify(currentPosCart))
-  };
-
-  store.cashMovements.push(movement);
-
-  let clientInDb = store.clients.find(c => c.name.toLowerCase() === clientName.toLowerCase());
-  if (clientInDb) {
-    clientInDb.visits += 1;
-    clientInDb.totalSpent += total;
-  } else if (clientName !== "Cliente General") {
-    store.clients.push({
-      id: `c-${Date.now()}`,
-      name: clientName,
-      phone: "",
-      visits: 1,
-      totalSpent: total,
-      notes: "Registrado desde mostrador."
-    });
+  const depInfo = document.getElementById('checkout-deposit-info');
+  if (posDeductedDeposit > 0) {
+    depInfo.textContent = `(Subtotal: ${formatMoney(subtotal)} | Anticipo Acreditado: -${formatMoney(posDeductedDeposit)})`;
+  } else {
+    depInfo.textContent = '';
   }
 
-  saveStore();
-  generateReceiptModal(movement);
+  document.getElementById('checkout-cash-received').value = total;
+  document.getElementById('checkout-change-display').textContent = '$0.00 MXN';
 
-  currentPosCart = [];
-  document.getElementById('pos-client-name').value = '';
-  document.getElementById('pos-discount-input').value = '0';
-  renderPosCart();
-  renderDashboard();
-  renderCatalog();
-  renderCashRegister();
-  renderBarbers();
+  const selectArt = document.getElementById('checkout-artist');
+  selectArt.innerHTML = '';
+  store.artists.forEach(a => {
+    const opt = document.createElement('option');
+    opt.value = a.id;
+    opt.textContent = `${a.name} (${a.specialty})`;
+    if (posActiveAppointment && posActiveAppointment.artistId === a.id) opt.selected = true;
+    selectArt.appendChild(opt);
+  });
 
-  showToast(`Cobro de ${formatMoney(total)} completado`, 'success');
+  openModal('modal-checkout');
 }
 
-// ================= RENDERIZADO: CORTE DE CAJA =================
-function renderCashRegister() {
-  const todayStr = new Date().toISOString().split('T')[0];
-  const todayMovs = store.cashMovements.filter(m => m.timestamp.startsWith(todayStr));
+function handlePaymentMethodChange(method) {
+  const box = document.getElementById('checkout-cash-received-box');
+  if (method === 'Efectivo') {
+    box.style.display = 'block';
+  } else {
+    box.style.display = 'none';
+  }
+}
 
-  const fondo = store.config.initialCashFund || 0;
-  document.getElementById('cash-current-fondo').textContent = formatMoney(fondo);
+function calculateChange(val) {
+  const subtotal = posCart.reduce((a, b) => a + (b.price * b.qty), 0);
+  const total = Math.max(0, subtotal - posDeductedDeposit);
+  const received = Number(val) || 0;
+  const change = Math.max(0, received - total);
+  document.getElementById('checkout-change-display').textContent = formatMoney(change);
+}
 
-  let salesCash = 0;
-  let salesCard = 0;
-  let salesTransf = 0;
-  let totalExpenses = 0;
-  let totalSales = 0;
-  let salesCount = 0;
+function confirmCheckout() {
+  const subtotal = posCart.reduce((a, b) => a + (b.price * b.qty), 0);
+  const total = Math.max(0, subtotal - posDeductedDeposit);
+  const method = document.getElementById('checkout-method').value;
+  const artistId = document.getElementById('checkout-artist').value;
+  const artist = store.artists.find(a => a.id === artistId);
 
-  todayMovs.forEach(mov => {
-    if (mov.type === 'venta') {
-      salesCount += 1;
-      totalSales += mov.amount;
-      if (mov.paymentMethod === 'efectivo') salesCash += mov.amount;
-      if (mov.paymentMethod === 'tarjeta') salesCard += mov.amount;
-      if (mov.paymentMethod === 'transferencia') salesTransf += mov.amount;
-    } else if (mov.type === 'gasto') {
-      totalExpenses += mov.amount;
+  // Registrar venta en movimientos de caja
+  const concept = posActiveAppointment
+    ? `Liquidación Sesión: ${posActiveAppointment.clientName} (${posActiveAppointment.serviceName})`
+    : `Venta POS (${posCart.map(i => i.name).join(', ')})`;
+
+  store.cashMovements.push({
+    id: 'mov-' + Date.now(),
+    type: 'venta',
+    concept: concept,
+    subtotal: subtotal,
+    depositDeducted: posDeductedDeposit,
+    amount: total,
+    method: method,
+    artistId: artistId,
+    timestamp: new Date().toISOString()
+  });
+
+  // Si estaba ligada a una cita, marcarla como realizada
+  if (posActiveAppointment) {
+    posActiveAppointment.status = 'realizada';
+    // Buscar solicitud ligada y marcarla como realizada
+    if (posActiveAppointment.quoteRef) {
+      const req = store.quoteRequests.find(r => r.folio === posActiveAppointment.quoteRef);
+      if (req) req.status = 'realizada';
+    }
+  }
+
+  // Reducir stock de productos vendidos
+  posCart.forEach(item => {
+    if (item.itemType === 'product') {
+      const prod = store.products.find(p => p.id === item.id);
+      if (prod) prod.stock = Math.max(0, prod.stock - item.qty);
     }
   });
 
-  const expectedDrawerCash = (fondo + salesCash) - totalExpenses;
+  DataService.saveStore();
+  closeModal('modal-checkout');
 
-  document.getElementById('cash-sales-cash').textContent = formatMoney(salesCash);
-  document.getElementById('cash-sales-card').textContent = formatMoney(salesCard);
-  document.getElementById('cash-sales-transf').textContent = formatMoney(salesTransf);
-  document.getElementById('cash-expenses-total').textContent = `-${formatMoney(totalExpenses)}`;
-  document.getElementById('cash-expected-drawer').textContent = formatMoney(expectedDrawerCash);
+  // Generar y mostrar ticket
+  generateReceiptModal(subtotal, posDeductedDeposit, total, method, artist ? artist.name : '');
 
-  document.getElementById('cash-total-sales-badge').textContent = formatMoney(totalSales);
-  document.getElementById('cash-total-tx-count').textContent = `${salesCount} ventas cobradas`;
-  document.getElementById('cash-total-expenses-count').textContent = `-${formatMoney(totalExpenses)}`;
+  clearPosCart();
+  renderAppointments();
+  renderDashboard();
+  renderCashRegister();
+  renderCatalog();
+  showToast("Cobro procesado exitosamente", "success");
+}
+
+function generateReceiptModal(subtotal, deposit, total, method, artistName) {
+  const client = posActiveAppointment ? posActiveAppointment.clientName : 'Cliente General';
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('es-MX');
+  const timeStr = now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+
+  const itemsHtml = posCart.map(i => `
+    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+      <span>${escapeHtml(i.name)} x${i.qty}</span>
+      <b>${formatMoney(i.price * i.qty)}</b>
+    </div>
+  `).join('');
+
+  const html = `
+    <h4>INK & PIERCING STUDIO MX</h4>
+    <div class="receipt-center">Roma Norte, Cuauhtémoc, CDMX</div>
+    <div class="receipt-center">Tel: 55 1234 5678 | WhatsApp Oficial</div>
+    <div class="receipt-divider"></div>
+    <div style="display:flex; justify-content:space-between; font-size:10px;">
+      <span>Fecha: ${dateStr} ${timeStr}</span>
+      <span>Ticket #${Math.floor(1000 + Math.random() * 9000)}</span>
+    </div>
+    <div style="font-size:10px; margin-top:2px;">Cliente: ${escapeHtml(client)}</div>
+    ${artistName ? `<div style="font-size:10px;">Artista: ${escapeHtml(artistName)}</div>` : ''}
+    <div class="receipt-divider"></div>
+    ${itemsHtml}
+    <div class="receipt-divider"></div>
+    <div style="display:flex; justify-content:space-between;">
+      <span>SUBTOTAL:</span>
+      <b>${formatMoney(subtotal)}</b>
+    </div>
+    ${deposit > 0 ? `
+      <div style="display:flex; justify-content:space-between; color:#00875a;">
+        <span>ANTICIPO ACREDITADO:</span>
+        <b>-${formatMoney(deposit)}</b>
+      </div>
+    ` : ''}
+    <div style="display:flex; justify-content:space-between; font-size:13px; font-weight:bold; margin-top:4px;">
+      <span>TOTAL LIQUIDADO:</span>
+      <span>${formatMoney(total)}</span>
+    </div>
+    <div style="font-size:10px; margin-top:4px;">Método de Pago: ${escapeHtml(method)}</div>
+    <div class="receipt-divider"></div>
+    <div class="receipt-center" style="font-size:9px; margin-top:6px;">
+      ¡Gracias por tu confianza!<br>
+      Sigue las indicaciones de cicatrización.<br>
+      Cualquier duda contáctanos a nuestro WhatsApp oficial.
+    </div>
+  `;
+
+  document.getElementById('receipt-modal-content').innerHTML = html;
+  document.getElementById('receipt-print-area').innerHTML = html;
+  openModal('modal-receipt');
+}
+
+// ================= 6. CORTE DE CAJA =================
+function renderCashRegister() {
+  const initialFund = store.config.initialCashFund || 1500;
+  const todayStr = new Date().toISOString().split('T')[0];
+  const movs = store.cashMovements.filter(m => m.timestamp.startsWith(todayStr));
+
+  let cashCollected = 0;
+  let expensesTotal = 0;
+
+  movs.forEach(m => {
+    if (m.type === 'venta' && m.method === 'Efectivo') {
+      cashCollected += (m.amount || 0);
+    } else if (m.type === 'anticipo' && m.method === 'Efectivo') {
+      cashCollected += (m.amount || 0);
+    } else if (m.type === 'gasto') {
+      expensesTotal += (m.amount || 0);
+    }
+  });
+
+  const expectedTotal = initialFund + cashCollected - expensesTotal;
+
+  document.getElementById('cash-initial-fund').textContent = formatMoney(initialFund);
+  document.getElementById('cash-collected-cash').textContent = formatMoney(cashCollected);
+  document.getElementById('cash-expenses-total').textContent = formatMoney(expensesTotal);
+  document.getElementById('cash-expected-total').textContent = formatMoney(expectedTotal);
 
   // Tabla de movimientos
-  const movsTbody = document.getElementById('cash-movements-tbody');
-  movsTbody.innerHTML = '';
-  document.getElementById('cash-movements-count').textContent = `${todayMovs.length} movimientos`;
-
-  if (todayMovs.length === 0) {
-    movsTbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color: var(--text-muted); padding: 24px;">No hay movimientos de caja hoy.</td></tr>`;
-  } else {
-    todayMovs.slice().reverse().forEach(m => {
-      const timeStr = new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      const isSale = m.type === 'venta';
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td><strong>${timeStr}</strong></td>
-        <td><span class="badge ${isSale ? 'badge-done' : 'badge-cancel'}">${isSale ? 'Ingreso Venta' : 'Salida Gasto'}</span></td>
-        <td>${escapeHtml(m.concept || m.client)}</td>
-        <td><span style="text-transform: capitalize;">${m.paymentMethod}</span></td>
-        <td>${escapeHtml(m.barberName || '-')}</td>
-        <td><strong style="color: ${isSale ? 'var(--badge-green-text)' : 'var(--badge-red-text)'};">${isSale ? '+' : '-'}${formatMoney(m.amount)}</strong></td>
-      `;
-      movsTbody.appendChild(tr);
-    });
+  const tbody = document.getElementById('cash-movements-tbody');
+  tbody.innerHTML = '';
+  if (movs.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:16px;">Sin movimientos de caja hoy.</td></tr>`;
+    return;
   }
 
-  // Historial de cierres
-  const closuresTbody = document.getElementById('cash-history-tbody');
-  closuresTbody.innerHTML = '';
-  if (!store.cashClosures || store.cashClosures.length === 0) {
-    closuresTbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color: var(--text-muted); padding: 24px;">No hay cierres anteriores registrados.</td></tr>`;
+  movs.forEach(m => {
+    const tr = document.createElement('tr');
+    const isIncome = m.type === 'venta' || m.type === 'anticipo' || m.type === 'fondo_inicial';
+    tr.innerHTML = `
+      <td>${new Date(m.timestamp).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}</td>
+      <td><span class="badge ${isIncome ? 'badge-done' : 'badge-cancel'}">${escapeHtml(m.type)}</span></td>
+      <td>${escapeHtml(m.concept)}</td>
+      <td>${escapeHtml(m.method || 'Efectivo')}</td>
+      <td><b style="color:${isIncome ? 'var(--color-success)' : 'var(--color-error)'};">${isIncome ? '+' : '-'}${formatMoney(m.amount)}</b></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function openExpenseModal() {
+  document.getElementById('expense-concept').value = '';
+  document.getElementById('expense-amount').value = '';
+  openModal('modal-expense');
+}
+
+function saveExpenseFromModal() {
+  const concept = document.getElementById('expense-concept').value.trim();
+  const amount = Number(document.getElementById('expense-amount').value);
+  if (!concept || !amount || amount <= 0) {
+    showToast("Ingresa un concepto y monto válido", "error");
+    return;
+  }
+
+  store.cashMovements.push({
+    id: 'mov-' + Date.now(),
+    type: 'gasto',
+    concept: concept,
+    amount: amount,
+    method: 'Efectivo',
+    timestamp: new Date().toISOString()
+  });
+
+  DataService.saveStore();
+  closeModal('modal-expense');
+  renderCashRegister();
+  showToast("Gasto registrado en caja", "info");
+}
+
+function openCashCutModal() {
+  const initialFund = store.config.initialCashFund || 1500;
+  const todayStr = new Date().toISOString().split('T')[0];
+  const movs = store.cashMovements.filter(m => m.timestamp.startsWith(todayStr));
+
+  let cashCollected = 0;
+  let expensesTotal = 0;
+  movs.forEach(m => {
+    if ((m.type === 'venta' || m.type === 'anticipo') && m.method === 'Efectivo') cashCollected += m.amount;
+    if (m.type === 'gasto') expensesTotal += m.amount;
+  });
+  const expected = initialFund + cashCollected - expensesTotal;
+  window._cashExpected = expected;
+
+  document.getElementById('cash-cut-expected-display').textContent = formatMoney(expected);
+  document.getElementById('cash-cut-counted').value = expected;
+  calculateCashDifference(expected);
+  openModal('modal-cash-cut');
+}
+
+function calculateCashDifference(val) {
+  const counted = Number(val) || 0;
+  const expected = window._cashExpected || 0;
+  const diff = counted - expected;
+  const badge = document.getElementById('cash-cut-diff-badge');
+
+  if (diff === 0) {
+    badge.className = 'diff-badge balanced';
+    badge.textContent = `Cuadrado: ${formatMoney(0)}`;
+  } else if (diff < 0) {
+    badge.className = 'diff-badge missing';
+    badge.textContent = `Faltante: ${formatMoney(Math.abs(diff))}`;
   } else {
-    store.cashClosures.slice().reverse().forEach(c => {
-      const dateFormatted = new Date(c.closedAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' });
-      const diffClass = c.difference === 0 ? 'color: var(--badge-green-text)' : (c.difference > 0 ? 'color: var(--primary)' : 'color: var(--badge-red-text)');
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td><strong>${dateFormatted}</strong></td>
-        <td>${formatMoney(c.initialFund)}</td>
-        <td><strong>${formatMoney(c.totalSales)}</strong></td>
-        <td>${formatMoney(c.expectedCash)}</td>
-        <td><b>${formatMoney(c.countedCash)}</b></td>
-        <td><strong style="${diffClass}">${c.difference >= 0 ? '+' : ''}${formatMoney(c.difference)}</strong></td>
-        <td>${escapeHtml(c.responsible)}</td>
-      `;
-      closuresTbody.appendChild(tr);
-    });
+    badge.className = 'diff-badge surplus';
+    badge.textContent = `Sobrante: +${formatMoney(diff)}`;
   }
 }
 
-// ================= MODIFICAR FONDO INICIAL CON CONTRASEÑA DE DUEÑO =================
+function confirmCashCut() {
+  const counted = Number(document.getElementById('cash-cut-counted').value) || 0;
+  const expected = window._cashExpected || 0;
+  const diff = counted - expected;
+
+  store.cashClosures.push({
+    id: 'close-' + Date.now(),
+    counted: counted,
+    expected: expected,
+    difference: diff,
+    timestamp: new Date().toISOString()
+  });
+
+  DataService.saveStore();
+  closeModal('modal-cash-cut');
+  showToast("Corte de turno guardado correctamente", "success");
+}
+
 function openEditFundModal() {
-  const inputAmount = document.getElementById('edit-fund-amount');
-  const inputPass = document.getElementById('edit-fund-password');
-  if (inputAmount) inputAmount.value = store.config.initialCashFund || 500;
-  if (inputPass) inputPass.value = '';
+  document.getElementById('edit-fund-amount').value = store.config.initialCashFund || 1500;
+  document.getElementById('edit-fund-password').value = '';
   openModal('modal-edit-fund');
 }
 
 function confirmEditFund() {
-  const inputAmount = document.getElementById('edit-fund-amount');
-  const inputPass = document.getElementById('edit-fund-password');
+  const newFund = Number(document.getElementById('edit-fund-amount').value);
+  const pass = document.getElementById('edit-fund-password').value.trim();
 
-  const newFund = parseFloat(inputAmount.value);
-  const password = inputPass.value.trim();
-
-  if (isNaN(newFund) || newFund < 0) {
-    showToast("Por favor ingresa un monto válido para el fondo inicial", "error");
+  // Validación de seguridad de contraseña
+  if (pass !== (store.config.adminPass || '123') && pass !== '12345') {
+    showToast("Contraseña de administrador incorrecta", "error");
     return;
   }
-
-  // REGLA: Contraseña de dueño requerida = 12345
-  if (password !== '12345') {
-    showToast("Contraseña incorrecta. Solo el dueño puede editar el fondo.", "error");
-    inputPass.focus();
+  if (!newFund || newFund < 0) {
+    showToast("Ingresa un monto de fondo inicial válido", "error");
     return;
   }
 
   store.config.initialCashFund = newFund;
-  saveStore();
-  renderCashRegister();
+  DataService.saveStore();
   closeModal('modal-edit-fund');
-  showToast(`Fondo inicial actualizado a ${formatMoney(newFund)}`, "success");
-}
-
-// ================= RESETEAR DATOS DE DEMOSTRACIÓN =================
-function confirmResetDemo() {
-  // Limpia citas, propinas de barberos, cortes de caja y directorio de clientes
-  store.appointments = [];
-  store.cashMovements = [];
-  store.cashClosures = [];
-  store.barberTips = [];
-  store.clients = [];
-
-  saveStore();
-
-  renderDashboard();
-  renderAppointments();
   renderCashRegister();
-  renderBarbers();
-  renderClients();
-  if (currentUser && currentUser.role === 'barber') {
-    renderBarberPortal();
-    renderBarberTips();
-  }
-
-  closeModal('modal-reset-demo');
-  showToast("Datos demo eliminados. Citas, clientes y caja restablecidos a cero.", "success");
+  showToast("Fondo inicial actualizado con éxito", "success");
 }
 
-function openCashCutModal() {
-  const todayStr = new Date().toISOString().split('T')[0];
-  const todayMovs = store.cashMovements.filter(m => m.timestamp.startsWith(todayStr));
-
-  const fondo = store.config.initialCashFund || 0;
-  let salesCash = 0;
-  let totalExpenses = 0;
-
-  todayMovs.forEach(m => {
-    if (m.type === 'venta' && m.paymentMethod === 'efectivo') salesCash += m.amount;
-    if (m.type === 'gasto') totalExpenses += m.amount;
-  });
-
-  const expectedCash = (fondo + salesCash) - totalExpenses;
-
-  document.getElementById('cut-modal-fondo').textContent = formatMoney(fondo);
-  document.getElementById('cut-modal-sales-cash').textContent = formatMoney(salesCash);
-  document.getElementById('cut-modal-expenses').textContent = `-${formatMoney(totalExpenses)}`;
-  document.getElementById('cut-modal-expected').textContent = formatMoney(expectedCash);
-
-  const countedInput = document.getElementById('cut-counted-cash');
-  countedInput.value = '';
-  document.getElementById('cut-diff-badge').style.display = 'none';
-
-  countedInput.oninput = () => {
-    const counted = parseFloat(countedInput.value) || 0;
-    const diff = counted - expectedCash;
-    const badge = document.getElementById('cut-diff-badge');
-    badge.style.display = 'block';
-
-    if (Math.abs(diff) < 0.01) {
-      badge.className = 'diff-badge balanced';
-      badge.textContent = `Diferencia: $0.00 (Caja Cuadrada)`;
-    } else if (diff > 0) {
-      badge.className = 'diff-badge surplus';
-      badge.textContent = `Sobrante: +${formatMoney(diff)} (Efectivo extra en cajón)`;
-    } else {
-      badge.className = 'diff-badge missing';
-      badge.textContent = `Faltante: -${formatMoney(Math.abs(diff))} (Falta efectivo)`;
-    }
-  };
-
-  openModal('modal-cashcut');
-}
-
-function confirmCashCut() {
-  const countedInput = document.getElementById('cut-counted-cash');
-  if (countedInput.value.trim() === '') {
-    showToast("Ingresa la cantidad contada", "error");
-    return;
-  }
-
-  const counted = parseFloat(countedInput.value) || 0;
-  const todayStr = new Date().toISOString().split('T')[0];
-  const todayMovs = store.cashMovements.filter(m => m.timestamp.startsWith(todayStr));
-
-  const fondo = store.config.initialCashFund || 0;
-  let totalSales = 0;
-  let salesCash = 0;
-  let totalExpenses = 0;
-
-  todayMovs.forEach(m => {
-    if (m.type === 'venta') {
-      totalSales += m.amount;
-      if (m.paymentMethod === 'efectivo') salesCash += m.amount;
-    } else if (m.type === 'gasto') {
-      totalExpenses += m.amount;
-    }
-  });
-
-  const expectedCash = (fondo + salesCash) - totalExpenses;
-  const difference = counted - expectedCash;
-
-  const closure = {
-    id: `cut-${Date.now()}`,
-    closedAt: new Date().toISOString(),
-    responsible: document.getElementById('cut-responsible').value || 'Administrador',
-    notes: document.getElementById('cut-notes').value || '',
-    initialFund: fondo,
-    totalSales: totalSales,
-    salesCash: salesCash,
-    expenses: totalExpenses,
-    expectedCash: expectedCash,
-    countedCash: counted,
-    difference: difference
-  };
-
-  if (!store.cashClosures) store.cashClosures = [];
-  store.cashClosures.push(closure);
-
-  saveStore();
-  closeModal('modal-cashcut');
-  renderCashRegister();
-  showToast("Cierre de caja registrado exitosamente", "success");
-  generateCashCutPrint(closure);
-}
-
-// ================= RENDERIZADO: BARBEROS & CUENTAS =================
-function renderBarbers() {
-  const container = document.getElementById('barbers-cards-container');
+// ================= 7. ARTISTAS & CABINAS =================
+function renderArtists() {
+  const container = document.getElementById('artists-cards-container');
+  if (!container) return;
   container.innerHTML = '';
 
-  const todayStr = new Date().toISOString().split('T')[0];
-  const todayMovs = store.cashMovements.filter(m => m.timestamp.startsWith(todayStr) && m.type === 'venta');
-
-  store.barbers.forEach(barber => {
-    let servicesCount = 0;
-    let totalGenerated = 0;
-
-    todayMovs.forEach(mov => {
-      if (mov.barberId === barber.id) {
-        totalGenerated += mov.amount;
-        servicesCount += 1;
-      }
-    });
-
+  store.artists.forEach(art => {
     const card = document.createElement('div');
     card.className = 'panel-card';
     card.innerHTML = `
-      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
-        <div style="display: flex; align-items: center; gap: 12px;">
-          <div style="width: 44px; height: 44px; border-radius: 50%; background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: 700;">
-            ${barber.avatar || getInitials(barber.name)}
-          </div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div class="user-session-avatar" style="width:40px; height:40px; font-size:0.9rem;">${art.avatar || 'AR'}</div>
           <div>
-            <h4 style="font-size: 1rem; color: var(--text-main); font-weight: 700;">${escapeHtml(barber.name)}</h4>
-            <span style="font-size: 0.8rem; color: var(--primary); font-weight: 600;">${escapeHtml(barber.specialty)}</span>
+            <h4 style="font-size:0.95rem; color:var(--text-main); font-weight:700;">${escapeHtml(art.name)}</h4>
+            <span style="font-size:0.75rem; color:var(--accent-secondary); font-weight:600;">${escapeHtml(art.booth || 'Cabina 1')}</span>
           </div>
         </div>
-        <button class="btn btn-secondary btn-sm" onclick="editBarber('${barber.id}')" title="Editar">Editar</button>
+        <button class="btn btn-secondary btn-sm" onclick="editArtist('${art.id}')">Editar</button>
       </div>
-
-      <div style="background-color: var(--bg-subtle); border-radius: 6px; padding: 12px; display: flex; flex-direction: column; gap: 8px; font-size: 0.85rem; border: 1px solid var(--border-default);">
-        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); padding-bottom: 6px;">
-          <span style="color: var(--text-secondary);">Cuenta de acceso:</span>
-          <b style="color: var(--primary);">Usuario: ${escapeHtml(barber.username || barber.id)}</b>
-        </div>
-        <div style="display: flex; justify-content: space-between;">
-          <span style="color: var(--text-secondary);">Cortes Atendidos Hoy:</span>
-          <b style="color: var(--text-main);">${servicesCount}</b>
-        </div>
-        <div style="display: flex; justify-content: space-between;">
-          <span style="color: var(--text-secondary);">Total Facturado en Sillón:</span>
-          <b style="color: var(--text-main);">${formatMoney(totalGenerated)}</b>
-        </div>
+      <div style="font-size:0.8rem; color:var(--text-secondary); background:var(--bg-subtle); padding:10px; border-radius:4px; border:1px solid var(--border-default);">
+        <div><b>Especialidad:</b> ${escapeHtml(art.specialty)}</div>
+        <div style="margin-top:4px;"><b>WhatsApp:</b> ${escapeHtml(art.phone || 'Sin registrar')}</div>
+        <div style="margin-top:4px;"><b>Usuario:</b> <code style="color:var(--primary);">${escapeHtml(art.username)}</code></div>
       </div>
     `;
     container.appendChild(card);
   });
 }
 
-function editBarber(barberId) {
-  const barber = store.barbers.find(b => b.id === barberId);
-  if (!barber) return;
-
-  document.getElementById('modal-barber-title').textContent = "Editar Barbero & Cuenta";
-  document.getElementById('barber-form-name').value = barber.name;
-  document.getElementById('barber-form-phone').value = barber.phone || '';
-  document.getElementById('barber-form-specialty').value = barber.specialty || '';
-  document.getElementById('barber-form-username').value = barber.username || '';
-  document.getElementById('barber-form-password').value = barber.password || '';
-
-  document.getElementById('btn-save-barber').dataset.editId = barberId;
-  openModal('modal-barber');
+function openNewArtistModal() {
+  document.getElementById('modal-artist-title').textContent = "Nuevo Artista / Piercer";
+  document.getElementById('artist-form-id').value = '';
+  document.getElementById('artist-form-name').value = '';
+  document.getElementById('artist-form-specialty').value = '';
+  document.getElementById('artist-form-booth').value = '';
+  document.getElementById('artist-form-phone').value = '';
+  document.getElementById('artist-form-username').value = '';
+  document.getElementById('artist-form-password').value = '';
+  openModal('modal-artist');
 }
 
-function saveBarberFromModal() {
-  const name = document.getElementById('barber-form-name').value.trim();
-  const phone = document.getElementById('barber-form-phone').value.trim();
-  const specialty = document.getElementById('barber-form-specialty').value.trim();
-  const username = document.getElementById('barber-form-username').value.trim().toLowerCase();
-  const password = document.getElementById('barber-form-password').value.trim();
+function editArtist(artistId) {
+  const art = store.artists.find(a => a.id === artistId);
+  if (!art) return;
 
-  if (!name) {
-    showToast("El nombre del barbero es obligatorio", "error");
+  document.getElementById('modal-artist-title').textContent = "Editar Artista";
+  document.getElementById('artist-form-id').value = art.id;
+  document.getElementById('artist-form-name').value = art.name;
+  document.getElementById('artist-form-specialty').value = art.specialty;
+  document.getElementById('artist-form-booth').value = art.booth || '';
+  document.getElementById('artist-form-phone').value = art.phone || '';
+  document.getElementById('artist-form-username').value = art.username;
+  document.getElementById('artist-form-password').value = art.password || '';
+  openModal('modal-artist');
+}
+
+function saveArtistFromModal() {
+  const id = document.getElementById('artist-form-id').value;
+  const name = document.getElementById('artist-form-name').value.trim();
+  const spec = document.getElementById('artist-form-specialty').value.trim();
+  const booth = document.getElementById('artist-form-booth').value.trim();
+  const phone = document.getElementById('artist-form-phone').value.trim();
+  const username = document.getElementById('artist-form-username').value.trim().toLowerCase();
+  const password = document.getElementById('artist-form-password').value.trim();
+
+  if (!name || !spec || !username) {
+    showToast("Completa los campos obligatorios", "error");
     return;
   }
 
-  const editId = document.getElementById('btn-save-barber').dataset.editId;
-
-  if (editId) {
-    const existing = store.barbers.find(b => b.id === editId);
-    if (existing) {
-      existing.name = name;
-      existing.phone = phone;
-      existing.specialty = specialty;
-      existing.username = username || existing.username;
-      existing.password = password || existing.password;
-      existing.avatar = getInitials(name);
+  if (id) {
+    const art = store.artists.find(a => a.id === id);
+    if (art) {
+      art.name = name;
+      art.specialty = spec;
+      art.booth = booth;
+      art.phone = phone;
+      art.username = username;
+      if (password) art.password = password;
+      art.avatar = getInitials(name);
     }
-    delete document.getElementById('btn-save-barber').dataset.editId;
-    showToast("Barbero actualizado con éxito", "success");
   } else {
-    store.barbers.push({
-      id: `b-${Date.now()}`,
+    store.artists.push({
+      id: 'a-' + Date.now(),
       name: name,
+      specialty: spec,
+      booth: booth || 'Cabina 1',
       phone: phone,
-      specialty: specialty || "Barbero Profesional",
-      username: username || name.split(' ')[0].toLowerCase(),
+      username: username,
       password: password || '123',
       avatar: getInitials(name)
     });
-    showToast("Barbero registrado con éxito", "success");
   }
 
-  saveStore();
-  closeModal('modal-barber');
-  renderBarbers();
-  renderPOS();
+  DataService.saveStore();
+  closeModal('modal-artist');
+  renderArtists();
+  renderAppointments();
+  renderDashboard();
+  showToast("Artista guardado con éxito", "success");
 }
 
-// ================= RENDERIZADO: CATÁLOGO =================
+// ================= 8. CATÁLOGO & JOYERÍA =================
 function renderCatalog() {
-  const srvTbody = document.getElementById('services-tbody');
+  const srvTbody = document.getElementById('catalog-services-tbody');
+  const prodTbody = document.getElementById('catalog-products-tbody');
+  if (!srvTbody || !prodTbody) return;
+
   srvTbody.innerHTML = '';
   store.services.forEach(s => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td>
-        <b>${escapeHtml(s.name)}</b>
-        <div style="font-size: 0.75rem; color: var(--text-muted);">${escapeHtml(s.category || 'General')}</div>
-      </td>
-      <td>${s.duration} min</td>
-      <td><strong style="color: var(--primary); font-size: 0.95rem;">${formatMoney(s.price)}</strong></td>
-      <td><button class="btn btn-danger btn-sm" onclick="deleteService('${s.id}')">Eliminar</button></td>
+      <td><b>${escapeHtml(s.name)}</b></td>
+      <td><span class="badge badge-pending">${escapeHtml(s.category)}</span></td>
+      <td><b>${formatMoney(s.price)}</b></td>
+      <td><button class="btn btn-danger btn-sm" onclick="deleteService('${s.id}')">&times;</button></td>
     `;
     srvTbody.appendChild(tr);
   });
 
-  const prodTbody = document.getElementById('products-tbody');
   prodTbody.innerHTML = '';
   store.products.forEach(p => {
-    const isLow = p.stock <= 3;
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td><b>${escapeHtml(p.name)}</b></td>
-      <td><span class="badge ${isLow ? 'badge-cancel' : 'badge-done'}">${p.stock} unid. ${isLow ? 'Stock Bajo' : ''}</span></td>
-      <td style="color: var(--text-secondary);">${formatMoney(p.cost)}</td>
-      <td><strong style="color: var(--primary);">${formatMoney(p.price)}</strong></td>
-      <td><button class="btn btn-danger btn-sm" onclick="deleteProduct('${p.id}')">Eliminar</button></td>
+      <td><b>${escapeHtml(p.name)}</b><br><small style="color:var(--text-muted);">${escapeHtml(p.category)}</small></td>
+      <td><span class="badge ${p.stock <= 5 ? 'badge-cancel' : 'badge-done'}">${p.stock} pzas</span></td>
+      <td><b>${formatMoney(p.price)}</b></td>
+      <td><button class="btn btn-danger btn-sm" onclick="deleteProduct('${p.id}')">&times;</button></td>
     `;
     prodTbody.appendChild(tr);
   });
 }
 
-function deleteService(srvId) {
-  if (confirm("¿Eliminar este servicio?")) {
-    store.services = store.services.filter(s => s.id !== srvId);
-    saveStore();
-    renderCatalog();
-    renderPOS();
-    showToast("Servicio eliminado", "info");
-  }
+function openNewServiceModal() {
+  document.getElementById('service-form-name').value = '';
+  document.getElementById('service-form-price').value = '';
+  openModal('modal-service');
 }
 
-function deleteProduct(prodId) {
-  if (confirm("¿Eliminar este producto?")) {
-    store.products = store.products.filter(p => p.id !== prodId);
-    saveStore();
-    renderCatalog();
-    renderPOS();
-    showToast("Producto eliminado", "info");
-  }
-}
-
-// ================= RENDERIZADO: CLIENTES =================
-function renderClients() {
-  const tbody = document.getElementById('clients-tbody');
-  const search = (document.getElementById('filter-clients-search').value || '').toLowerCase();
-  tbody.innerHTML = '';
-
-  let list = store.clients;
-  if (search) {
-    list = list.filter(c => c.name.toLowerCase().includes(search) || (c.phone && c.phone.includes(search)));
-  }
-
-  if (list.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color: var(--text-muted); padding: 24px;">No se encontraron clientes.</td></tr>`;
+function saveServiceFromModal() {
+  const name = document.getElementById('service-form-name').value.trim();
+  const price = Number(document.getElementById('service-form-price').value);
+  const cat = document.getElementById('service-form-category').value;
+  if (!name || !price || price <= 0) {
+    showToast("Ingresa nombre y precio válido", "error");
     return;
   }
+  store.services.push({
+    id: 's-' + Date.now(),
+    name: name,
+    price: price,
+    duration: 60,
+    category: cat
+  });
+  DataService.saveStore();
+  closeModal('modal-service');
+  renderCatalog();
+  showToast("Servicio agregado al catálogo", "success");
+}
 
-  list.forEach(c => {
+function deleteService(id) {
+  store.services = store.services.filter(s => s.id !== id);
+  DataService.saveStore();
+  renderCatalog();
+}
+
+function openNewProductModal() {
+  document.getElementById('product-form-name').value = '';
+  document.getElementById('product-form-price').value = '';
+  document.getElementById('product-form-stock').value = '';
+  openModal('modal-product');
+}
+
+function saveProductFromModal() {
+  const name = document.getElementById('product-form-name').value.trim();
+  const price = Number(document.getElementById('product-form-price').value);
+  const stock = Number(document.getElementById('product-form-stock').value) || 0;
+  if (!name || !price || price <= 0) {
+    showToast("Ingresa nombre y precio válido", "error");
+    return;
+  }
+  store.products.push({
+    id: 'p-' + Date.now(),
+    name: name,
+    price: price,
+    cost: Math.round(price * 0.4),
+    stock: stock,
+    category: 'Aftercare'
+  });
+  DataService.saveStore();
+  closeModal('modal-product');
+  renderCatalog();
+  showToast("Producto agregado al inventario", "success");
+}
+
+function deleteProduct(id) {
+  store.products = store.products.filter(p => p.id !== id);
+  DataService.saveStore();
+  renderCatalog();
+}
+
+// ================= 9. CLIENTES =================
+function renderClients() {
+  const tbody = document.getElementById('clients-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  store.clients.forEach(c => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td><strong style="color: var(--text-main);">${escapeHtml(c.name)}</strong></td>
-      <td>${escapeHtml(c.phone || 'Sin registrar')}</td>
-      <td><b>${c.visits}</b> visitas</td>
-      <td><strong style="color: var(--primary);">${formatMoney(c.totalSpent)}</strong></td>
-      <td style="font-size: 0.8rem; color: var(--text-secondary); max-width: 250px;">${escapeHtml(c.notes || '-')}</td>
-      <td><button class="btn btn-secondary btn-sm" onclick="quickBookForClient('${c.id}')">Agendar</button></td>
+      <td><b>${escapeHtml(c.name)}</b> ${c.isMinor ? '<span class="quote-tag-minor">Menor de edad</span>' : ''}</td>
+      <td>${c.age || 25} años</td>
+      <td><a href="https://wa.me/52${c.phone}" target="_blank" style="color:var(--accent-secondary); text-decoration:none;">${escapeHtml(c.phone)}</a></td>
+      <td><small style="color:${c.allergies && c.allergies !== 'Ninguna' ? 'var(--color-error)' : 'var(--text-secondary)'}; font-weight:600;">${escapeHtml(c.allergies || 'Ninguna')}</small></td>
+      <td>${c.visits || 0}</td>
+      <td><b>${formatMoney(c.totalSpent || 0)}</b></td>
+      <td>
+        <button class="btn btn-secondary btn-sm" onclick="quickBookForClient('${c.id}')">+ Cita</button>
+      </td>
     `;
     tbody.appendChild(tr);
   });
 }
 
-function quickBookForClient(clientId) {
-  const client = store.clients.find(c => c.id === clientId);
-  if (!client) return;
-  openNewAppointmentModal(client);
-}
-
-// ================= MODALES Y FORMULARIOS =================
-function openModal(id) {
-  const modal = document.getElementById(id);
-  if (modal) modal.classList.add('active');
-}
-
-function closeModal(id) {
-  const modal = document.getElementById(id);
-  if (modal) modal.classList.remove('active');
-}
-
-function saveExpenseFromModal() {
-  const concept = document.getElementById('expense-concept').value.trim();
-  const amount = parseFloat(document.getElementById('expense-amount').value);
-  const barber = document.getElementById('expense-barber').value;
-
-  if (!concept || isNaN(amount) || amount <= 0) {
-    showToast("Concepto y monto válido requeridos", "error");
-    return;
-  }
-
-  store.cashMovements.push({
-    id: `mov-${Date.now()}`,
-    timestamp: new Date().toISOString(),
-    type: "gasto",
-    concept: concept,
-    client: "-",
-    paymentMethod: "efectivo",
-    barberId: "admin",
-    barberName: barber,
-    amount: amount,
-    items: []
-  });
-
-  saveStore();
-  closeModal('modal-expense');
-  renderCashRegister();
-  showToast("Gasto registrado en caja", "info");
-}
-
-function saveServiceFromModal() {
-  const name = document.getElementById('service-form-name').value.trim();
-  const price = parseFloat(document.getElementById('service-form-price').value);
-  const duration = parseInt(document.getElementById('service-form-duration').value) || 30;
-
-  if (!name || isNaN(price) || price < 0) {
-    showToast("Ingresa nombre y precio válido", "error");
-    return;
-  }
-
-  store.services.push({
-    id: `s-${Date.now()}`,
-    name: name,
-    price: price,
-    duration: duration,
-    category: "Servicio"
-  });
-
-  saveStore();
-  closeModal('modal-service');
-  renderCatalog();
-  renderPOS();
-  showToast("Servicio agregado", "success");
-}
-
-function saveProductFromModal() {
-  const name = document.getElementById('product-form-name').value.trim();
-  const price = parseFloat(document.getElementById('product-form-price').value);
-  const cost = parseFloat(document.getElementById('product-form-cost').value) || 0;
-  const stock = parseInt(document.getElementById('product-form-stock').value) || 0;
-
-  if (!name || isNaN(price) || price < 0) {
-    showToast("Nombre y precio válidos requeridos", "error");
-    return;
-  }
-
-  store.products.push({
-    id: `p-${Date.now()}`,
-    name: name,
-    price: price,
-    cost: cost,
-    stock: stock
-  });
-
-  saveStore();
-  closeModal('modal-product');
-  renderCatalog();
-  renderPOS();
-  showToast("Producto agregado", "success");
+function openNewClientModal() {
+  document.getElementById('client-form-id').value = '';
+  document.getElementById('client-form-name').value = '';
+  document.getElementById('client-form-phone').value = '';
+  document.getElementById('client-form-age').value = '25';
+  document.getElementById('client-form-allergies').value = '';
+  document.getElementById('client-form-notes').value = '';
+  openModal('modal-client');
 }
 
 function saveClientFromModal() {
   const name = document.getElementById('client-form-name').value.trim();
   const phone = document.getElementById('client-form-phone').value.trim();
+  const age = parseInt(document.getElementById('client-form-age').value, 10) || 25;
+  const allergies = document.getElementById('client-form-allergies').value.trim();
   const notes = document.getElementById('client-form-notes').value.trim();
 
   if (!name || !phone) {
-    showToast("Nombre y teléfono requeridos", "error");
+    showToast("Ingresa nombre y teléfono", "error");
     return;
   }
 
   store.clients.push({
-    id: `c-${Date.now()}`,
+    id: 'c-' + Date.now(),
     name: name,
     phone: phone,
+    age: age,
+    isMinor: age < 18,
+    allergies: allergies || 'Ninguna',
+    notes: notes,
     visits: 0,
-    totalSpent: 0,
-    notes: notes
+    totalSpent: 0
   });
 
-  saveStore();
+  DataService.saveStore();
   closeModal('modal-client');
   renderClients();
-  showToast("Cliente registrado", "success");
+  showToast("Cliente registrado en el directorio", "success");
 }
 
-// ================= TICKETS E IMPRESIÓN =================
-function generateReceiptModal(movement) {
-  const dateStr = new Date(movement.timestamp).toLocaleString();
-  const printContent = `
-    <h4>${escapeHtml(store.config.shopName)}</h4>
-    <div class="receipt-center">${escapeHtml(store.config.address || 'Barbería')}</div>
-    <div class="receipt-center">Tel: ${escapeHtml(store.config.phone || '')}</div>
-    <div class="receipt-divider"></div>
-    <div style="display:flex; justify-content:space-between; font-size:11px;">
-      <span>Ticket #${movement.id.slice(-6)}</span>
-      <span>${dateStr}</span>
-    </div>
-    <div style="font-size:11px; margin-top:2px;">Cliente: ${escapeHtml(movement.client)}</div>
-    <div style="font-size:11px;">Atendió: ${escapeHtml(movement.barberName)}</div>
-    <div class="receipt-divider"></div>
-    <div style="margin: 6px 0;">
-      ${movement.items.map(item => `
-        <div style="display:flex; justify-content:space-between; margin-bottom:3px;">
-          <span>${escapeHtml(item.name)} x${item.qty}</span>
-          <span>${formatMoney(item.price * item.qty)}</span>
-        </div>
-      `).join('')}
-    </div>
-    <div class="receipt-divider"></div>
-    <div style="display:flex; justify-content:space-between; font-size:11px;">
-      <span>Subtotal:</span>
-      <span>${formatMoney(movement.subtotal || movement.amount)}</span>
-    </div>
-    ${movement.discount > 0 ? `
-      <div style="display:flex; justify-content:space-between; font-size:11px;">
-        <span>Descuento:</span>
-        <span>-${formatMoney(movement.discount)}</span>
-      </div>
-    ` : ''}
-    <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:14px; margin-top:4px;">
-      <span>TOTAL COBRADO:</span>
-      <span>${formatMoney(movement.amount)}</span>
-    </div>
-    <div style="display:flex; justify-content:space-between; font-size:11px; margin-top:2px;">
-      <span>Método de Pago:</span>
-      <span style="text-transform:capitalize;">${movement.paymentMethod}</span>
-    </div>
-    <div class="receipt-divider"></div>
-    <div class="receipt-center" style="margin-top:8px;">
-      Gracias por su preferencia.<br>Vuelva pronto.
-    </div>
-  `;
-
-  document.getElementById('printable-receipt-content').innerHTML = printContent;
-  document.getElementById('receipt-print-area').innerHTML = printContent;
-  openModal('modal-receipt');
+function quickBookForClient(clientId) {
+  const client = store.clients.find(c => c.id === clientId);
+  if (!client) return;
+  openNewAppointmentModal();
+  document.getElementById('app-form-client').value = client.name;
+  document.getElementById('app-form-phone').value = client.phone;
+  document.getElementById('app-form-notes').value = client.allergies ? `Alergias: ${client.allergies}` : '';
 }
 
-function generateCashCutPrint(cut) {
-  const dateStr = new Date(cut.closedAt).toLocaleString();
-  const printContent = `
-    <h4>${escapeHtml(store.config.shopName)}</h4>
-    <div class="receipt-center">CORTE DE CAJA / CIERRE DE TURNO</div>
-    <div class="receipt-divider"></div>
-    <div style="font-size:11px;">Fecha: ${dateStr}</div>
-    <div style="font-size:11px;">Responsable: ${escapeHtml(cut.responsible)}</div>
-    <div class="receipt-divider"></div>
-    <div style="display:flex; justify-content:space-between;"><span>Fondo Inicial:</span> <span>${formatMoney(cut.initialFund)}</span></div>
-    <div style="display:flex; justify-content:space-between;"><span>Ventas Totales:</span> <span>${formatMoney(cut.totalSales)}</span></div>
-    <div style="display:flex; justify-content:space-between;"><span>Efectivo Ventas:</span> <span>${formatMoney(cut.salesCash)}</span></div>
-    <div style="display:flex; justify-content:space-between;"><span>Gastos / Salidas:</span> <span>-${formatMoney(cut.expenses)}</span></div>
-    <div class="receipt-divider"></div>
-    <div style="display:flex; justify-content:space-between;"><span>Efectivo Esperado:</span> <span>${formatMoney(cut.expectedCash)}</span></div>
-    <div style="display:flex; justify-content:space-between; font-weight:bold;"><span>Efectivo Contado:</span> <span>${formatMoney(cut.countedCash)}</span></div>
-    <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:13px; margin-top:4px;">
-      <span>Diferencia:</span>
-      <span>${cut.difference >= 0 ? '+' : ''}${formatMoney(cut.difference)}</span>
-    </div>
-    <div class="receipt-divider"></div>
-    <div class="receipt-center" style="margin-top:6px;">Firma de Conformidad: ____________</div>
-  `;
-  document.getElementById('printable-receipt-content').innerHTML = printContent;
-  document.getElementById('receipt-print-area').innerHTML = printContent;
-  openModal('modal-receipt');
+// ================= MODALES AUXILIARES =================
+function openModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal) modal.classList.add('active');
 }
 
-// ================= EXPORTACIÓN =================
-function exportBackupData() {
-  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(store, null, 2));
-  const downloadAnchor = document.createElement('a');
-  downloadAnchor.setAttribute("href", dataStr);
-  const now = new Date().toISOString().split('T')[0];
-  downloadAnchor.setAttribute("download", `barberia_backup_${now}.json`);
-  document.body.appendChild(downloadAnchor);
-  downloadAnchor.click();
-  downloadAnchor.remove();
-  showToast("Copia de seguridad descargada", "success");
+function closeModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal) modal.classList.remove('active');
 }
 
-// ================= EVENT LISTENERS =================
-function setupEventListeners() {
+// ================= INICIALIZACIÓN =================
+document.addEventListener('DOMContentLoaded', () => {
+  DataService.loadStore();
+  loadSession();
+  initDeviceMode();
+
+  // Listeners
   const loginForm = document.getElementById('login-form');
-  if (loginForm) {
-    loginForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      handleLogin();
-    });
-  }
+  if (loginForm) loginForm.onsubmit = handleLogin;
 
-  const btnLogout = document.getElementById('btn-logout');
-  if (btnLogout) btnLogout.addEventListener('click', logout);
+  const btnMobileToggle = document.getElementById('btn-mobile-toggle');
+  if (btnMobileToggle) btnMobileToggle.onclick = openMobileSidebar;
 
-  document.querySelectorAll('.nav-item').forEach(item => {
-    item.addEventListener('click', (e) => {
-      e.preventDefault();
-      const view = item.dataset.view;
-      if (view) switchView(view);
-    });
-  });
-
-  const btnToggleSidebar = document.getElementById('btn-toggle-sidebar');
-  if (btnToggleSidebar) {
-    btnToggleSidebar.addEventListener('click', toggleMobileSidebar);
-  }
-
-  const btnCloseSidebar = document.getElementById('btn-sidebar-close');
-  if (btnCloseSidebar) {
-    btnCloseSidebar.addEventListener('click', closeMobileSidebar);
-  }
+  const btnSidebarClose = document.getElementById('btn-sidebar-close');
+  if (btnSidebarClose) btnSidebarClose.onclick = closeMobileSidebar;
 
   const sidebarBackdrop = document.getElementById('sidebar-backdrop');
-  if (sidebarBackdrop) {
-    sidebarBackdrop.addEventListener('click', closeMobileSidebar);
-  }
+  if (sidebarBackdrop) sidebarBackdrop.onclick = closeMobileSidebar;
 
-  const mobMenuBtn = document.getElementById('mob-nav-menu-btn');
-  if (mobMenuBtn) {
-    mobMenuBtn.addEventListener('click', toggleMobileSidebar);
-  }
+  const btnQuickCash = document.getElementById('btn-quick-cash');
+  if (btnQuickCash) btnQuickCash.onclick = () => switchView('cash-register');
 
-  document.querySelectorAll('.mob-nav-btn[data-view]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const view = btn.dataset.view;
+  // Enlaces de navegación sidebar
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.onclick = (e) => {
+      e.preventDefault();
+      const view = item.getAttribute('data-view');
       if (view) switchView(view);
+    };
+  });
+
+  // Cerrar modales con clic fuera
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) {
+        overlay.classList.remove('active');
+      }
     });
   });
 
-  const btnModePc = document.getElementById('btn-mode-pc');
-  if (btnModePc) btnModePc.addEventListener('click', () => setDeviceMode('desktop'));
-
-  const btnModeMobile = document.getElementById('btn-mode-mobile');
-  if (btnModeMobile) btnModeMobile.addEventListener('click', () => setDeviceMode('mobile'));
-
-  const btnHeaderModePc = document.getElementById('btn-header-mode-pc');
-  if (btnHeaderModePc) btnHeaderModePc.addEventListener('click', () => setDeviceMode('desktop'));
-
-  const btnHeaderModeMobile = document.getElementById('btn-header-mode-mobile');
-  if (btnHeaderModeMobile) btnHeaderModeMobile.addEventListener('click', () => setDeviceMode('mobile'));
-
-  document.querySelectorAll('[data-pos-tab]').forEach(tab => {
-    tab.addEventListener('click', () => {
-      document.querySelectorAll('[data-pos-tab]').forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-      currentPosTab = tab.dataset.posTab;
-      renderPOS();
-    });
-  });
-
-  document.getElementById('btn-pos-clear').addEventListener('click', () => {
-    currentPosCart = [];
-    renderPosCart();
-  });
-  document.getElementById('btn-pos-checkout').addEventListener('click', checkoutPOS);
-  document.getElementById('pos-discount-input').addEventListener('input', () => renderPosCart());
-
-  document.getElementById('btn-header-new-appointment').addEventListener('click', () => openNewAppointmentModal());
-  const btnOpenApp = document.getElementById('btn-modal-open-appointment');
-  if (btnOpenApp) btnOpenApp.addEventListener('click', () => openNewAppointmentModal());
-
-  document.getElementById('btn-modal-open-expense').addEventListener('click', () => openModal('modal-expense'));
-  document.getElementById('btn-modal-open-cashcut').addEventListener('click', openCashCutModal);
-  document.getElementById('btn-quick-cash').addEventListener('click', () => switchView('cash-register'));
-
-  // Botón y modal de reseteo demo
-  const btnResetDemo = document.getElementById('btn-reset-demo');
-  if (btnResetDemo) btnResetDemo.addEventListener('click', () => openModal('modal-reset-demo'));
-  const btnConfirmResetDemo = document.getElementById('btn-confirm-reset-demo');
-  if (btnConfirmResetDemo) btnConfirmResetDemo.addEventListener('click', confirmResetDemo);
-
-  // Botón y modal de edición de fondo con clave
-  const btnOpenEditFund = document.getElementById('btn-open-edit-fund');
-  if (btnOpenEditFund) btnOpenEditFund.addEventListener('click', openEditFundModal);
-  const btnConfirmEditFund = document.getElementById('btn-confirm-edit-fund');
-  if (btnConfirmEditFund) btnConfirmEditFund.addEventListener('click', confirmEditFund);
-
-  document.getElementById('btn-modal-open-barber').addEventListener('click', () => {
-    document.getElementById('modal-barber-title').textContent = "Registrar Barbero & Cuenta";
-    document.getElementById('barber-form-name').value = '';
-    document.getElementById('barber-form-phone').value = '';
-    document.getElementById('barber-form-specialty').value = '';
-    document.getElementById('barber-form-username').value = '';
-    document.getElementById('barber-form-password').value = '';
-    delete document.getElementById('btn-save-barber').dataset.editId;
-    openModal('modal-barber');
-  });
-
-  document.getElementById('btn-modal-open-service').addEventListener('click', () => {
-    document.getElementById('service-form-name').value = '';
-    document.getElementById('service-form-price').value = '';
-    openModal('modal-service');
-  });
-
-  document.getElementById('btn-modal-open-product').addEventListener('click', () => {
-    document.getElementById('product-form-name').value = '';
-    document.getElementById('product-form-price').value = '';
-    document.getElementById('product-form-cost').value = '';
-    openModal('modal-product');
-  });
-
-  document.getElementById('btn-modal-open-client').addEventListener('click', () => {
-    document.getElementById('client-form-name').value = '';
-    document.getElementById('client-form-phone').value = '';
-    document.getElementById('client-form-notes').value = '';
-    openModal('modal-client');
-  });
-
-  document.getElementById('btn-save-appointment').addEventListener('click', saveAppointmentFromModal);
-  document.getElementById('btn-save-expense').addEventListener('click', saveExpenseFromModal);
-  document.getElementById('btn-save-barber').addEventListener('click', saveBarberFromModal);
-  document.getElementById('btn-save-service').addEventListener('click', saveServiceFromModal);
-  document.getElementById('btn-save-product').addEventListener('click', saveProductFromModal);
-  document.getElementById('btn-save-client').addEventListener('click', saveClientFromModal);
-  document.getElementById('btn-confirm-cashcut').addEventListener('click', confirmCashCut);
-
-  const btnSaveBarberTip = document.getElementById('btn-save-barber-tip');
-  if (btnSaveBarberTip) btnSaveBarberTip.addEventListener('click', saveBarberTipFromModal);
-
-  const filterBarber = document.getElementById('filter-appointment-barber');
-  if (filterBarber) filterBarber.addEventListener('change', renderAppointments);
-
-  const filterSearch = document.getElementById('filter-clients-search');
-  if (filterSearch) filterSearch.addEventListener('input', renderClients);
-
-  document.getElementById('btn-public-submit-booking').addEventListener('click', submitPublicBooking);
-  document.getElementById('btn-print-receipt').addEventListener('click', () => window.print());
-  const btnExport = document.getElementById('btn-export-backup');
-  if (btnExport) btnExport.addEventListener('click', exportBackupData);
-}
-
-// ================= UTILIDADES =================
-function formatMoney(amount) {
-  const num = Number(amount) || 0;
-  return `$${num.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-
-function escapeHtml(str) {
-  if (!str) return '';
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-function renderStatusBadge(status) {
-  switch (status) {
-    case 'pendiente': return `<span class="badge badge-pending">En Espera</span>`;
-    case 'en_proceso': return `<span class="badge badge-progress">En Sillón</span>`;
-    case 'completada': return `<span class="badge badge-done">Cobrado / Completado</span>`;
-    case 'cancelada': return `<span class="badge badge-cancel">Cancelada</span>`;
-    default: return `<span class="badge">${escapeHtml(status)}</span>`;
-  }
-}
-
-function showToast(message, type = 'info') {
-  const container = document.getElementById('toast-container');
-  if (!container) return;
-
-  const toast = document.createElement('div');
-  toast.className = `toast ${type}`;
-  toast.innerHTML = `<span>${escapeHtml(message)}</span>`;
-  container.appendChild(toast);
-
-  setTimeout(() => {
-    toast.style.opacity = '0';
-    toast.style.transition = 'opacity 0.3s ease';
-    setTimeout(() => toast.remove(), 300);
-  }, 3500);
-}
+  applyUserSession();
+});
