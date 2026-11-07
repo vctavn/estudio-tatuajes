@@ -1301,8 +1301,11 @@ body {
 
 .time-slots-wrapper {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(95px, 1fr));
   gap: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .time-slot-pill {
@@ -2127,4 +2130,104 @@ body {
   object-fit: cover;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-default);
+}
+
+/* ================= ASIGNACIÓN DE TATUADOR EN MODAL ================= */
+.artist-assignment-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  margin-top: 4px;
+  transition: all 0.2s ease;
+}
+
+.artist-assignment-card.active {
+  border-color: rgba(212, 166, 74, 0.5);
+  background-color: rgba(212, 166, 74, 0.08);
+}
+
+/* ================= HORARIOS CON DETECCIÓN DE COLISIÓN ================= */
+.time-slot-pill.booked {
+  background-color: #1a1a20 !important;
+  color: #777785 !important;
+  border-color: #2b2b35 !important;
+  text-decoration: line-through;
+  opacity: 0.55;
+  cursor: not-allowed !important;
+  pointer-events: none;
+}
+
+.time-slot-pill.conflict {
+  background-color: rgba(255, 90, 95, 0.1) !important;
+  color: #FF5A5F !important;
+  border-color: rgba(255, 90, 95, 0.35) !important;
+  text-decoration: line-through;
+  opacity: 0.65;
+  cursor: not-allowed !important;
+  pointer-events: none;
+}
+
+.time-slot-pill.booked::after {
+  content: " (Ocupado)";
+  font-size: 0.65rem;
+  opacity: 0.8;
+}
+
+.time-slot-pill.conflict::after {
+  content: " (Empalma)";
+  font-size: 0.65rem;
+  opacity: 0.85;
+}
+
+/* ================= TATUAJES GRANDES & PROYECTOS MULTI-SESIÓN ================= */
+.project-multisession-box {
+  background-color: rgba(212, 166, 74, 0.04);
+  border: 1px solid rgba(212, 166, 74, 0.3);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  margin-top: 14px;
+}
+
+.project-multisession-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.project-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: var(--accent-secondary);
+  cursor: pointer;
+}
+
+.project-checkbox-label input[type="checkbox"] {
+  accent-color: var(--accent-secondary);
+  width: 17px;
+  height: 17px;
+  cursor: pointer;
+}
+
+.project-subtext {
+  font-size: 0.73rem;
+  color: var(--text-muted);
+  margin: 4px 0 0 25px;
+  line-height: 1.35;
+}
+
+.project-session-amount-box {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  margin-top: 10px;
 }

@@ -234,6 +234,20 @@ const DEFAULT_DATA = {
       dateRequested: new Date().toISOString().split('T')[0]
     }
   ],
+  projects: [
+    {
+      id: "proj-101",
+      title: "Manga Dragón Oriental",
+      clientName: "Roberto Gómez",
+      clientPhone: "5533445566",
+      totalPrice: 8400,
+      totalSessionsEstimated: 3,
+      billingMode: "pay_per_session",
+      totalPaid: 2800,
+      status: "en_progreso",
+      notes: "Brazo derecho. Sesión 1 línea base realizada. Sesión 2 sombreado."
+    }
+  ],
   appointments: [],
   cashMovements: [],
   cashClosures: [],
@@ -249,10 +263,18 @@ const DEFAULT_DATA = {
       id: "ses-101",
       clientName: "Roberto Gómez",
       clientPhone: "5533445566",
+      projectId: "proj-101",
+      isMultiSession: true,
+      projectTitle: "Manga Dragón Oriental",
+      sessionNumber: 2,
+      totalSessions: 3,
+      billingMode: "pay_per_session",
+      projectTotalPrice: 8400,
+      isPrepaidProject: false,
       services: [
         { id: "s2", name: "Tatuaje Mediano (Línea & Sombra)", price: 2800, duration: 150 }
       ],
-      serviceName: "Tatuaje Mediano (Línea & Sombra)",
+      serviceName: "[Manga Dragón] Sesión 2/3 - Sombreado",
       price: 2800,
       depositDeducted: 500,
       durationMinutes: 150,
@@ -264,13 +286,14 @@ const DEFAULT_DATA = {
       time: "11:00 AM",
       endTime: "1:30 PM",
       status: "en_proceso",
-      notes: "Sesión 2. Sombra y detalles de manga.",
+      notes: "Sesión 2 de 3. Sombra y detalles de manga.",
       quoteRef: "COT-2026-000"
     },
     {
       id: "ses-102",
       clientName: "Valeria Mendoza",
       clientPhone: "5544556677",
+      isMultiSession: false,
       services: [
         { id: "s1", name: "Tatuaje Flash / Pieza Pequeña", price: 1200, duration: 60 }
       ],
@@ -326,6 +349,7 @@ const DataService = {
         store = JSON.parse(saved);
         if (!store.quoteRequests) store.quoteRequests = DEFAULT_DATA.quoteRequests;
         if (!store.artists || store.artists.length === 0) store.artists = DEFAULT_DATA.artists;
+        if (!store.projects) store.projects = DEFAULT_DATA.projects || [];
         return;
       }
     } catch (e) {
@@ -451,6 +475,7 @@ function applyUserSession() {
 function confirmResetDemo() {
   store.appointments = [];
   store.quoteRequests = [];
+  store.projects = [];
   store.cashMovements = [];
   store.cashClosures = [];
   store.artistTips = [];
@@ -582,12 +607,12 @@ function renderDashboard() {
       tr.innerHTML = `
         <td><b>${formatTime12h(app.time)} - ${formatTime12h(app.endTime || calculateEndTime(app.time, app.durationMinutes || 60))}</b></td>
         <td><b>${escapeHtml(app.clientName)}</b><br><small style="color:var(--text-muted);">${escapeHtml(app.clientPhone)}</small></td>
-        <td>${escapeHtml(app.serviceName)}<br><small style="color:var(--accent-secondary); font-weight:600;">${app.durationLabel || '1h'}</small></td>
+        <td>${escapeHtml(app.serviceName)}${app.isMultiSession ? ` <span class="badge badge-touchup" style="font-size:0.65rem;">Sesión ${app.sessionNumber || 1}/${app.totalSessions || 2}</span>` : ''}<br><small style="color:var(--accent-secondary); font-weight:600;">${app.durationLabel || '1h'}</small></td>
         <td>${escapeHtml(app.booth || 'Cabina Principal')}</td>
         <td>${renderStatusBadge(app.status)}</td>
         <td>
           ${isPaid
-            ? '<span class="badge badge-paid" title="Esta sesión ya fue cobrada y realizada"><svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg> Cobrada</span>'
+            ? `<span class="badge badge-paid" title="${app.isPrepaidProject ? 'Sesión pre-pagada en proyecto ($0)' : 'Esta sesión ya fue cobrada y realizada'}"><svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg> ${app.isPrepaidProject ? 'Pre-pagada ($0)' : 'Cobrada'}</span>`
             : `<button class="btn btn-primary btn-sm" onclick="directPayAppointment('${app.id}')" title="Cobrar sesión">Cobrar</button>`}
         </td>
       `;
@@ -602,14 +627,14 @@ function renderDashboard() {
         </div>
         <div class="mobile-app-client">${escapeHtml(app.clientName)}</div>
         <div class="mobile-app-meta">
-          <span><b>Trabajo:</b> ${escapeHtml(app.serviceName)} (${app.durationLabel || '1h'})</span>
+          <span><b>Trabajo:</b> ${escapeHtml(app.serviceName)} ${app.isMultiSession ? `<span class="badge badge-touchup" style="font-size:0.65rem;">Sesión ${app.sessionNumber || 1}/${app.totalSessions || 2}</span>` : ''} (${app.durationLabel || '1h'})</span>
           <span><b>Cabina:</b> ${escapeHtml(app.booth || 'Cabina Principal')}</span>
           ${app.depositDeducted ? `<span style="color:var(--color-success); font-weight:600;">Depósito acreditado: -$${app.depositDeducted} MXN</span>` : ''}
-          ${isPaid ? `<span style="color:var(--color-success); font-weight:700;">Sesión ya cobrada y liquidada</span>` : ''}
+          ${isPaid ? `<span style="color:var(--color-success); font-weight:700;">${app.isPrepaidProject ? 'Sesión pre-pagada ($0.00 MXN)' : 'Sesión ya cobrada y liquidada'}</span>` : ''}
         </div>
         <div class="mobile-app-actions">
           ${isPaid
-            ? '<span class="badge badge-paid" style="flex:1; justify-content:center; padding:6px 0;">Cobrada y Liquidada</span>'
+            ? `<span class="badge badge-paid" style="flex:1; justify-content:center; padding:6px 0;">${app.isPrepaidProject ? 'Pre-pagada ($0.00)' : 'Cobrada y Liquidada'}</span>`
             : `<button class="btn btn-primary btn-sm" style="flex:1;" onclick="directPayAppointment('${app.id}')">Cobrar en POS</button>`}
           <button class="btn btn-secondary btn-sm" onclick="sendWhatsAppReminder('${app.id}')">WhatsApp</button>
         </div>
@@ -1047,11 +1072,108 @@ function scheduleSessionFromQuote(requestId) {
   window._quoteScheduledRef = req;
 }
 
-// ================= 3. AGENDA & CALENDARIO INTERACTIVO (DURACIÓN LIBRE + 12H) =================
+// ================= 3. AGENDA, CALENDARIO INTERACTIVO & PROYECTOS MULTI-SESIÓN =================
 let selectedCalendarDate = new Date().toISOString().split('T')[0];
 let selectedModalTime = '11:00 AM';
 let selectedModalDurationMinutes = 120;
 let selectedModalServices = [];
+let selectedModalArtistAssigned = true;
+
+// Horarios de operación del estudio (cada 30 min, formato 12 horas)
+const ALL_TIME_SLOTS = [
+  "10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM",
+  "12:00 PM", "12:30 PM", "1:00 PM", "1:30 PM",
+  "2:00 PM", "2:30 PM", "3:00 PM", "3:30 PM",
+  "4:00 PM", "4:30 PM", "5:00 PM", "5:30 PM",
+  "6:00 PM", "6:30 PM", "7:00 PM", "7:30 PM"
+];
+
+function toggleAssignArtistModal() {
+  selectedModalArtistAssigned = !selectedModalArtistAssigned;
+  updateArtistAssignmentUI();
+}
+
+function updateArtistAssignmentUI() {
+  const box = document.getElementById('modal-artist-assignment-box');
+  const btn = document.getElementById('btn-assign-artist');
+  const desc = document.getElementById('modal-assigned-artist-desc');
+  if (!box || !btn) return;
+
+  if (selectedModalArtistAssigned) {
+    box.classList.add('active');
+    btn.className = 'btn btn-secondary btn-sm';
+    btn.textContent = '✓ Asignado';
+    if (desc) desc.textContent = 'Cabina Principal • Tatuador Asignado';
+    showToast("Tatuador asignado a la cabina para esta sesión", "info");
+  } else {
+    box.classList.remove('active');
+    btn.className = 'btn btn-primary btn-sm';
+    btn.textContent = '+ Asignar Tatuador';
+    if (desc) desc.textContent = 'Sin tatuador asignado (Obligatorio asignar)';
+    showToast("Se desasignó al Tatuador. Debes asignarlo para agendar.", "info");
+  }
+}
+
+// Algoritmo de detección de colisiones / empalmes de horario para evitar ensimismar citas
+function checkSlotCollision(slotTime12h, durationMinutes, dateStr, excludeAppId = null) {
+  const sStart = parseTime12hToMinutes(slotTime12h);
+  const sEnd = sStart + durationMinutes;
+
+  // Cierre de estudio: ninguna sesión puede terminar después de las 9:00 PM (1260 mins)
+  if (sEnd > 1260) {
+    return {
+      isBooked: false,
+      isConflict: true,
+      reason: 'Excede el horario de cierre del estudio (9:00 PM)'
+    };
+  }
+
+  const dayApps = (store.appointments || []).filter(a =>
+    a.date === dateStr &&
+    a.status !== 'cancelada' &&
+    (!excludeAppId || a.id !== excludeAppId)
+  );
+
+  for (const app of dayApps) {
+    const aStart = parseTime12hToMinutes(app.time);
+    const aEnd = app.endTime ? parseTime12hToMinutes(app.endTime) : (aStart + (app.durationMinutes || 60));
+
+    // Si la hora de inicio cae dentro de una cita existente
+    if (sStart >= aStart && sStart < aEnd) {
+      return {
+        isBooked: true,
+        isConflict: false,
+        reason: `Horario ocupado por sesión de ${app.clientName} (${formatTime12h(app.time)} - ${formatTime12h(app.endTime || minutesToTime12h(aEnd))})`
+      };
+    }
+
+    // Si la cita candidata traslapa o empalma con la cita existente
+    // Intervalo [sStart, sEnd] se cruza con [aStart, aEnd] sii sStart < aEnd && sEnd > aStart
+    if (sStart < aEnd && sEnd > aStart) {
+      return {
+        isBooked: false,
+        isConflict: true,
+        reason: `La duración fijada (${formatDurationLabel(durationMinutes)}) empalma con la sesión de ${app.clientName} (${formatTime12h(app.time)} - ${formatTime12h(app.endTime || minutesToTime12h(aEnd))})`
+      };
+    }
+  }
+
+  return { isBooked: false, isConflict: false, reason: 'Disponible' };
+}
+
+function findFirstAvailableSlot(dateStr, durationMinutes, preferredSlot = null) {
+  if (preferredSlot) {
+    const check = checkSlotCollision(preferredSlot, durationMinutes, dateStr);
+    if (!check.isBooked && !check.isConflict) return preferredSlot;
+  }
+  for (const slot of ALL_TIME_SLOTS) {
+    const check = checkSlotCollision(slot, durationMinutes, dateStr);
+    if (!check.isBooked && !check.isConflict) {
+      return slot;
+    }
+  }
+  return null;
+}
 
 function renderAppointments() {
   const tbody = document.getElementById('appointments-tbody');
@@ -1085,7 +1207,11 @@ function renderAppointments() {
     tr.innerHTML = `
       <td><b>${formatTime12h(app.time)} - ${formatTime12h(endTimeStr)}</b></td>
       <td><b>${escapeHtml(app.clientName)}</b><br><small style="color:var(--text-muted);">${escapeHtml(app.clientPhone)}</small></td>
-      <td>${escapeHtml(app.serviceName)}<br><small style="color:var(--accent-secondary); font-weight:600;">${app.durationLabel || '1h'}</small></td>
+      <td>
+        ${app.isMultiSession
+          ? `<div><b>${escapeHtml(app.projectTitle || app.serviceName)}</b> <span class="badge badge-touchup" style="font-size:0.65rem;">Sesión ${app.sessionNumber || 1}/${app.totalSessions || 2}</span></div><small style="color:${app.isPrepaidProject ? 'var(--color-success)' : 'var(--text-secondary)'}; font-weight:600;">${app.isPrepaidProject ? 'Liquidada en Proyecto ($0)' : formatMoney(app.price)} • </small><small style="color:var(--accent-secondary); font-weight:600;">${app.durationLabel || '1h'}</small>`
+          : `${escapeHtml(app.serviceName)}<br><small style="color:var(--accent-secondary); font-weight:600;">${app.durationLabel || '1h'}</small>`}
+      </td>
       <td>${escapeHtml(app.booth || 'Cabina Principal')}</td>
       <td>${app.depositDeducted ? `<span style="color:var(--color-success); font-weight:700;">-${formatMoney(app.depositDeducted)}</span>` : '<span style="color:var(--text-muted);">$0</span>'}</td>
       <td>
@@ -1098,10 +1224,13 @@ function renderAppointments() {
         </select>
       </td>
       <td>
-        <div style="display: flex; gap: 4px; align-items: center;">
+        <div style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
           ${isPaid
-            ? '<span class="badge badge-paid" title="Esta sesión ya fue cobrada y realizada"><svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg> Cobrada</span>'
+            ? `<span class="badge badge-paid" title="${app.isPrepaidProject ? 'Sesión pre-pagada en proyecto ($0.00)' : 'Esta sesión ya fue cobrada y realizada'}"><svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg> ${app.isPrepaidProject ? 'Pre-pagada ($0)' : 'Cobrada'}</span>`
             : `<button class="btn btn-primary btn-sm" onclick="directPayAppointment('${app.id}')" title="Cobrar sesión en POS">Cobrar</button>`}
+          ${app.isMultiSession
+            ? `<button class="btn btn-secondary btn-sm" onclick="scheduleNextProjectSession('${app.id}')" title="Agendar siguiente sesión del proyecto" style="background: rgba(212, 166, 74, 0.15); border-color: rgba(212, 166, 74, 0.4); color: var(--accent-secondary); font-weight: 700;">+ Sig. Sesión</button>`
+            : ''}
           <button class="btn btn-secondary btn-sm" onclick="sendWhatsAppReminder('${app.id}')" title="Enviar WhatsApp">WA</button>
           <button class="btn btn-danger btn-sm" onclick="deleteAppointment('${app.id}')" title="Eliminar">&times;</button>
         </div>
@@ -1118,16 +1247,19 @@ function renderAppointments() {
       </div>
       <div class="mobile-app-client">${escapeHtml(app.clientName)}</div>
       <div class="mobile-app-meta">
-        <span><b>Servicio:</b> ${escapeHtml(app.serviceName)} (${app.durationLabel || '1h'})</span>
+        <span><b>Trabajo:</b> ${escapeHtml(app.serviceName)} ${app.isMultiSession ? `<span class="badge badge-touchup" style="font-size:0.65rem;">Sesión ${app.sessionNumber || 1}/${app.totalSessions || 2}</span>` : ''} (${app.durationLabel || '1h'})</span>
         <span><b>Cabina:</b> ${escapeHtml(app.booth || 'Cabina Principal')}</span>
         ${app.depositDeducted ? `<span style="color:var(--color-success); font-weight:700;">Anticipo acreditado: -${formatMoney(app.depositDeducted)}</span>` : ''}
-        ${isPaid ? `<span style="color:var(--color-success); font-weight:700;">Estado: Cobrada y Liquidada</span>` : ''}
+        ${isPaid ? `<span style="color:var(--color-success); font-weight:700;">${app.isPrepaidProject ? 'Estado: Pre-pagada dentro del proyecto ($0.00 MXN)' : 'Estado: Cobrada y Liquidada'}</span>` : ''}
         ${app.notes ? `<span style="color:var(--text-muted); font-size:0.75rem;">Nota: ${escapeHtml(app.notes)}</span>` : ''}
       </div>
       <div class="mobile-app-actions">
         ${isPaid
-          ? '<span class="badge badge-paid" style="flex:1; justify-content:center; padding:6px 0;">Cobrada y Liquidada</span>'
+          ? `<span class="badge badge-paid" style="flex:1; justify-content:center; padding:6px 0;">${app.isPrepaidProject ? 'Pre-pagada ($0.00)' : 'Cobrada y Liquidada'}</span>`
           : `<button class="btn btn-primary btn-sm" style="flex:1;" onclick="directPayAppointment('${app.id}')">Cobrar en POS</button>`}
+        ${app.isMultiSession
+          ? `<button class="btn btn-secondary btn-sm" onclick="scheduleNextProjectSession('${app.id}')" style="background: rgba(212, 166, 74, 0.15); border-color: rgba(212, 166, 74, 0.4); color: var(--accent-secondary); font-weight: 700;">+ Sig. Sesión</button>`
+          : ''}
         <button class="btn btn-secondary btn-sm" onclick="sendWhatsAppReminder('${app.id}')">Recordar WA</button>
       </div>
     `;
@@ -1166,7 +1298,9 @@ function openNewAppointmentModal() {
   selectedModalServices = [];
   selectedModalTime = '11:00 AM';
   selectedModalDurationMinutes = 120;
+  selectedModalArtistAssigned = true;
   window._quoteScheduledRef = null;
+  window._activeProjectEditId = null;
 
   document.getElementById('app-form-client').value = '';
   document.getElementById('app-form-phone').value = '';
@@ -1174,6 +1308,19 @@ function openNewAppointmentModal() {
   document.getElementById('app-form-custom-duration').value = '120';
   document.getElementById('modal-deposit-row').style.display = 'none';
 
+  // Reset campos de proyectos multi-sesión
+  const chk = document.getElementById('app-is-multi-session');
+  if (chk) chk.checked = false;
+  const multiContainer = document.getElementById('multi-session-fields-container');
+  if (multiContainer) multiContainer.style.display = 'none';
+  if (document.getElementById('app-project-title')) document.getElementById('app-project-title').value = '';
+  if (document.getElementById('app-project-session-number')) document.getElementById('app-project-session-number').value = '1';
+  if (document.getElementById('app-project-total-sessions')) document.getElementById('app-project-total-sessions').value = '3';
+  if (document.getElementById('app-project-billing-mode')) document.getElementById('app-project-billing-mode').value = 'pay_per_session';
+  if (document.getElementById('app-project-total-price')) document.getElementById('app-project-total-price').value = '';
+  if (document.getElementById('app-project-session-custom-amount')) document.getElementById('app-project-session-custom-amount').value = '';
+
+  updateArtistAssignmentUI();
   renderModalServicesPicker();
   renderModalCalendar();
   renderModalTimePicker();
@@ -1208,6 +1355,7 @@ function renderModalServicesPicker() {
       }
       renderModalServicesPicker();
       updateModalServicesSummary();
+      updateProjectSessionPreview();
     };
     container.appendChild(item);
   });
@@ -1234,38 +1382,37 @@ function renderModalTimePicker() {
   const container = document.getElementById('modal-time-picker-container');
   if (!container) return;
 
-  const slots = [
-    "10:00 AM", "11:00 AM", "12:00 PM",
-    "1:00 PM", "2:00 PM", "3:00 PM", "4:00 PM",
-    "5:00 PM", "6:00 PM", "7:00 PM"
-  ];
-
-  const bookedSlots = store.appointments
-    .filter(a => a.date === selectedCalendarDate && a.status !== 'cancelada')
-    .map(a => formatTime12h(a.time));
-
   container.innerHTML = `
-    <div class="time-shift-title">Horarios Disponibles (12 Horas)</div>
+    <div class="time-shift-title">Horarios del Tatuador (Detección de Empalmes Activa)</div>
     <div class="time-slots-wrapper" id="modal-time-slots-wrapper"></div>
   `;
 
   const wrapper = document.getElementById('modal-time-slots-wrapper');
-  slots.forEach(slot => {
-    const isBooked = bookedSlots.includes(slot);
-    const isSelected = (slot === selectedModalTime);
+
+  // Si la hora actual choca por duración o está ocupada, auto-seleccionar la primera disponible
+  const currentCheck = checkSlotCollision(selectedModalTime, selectedModalDurationMinutes, selectedCalendarDate);
+  if (currentCheck.isBooked || currentCheck.isConflict) {
+    const validSlot = findFirstAvailableSlot(selectedCalendarDate, selectedModalDurationMinutes, null);
+    if (validSlot) {
+      selectedModalTime = validSlot;
+    }
+  }
+
+  ALL_TIME_SLOTS.forEach(slot => {
+    const check = checkSlotCollision(slot, selectedModalDurationMinutes, selectedCalendarDate);
+    const isSelected = (slot === selectedModalTime && !check.isBooked && !check.isConflict);
 
     const pill = document.createElement('div');
-    pill.className = `time-slot-pill ${isSelected ? 'selected' : ''} ${isBooked ? 'booked' : ''}`;
+    pill.className = `time-slot-pill ${isSelected ? 'selected' : ''} ${check.isBooked ? 'booked' : ''} ${check.isConflict ? 'conflict' : ''}`;
     pill.textContent = slot;
+    pill.title = check.reason;
 
-    if (!isBooked) {
+    if (!check.isBooked && !check.isConflict) {
       pill.onclick = () => {
         selectedModalTime = slot;
         renderModalTimePicker();
         updateModalTimeRange();
       };
-    } else {
-      pill.title = "Horario reservado";
     }
 
     wrapper.appendChild(pill);
@@ -1276,7 +1423,10 @@ function selectDurationPreset(minutes, label) {
   selectedModalDurationMinutes = minutes;
   document.getElementById('app-form-custom-duration').value = minutes;
   document.querySelectorAll('.duration-pill').forEach(p => p.classList.remove('active'));
-  if (event && event.target) event.target.classList.add('active');
+  if (window.event && window.event.target && window.event.target.classList.contains('duration-pill')) {
+    window.event.target.classList.add('active');
+  }
+  renderModalTimePicker();
   updateModalTimeRange();
 }
 
@@ -1284,6 +1434,7 @@ function handleCustomDurationChange(val) {
   const minutes = parseInt(val, 10) || 60;
   selectedModalDurationMinutes = minutes;
   document.querySelectorAll('.duration-pill').forEach(p => p.classList.remove('active'));
+  renderModalTimePicker();
   updateModalTimeRange();
 }
 
@@ -1292,6 +1443,133 @@ function updateModalTimeRange() {
   const label = formatDurationLabel(selectedModalDurationMinutes);
   document.getElementById('modal-time-range-preview').textContent = `${selectedModalTime} - ${end} (${label})`;
   document.getElementById('app-duration-summary-text').textContent = `Duración fijada: ${label}`;
+}
+
+// ================= GESTIÓN DE TATUAJES GRANDES / PROYECTOS MULTI-SESIÓN =================
+function handleMultiSessionToggle(isChecked) {
+  const container = document.getElementById('multi-session-fields-container');
+  if (!container) return;
+  container.style.display = isChecked ? 'block' : 'none';
+
+  if (isChecked) {
+    const clientName = document.getElementById('app-form-client').value.trim();
+    const titleInput = document.getElementById('app-project-title');
+    if (!titleInput.value) {
+      if (selectedModalServices.length > 0) {
+        titleInput.value = `${selectedModalServices[0].name} - ${clientName || 'Cliente'}`;
+      } else {
+        titleInput.value = `Proyecto Manga / Pieza Grande ${clientName ? '- ' + clientName : ''}`;
+      }
+    }
+
+    const priceInput = document.getElementById('app-project-total-price');
+    if (!priceInput.value) {
+      const srvTotal = selectedModalServices.reduce((a, s) => a + (s.price || 0), 0);
+      priceInput.value = srvTotal > 0 ? srvTotal : 6000;
+    }
+  }
+
+  updateProjectSessionPreview();
+}
+
+function handleProjectBillingModeChange(mode) {
+  updateProjectSessionPreview();
+}
+
+function handleProjectSessionCustomAmount(val) {
+  const amt = Number(val) || 0;
+  document.getElementById('project-session-charge-display').textContent = formatMoney(amt);
+}
+
+function updateProjectSessionPreview() {
+  const isMulti = document.getElementById('app-is-multi-session')?.checked;
+  if (!isMulti) return;
+
+  const mode = document.getElementById('app-project-billing-mode')?.value || 'pay_per_session';
+  const sessionNum = parseInt(document.getElementById('app-project-session-number')?.value, 10) || 1;
+  const totalSessions = parseInt(document.getElementById('app-project-total-sessions')?.value, 10) || 2;
+  const totalPrice = Number(document.getElementById('app-project-total-price')?.value) || 0;
+  const customAmtWrap = document.getElementById('project-session-custom-amount-wrap');
+  const customAmtInput = document.getElementById('app-project-session-custom-amount');
+  const chargeDisplay = document.getElementById('project-session-charge-display');
+  const explanation = document.getElementById('project-session-explanation');
+  const priceBox = document.getElementById('app-project-total-price-box');
+  const priceLabel = document.getElementById('app-project-price-label');
+
+  if (priceBox && priceLabel) {
+    if (mode === 'already_paid') {
+      priceLabel.textContent = "Presupuesto del Proyecto de Referencia ($ MXN)";
+    } else {
+      priceLabel.textContent = "Precio Total Presupuestado del Proyecto ($ MXN) *";
+    }
+  }
+
+  if (mode === 'paid_upfront') {
+    if (sessionNum === 1) {
+      if (customAmtWrap) customAmtWrap.style.display = 'none';
+      if (chargeDisplay) chargeDisplay.textContent = formatMoney(totalPrice);
+      if (explanation) explanation.textContent = `Pago Total de una sola vez: Se cobrará el monto completo del proyecto (${formatMoney(totalPrice)}) en esta primera cita. Las sesiones posteriores quedarán automáticamente a $0.00 MXN sin cobro repetido.`;
+    } else {
+      if (customAmtWrap) customAmtWrap.style.display = 'none';
+      if (chargeDisplay) chargeDisplay.textContent = "$0.00 MXN (Pre-pagada)";
+      if (explanation) explanation.textContent = `¡Proyecto ya liquidado por anticipado! Esta sesión ${sessionNum} de ${totalSessions} NO generará ningún cobro ($0.00). El sistema la marcará como ya cubierta.`;
+    }
+  } else if (mode === 'already_paid') {
+    if (customAmtWrap) customAmtWrap.style.display = 'none';
+    if (chargeDisplay) chargeDisplay.textContent = "$0.00 MXN (Pre-pagada)";
+    if (explanation) explanation.textContent = `Esta sesión forma parte de un proyecto liquidado en una fecha anterior. Se agendará a $0.00 MXN sin cobro duplicado.`;
+  } else {
+    // pay_per_session
+    if (customAmtWrap) customAmtWrap.style.display = 'flex';
+    const suggested = totalSessions > 0 ? Math.round((totalPrice / totalSessions) / 50) * 50 : totalPrice;
+    if (!customAmtInput.value || Number(customAmtInput.value) <= 0) {
+      customAmtInput.value = suggested > 0 ? suggested : '';
+    }
+    const currentCharge = Number(customAmtInput.value) || suggested;
+    if (chargeDisplay) chargeDisplay.textContent = formatMoney(currentCharge);
+    if (explanation) explanation.textContent = `Pago en abonos por sesión: El cliente abonará ${formatMoney(currentCharge)} hoy al terminar esta cita, pagando progresivamente a medida que se realicen las sesiones.`;
+  }
+}
+
+function scheduleNextProjectSession(appId) {
+  const app = (store.appointments || []).find(a => a.id === appId);
+  if (!app) return;
+
+  openNewAppointmentModal();
+
+  document.getElementById('app-form-client').value = app.clientName || '';
+  document.getElementById('app-form-phone').value = app.clientPhone || '';
+  document.getElementById('app-form-notes').value = `Continuación de proyecto: ${app.projectTitle || app.serviceName}.`;
+
+  const chk = document.getElementById('app-is-multi-session');
+  if (chk) {
+    chk.checked = true;
+    handleMultiSessionToggle(true);
+  }
+
+  const nextSessionNum = (app.sessionNumber || 1) + 1;
+  const totalSessions = app.totalSessions || 3;
+
+  document.getElementById('app-project-title').value = app.projectTitle || app.serviceName;
+  document.getElementById('app-project-session-number').value = nextSessionNum;
+  document.getElementById('app-project-total-sessions').value = totalSessions;
+
+  const modeSelect = document.getElementById('app-project-billing-mode');
+  if (app.billingMode === 'paid_upfront' || app.isPrepaidProject) {
+    modeSelect.value = 'already_paid';
+  } else {
+    modeSelect.value = 'pay_per_session';
+  }
+
+  document.getElementById('app-project-total-price').value = app.projectTotalPrice || app.price || 0;
+  if (modeSelect.value === 'pay_per_session') {
+    document.getElementById('app-project-session-custom-amount').value = app.price || '';
+  }
+
+  window._activeProjectEditId = app.projectId || null;
+  updateProjectSessionPreview();
+
+  showToast(`Agendando Sesión ${nextSessionNum} de ${totalSessions} para ${app.projectTitle || 'el proyecto'}. Elige fecha y horario disponible.`, "info");
 }
 
 function saveAppointmentFromModal() {
@@ -1303,13 +1581,67 @@ function saveAppointmentFromModal() {
     showToast("Ingresa el nombre del cliente", "error");
     return;
   }
+
+  if (!selectedModalArtistAssigned) {
+    showToast("Por favor presiona el botón 'Asignar Tatuador' para asignarle la cabina", "error");
+    return;
+  }
+
   if (selectedModalServices.length === 0) {
     showToast("Selecciona al menos un servicio o tipo de sesión", "error");
     return;
   }
 
-  const totalPrice = selectedModalServices.reduce((a, s) => a + (s.price || 0), 0);
-  const serviceName = selectedModalServices.map(s => s.name).join(" + ");
+  // Verificación estricta de colisión / empalme de horario
+  const collision = checkSlotCollision(selectedModalTime, selectedModalDurationMinutes, selectedCalendarDate);
+  if (collision.isBooked || collision.isConflict) {
+    showToast(`No es posible agendar: ${collision.reason}. Selecciona otro horario disponible.`, "error");
+    return;
+  }
+
+  const isMulti = document.getElementById('app-is-multi-session')?.checked || false;
+  let projectTitle = '';
+  let sessionNumber = 1;
+  let totalSessions = 1;
+  let billingMode = 'normal';
+  let projectTotalPrice = 0;
+  let finalPrice = selectedModalServices.reduce((a, s) => a + (s.price || 0), 0);
+  let isPrepaid = false;
+  let serviceName = selectedModalServices.map(s => s.name).join(" + ");
+
+  if (isMulti) {
+    projectTitle = document.getElementById('app-project-title').value.trim();
+    if (!projectTitle) {
+      showToast("Ingresa el nombre del proyecto o tatuaje grande", "error");
+      return;
+    }
+    sessionNumber = parseInt(document.getElementById('app-project-session-number').value, 10) || 1;
+    totalSessions = parseInt(document.getElementById('app-project-total-sessions').value, 10) || 2;
+    billingMode = document.getElementById('app-project-billing-mode').value;
+    projectTotalPrice = Number(document.getElementById('app-project-total-price').value) || finalPrice;
+
+    if (billingMode === 'paid_upfront') {
+      if (sessionNumber === 1) {
+        finalPrice = projectTotalPrice;
+        isPrepaid = false;
+        serviceName = `[Proyecto] ${projectTitle} (Sesión 1/${totalSessions} - Pago Total)`;
+      } else {
+        finalPrice = 0;
+        isPrepaid = true;
+        serviceName = `[Proyecto] ${projectTitle} (Sesión ${sessionNumber}/${totalSessions} - Pre-pagada)`;
+      }
+    } else if (billingMode === 'already_paid') {
+      finalPrice = 0;
+      isPrepaid = true;
+      serviceName = `[Proyecto] ${projectTitle} (Sesión ${sessionNumber}/${totalSessions} - Pre-pagada)`;
+    } else {
+      // pay_per_session
+      const customAmt = Number(document.getElementById('app-project-session-custom-amount').value);
+      finalPrice = customAmt > 0 ? customAmt : (totalSessions > 0 ? Math.round(projectTotalPrice / totalSessions) : projectTotalPrice);
+      isPrepaid = false;
+      serviceName = `[Proyecto] ${projectTitle} (Sesión ${sessionNumber}/${totalSessions} - Abono)`;
+    }
+  }
 
   let depositDeducted = 0;
   let quoteRef = '';
@@ -1321,13 +1653,37 @@ function saveAppointmentFromModal() {
 
   const endTimeStr = calculateEndTime(selectedModalTime, selectedModalDurationMinutes);
 
+  // Vincular o crear proyecto
+  let projectId = window._activeProjectEditId || null;
+  if (isMulti) {
+    if (!store.projects) store.projects = [];
+    let proj = store.projects.find(p => p.id === projectId || (p.title.toLowerCase() === projectTitle.toLowerCase() && p.clientPhone === clientPhone));
+    if (!proj) {
+      proj = {
+        id: 'proj-' + Date.now(),
+        title: projectTitle,
+        clientName: clientName,
+        clientPhone: clientPhone,
+        totalPrice: projectTotalPrice,
+        totalSessionsEstimated: totalSessions,
+        billingMode: billingMode,
+        totalPaid: (billingMode === 'paid_upfront' && sessionNumber > 1) ? projectTotalPrice : 0,
+        status: 'en_progreso',
+        notes: notes,
+        createdAt: new Date().toISOString()
+      };
+      store.projects.push(proj);
+    }
+    projectId = proj.id;
+  }
+
   const newApp = {
     id: 'ses-' + Date.now(),
     clientName: clientName,
     clientPhone: clientPhone,
     services: selectedModalServices,
     serviceName: serviceName,
-    price: totalPrice,
+    price: finalPrice,
     depositDeducted: depositDeducted,
     durationMinutes: selectedModalDurationMinutes,
     durationLabel: formatDurationLabel(selectedModalDurationMinutes),
@@ -1339,7 +1695,17 @@ function saveAppointmentFromModal() {
     endTime: endTimeStr,
     status: 'agendada',
     notes: notes,
-    quoteRef: quoteRef
+    quoteRef: quoteRef,
+    // Propiedades de proyecto multi-sesión
+    isMultiSession: isMulti,
+    projectId: projectId,
+    projectTitle: projectTitle,
+    sessionNumber: sessionNumber,
+    totalSessions: totalSessions,
+    billingMode: billingMode,
+    projectTotalPrice: projectTotalPrice,
+    isPrepaidProject: isPrepaid,
+    isPaid: isPrepaid // Si es pre-pagada, se marca liquidada a $0 para no cobrarla de nuevo
   };
 
   store.appointments.push(newApp);
@@ -1366,7 +1732,11 @@ function saveAppointmentFromModal() {
   renderAppointments();
   renderDashboard();
   renderQuoteRequests();
-  showToast(`Sesión agendada para ${clientName} el ${selectedCalendarDate} a las ${selectedModalTime}`, "success");
+
+  const successMsg = isPrepaid
+    ? `Sesión ${sessionNumber} agendada para ${clientName} el ${selectedCalendarDate} a las ${selectedModalTime} (Pre-pagada $0.00 MXN)`
+    : `Sesión agendada para ${clientName} el ${selectedCalendarDate} a las ${selectedModalTime}`;
+  showToast(successMsg, "success");
 }
 
 // ================= CALENDARIO WIDGET =================
@@ -1678,7 +2048,11 @@ function loadAppointmentToPos(appId) {
 
   // Bloqueo estricto: no permitir cargar citas ya realizadas o cobradas
   if (isAppointmentPaid(app)) {
-    showToast(`La sesión de ${app.clientName} ya fue cobrada y realizada previamente. No es posible cobrarla dos veces.`, "error");
+    if (app.isPrepaidProject) {
+      showToast(`La sesión de ${app.clientName} está cubierta al 100% por el proyecto previo ($0.00 MXN).`, "info");
+    } else {
+      showToast(`La sesión de ${app.clientName} ya fue cobrada y realizada previamente. No es posible cobrarla dos veces.`, "error");
+    }
     clearPosCart();
     return;
   }
@@ -1717,7 +2091,11 @@ function directPayAppointment(appId) {
 
   // Bloqueo estricto contra doble cobro
   if (isAppointmentPaid(app)) {
-    showToast(`Esta sesión ya fue cobrada y realizada. Está protegida contra doble cobro.`, "error");
+    if (app.isPrepaidProject) {
+      showToast(`Esta sesión forma parte de un proyecto y ya está pre-pagada ($0.00 MXN).`, "info");
+    } else {
+      showToast(`Esta sesión ya fue cobrada y realizada. Está protegida contra doble cobro.`, "error");
+    }
     return;
   }
 
@@ -1868,6 +2246,14 @@ function confirmCheckout() {
     if (posActiveAppointment.quoteRef) {
       const req = store.quoteRequests.find(r => r.folio === posActiveAppointment.quoteRef);
       if (req) req.status = 'realizada';
+    }
+    // Actualizar total liquidado en el proyecto si aplica
+    if (posActiveAppointment.projectId) {
+      if (!store.projects) store.projects = [];
+      const proj = store.projects.find(p => p.id === posActiveAppointment.projectId);
+      if (proj) {
+        proj.totalPaid = (proj.totalPaid || 0) + total;
+      }
     }
   }
 

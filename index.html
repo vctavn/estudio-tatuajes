@@ -715,6 +715,23 @@
         </div>
       </div>
 
+      <!-- Botón y Selector para Asignar Tatuador a la Sesión -->
+      <div class="form-group" style="margin-top: 10px;">
+        <label class="form-label">Tatuador Asignado a Cabina *</label>
+        <div class="artist-assignment-card active" id="modal-artist-assignment-box">
+          <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
+            <div class="user-session-avatar" style="width: 36px; height: 36px; font-size: 0.8rem;" id="modal-assigned-artist-avatar">TA</div>
+            <div>
+              <div style="font-weight: 700; font-size: 0.88rem; color: var(--text-main);" id="modal-assigned-artist-name">Tatuador</div>
+              <div style="font-size: 0.74rem; color: var(--accent-secondary);" id="modal-assigned-artist-desc">Cabina Principal • Estudio Pro</div>
+            </div>
+          </div>
+          <button type="button" class="btn btn-secondary btn-sm" id="btn-assign-artist" onclick="toggleAssignArtistModal()">
+            ✓ Asignado
+          </button>
+        </div>
+      </div>
+
       <!-- Selector Múltiple de Servicios / Tipo de Sesión -->
       <div class="form-group">
         <label class="form-label">Servicio / Tipo de Trabajo *</label>
@@ -746,14 +763,14 @@
         </div>
       </div>
 
-      <!-- Calendario Interactivo y Horarios (12h) -->
+      <!-- Calendario Interactivo y Horarios con Detección de Colisiones (12h) -->
       <div class="responsive-grid-modal-calendar">
         <div>
           <label class="form-label">Fecha de la Sesión *</label>
           <div id="modal-calendar-widget-container"></div>
         </div>
         <div>
-          <label class="form-label">Hora de Inicio (Formato 12 Horas) *</label>
+          <label class="form-label">Horario Disponible del Tatuador (12 Horas) *</label>
           <div class="time-picker-container" id="modal-time-picker-container"></div>
           <div style="margin-top: 8px; padding: 8px 10px; background: var(--bg-subtle); border-radius: 4px; font-size: 0.8rem; border: 1px solid var(--border-subtle);">
             <span>Rango de Sesión: </span>
@@ -766,6 +783,68 @@
       <div class="form-group" id="modal-deposit-row" style="margin-top: 14px; display: none;">
         <label class="form-label">Anticipo / Depósito Previamente Pagado</label>
         <input type="text" id="app-form-deposit-display" class="form-control" readonly style="background-color: var(--bg-subtle); color: var(--color-success); font-weight: 700;">
+      </div>
+
+      <!-- Gestión de Tatuajes Grandes Multi-Sesión (Proyectos) -->
+      <div class="project-multisession-box">
+        <div class="project-multisession-header">
+          <label class="project-checkbox-label">
+            <input type="checkbox" id="app-is-multi-session" onchange="handleMultiSessionToggle(this.checked)">
+            <span>¿Es un Tatuaje Grande / Proyecto de Varias Sesiones?</span>
+          </label>
+          <span class="badge badge-touchup">Multi-Sesión</span>
+        </div>
+        <p class="project-subtext">Para mangas, espaldas completas o piezas grandes que requieren 2 o más sesiones (pago total de una vez o abono por sesión).</p>
+
+        <div id="multi-session-fields-container" style="display: none; margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--border-default);">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Nombre del Proyecto / Pieza *</label>
+              <input type="text" id="app-project-title" class="form-control" placeholder="Ej. Manga Oriental Dragón, Espalda Realismo...">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Número de esta Sesión *</label>
+              <div style="display: flex; gap: 6px; align-items: center;">
+                <input type="number" id="app-project-session-number" class="form-control" style="max-width: 80px;" value="1" min="1" max="25" onchange="updateProjectSessionPreview()">
+                <span style="font-size: 0.8rem; color: var(--text-secondary);">de</span>
+                <input type="number" id="app-project-total-sessions" class="form-control" style="max-width: 80px;" value="3" min="1" max="25" onchange="updateProjectSessionPreview()">
+                <span style="font-size: 0.75rem; color: var(--text-muted);">sesiones est.</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Modalidad de Pago del Proyecto *</label>
+              <select id="app-project-billing-mode" class="form-select" onchange="handleProjectBillingModeChange(this.value)">
+                <option value="pay_per_session">Pagar a medida que se realizan las sesiones (Abono en cada cita)</option>
+                <option value="paid_upfront">Cobro de una / Pago Total del Proyecto por Anticipado (Sesiones posteriores a $0)</option>
+                <option value="already_paid">Sesión ya pagada previamente en el proyecto ($0.00 por liquidar hoy)</option>
+              </select>
+            </div>
+            <div class="form-group" id="app-project-total-price-box">
+              <label class="form-label" id="app-project-price-label">Precio Total Presupuestado del Proyecto ($ MXN) *</label>
+              <input type="number" id="app-project-total-price" class="form-control" placeholder="Ej. 9000" oninput="updateProjectSessionPreview()">
+            </div>
+          </div>
+
+          <!-- Monto a cobrar en esta sesión específica -->
+          <div class="project-session-amount-box" id="project-session-amount-box">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+              <div>
+                <span style="font-size: 0.78rem; color: var(--text-secondary);">Monto a cobrar en esta sesión hoy:</span>
+                <div style="font-size: 1.15rem; font-weight: 800; color: var(--color-success);" id="project-session-charge-display">$0.00 MXN</div>
+              </div>
+              <div id="project-session-custom-amount-wrap" style="display: flex; align-items: center; gap: 8px;">
+                <label style="font-size: 0.75rem; color: var(--text-muted);">Monto sesión:</label>
+                <input type="number" id="app-project-session-custom-amount" class="form-control" style="width: 130px;" placeholder="Ej. 3000" oninput="handleProjectSessionCustomAmount(this.value)">
+              </div>
+            </div>
+            <p style="margin: 4px 0 0; font-size: 0.72rem; color: var(--text-muted);" id="project-session-explanation">
+              El cliente pagará esta sesión de forma individual a medida que avance el trabajo.
+            </p>
+          </div>
+        </div>
       </div>
 
       <div class="form-group" style="margin-top: 14px;">
