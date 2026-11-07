@@ -1,8 +1,8 @@
 @echo off
 cd /d "%~dp0"
-title INK & PIERCING STUDIO - Sistema de Gestión
+title TATTOO STUDIO - Sistema de Gestión
 echo ========================================================
-echo       INK & PIERCING STUDIO MX - SISTEMA DE GESTION
+echo            TATTOO STUDIO - SISTEMA DE GESTION
 echo ========================================================
 echo Abriendo aplicacion en tu navegador...
 

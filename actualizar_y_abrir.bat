@@ -1,9 +1,9 @@
 @echo off
-title INK & PIERCING STUDIO - Actualizar y Abrir
+title TATTOO STUDIO - Actualizar y Abrir
 cd /d "%~dp0"
 
 echo ========================================================
-echo       INK & PIERCING STUDIO MX - INICIANDO SISTEMA
+echo            TATTOO STUDIO - INICIANDO SISTEMA
 echo ========================================================
 echo.
 echo [1/2] Verificando si hay actualizaciones disponibles en la nube...
@@ -26,5 +26,7 @@ if exist "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe" (
     start "" "%~dp0index.html"
 )
 
+echo.
+echo Aplicacion iniciada correctamente.
 timeout /t 2 >nul
 exit

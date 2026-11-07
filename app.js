@@ -379,7 +379,7 @@ function handleLogin(e) {
   }
 
   // 2. Sesión de Tatuador
-  if ((userVal === 'tatuador' || userVal === 'alex') && passVal === '123') {
+  if (userVal === 'tatuador' && passVal === '123') {
     saveSession({
       role: 'artist',
       artistId: 'a1',
