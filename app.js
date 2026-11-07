@@ -106,6 +106,12 @@ function formatDurationLabel(minutes) {
   return `${m}m`;
 }
 
+// Comprobar de manera infalible si una sesión ya fue realizada o cobrada
+function isAppointmentPaid(app) {
+  if (!app) return false;
+  return app.isPaid === true || app.status === 'realizada' || app.status === 'completada';
+}
+
 // ================= ESTADO Y DATOS INICIALES =================
 const STORAGE_KEY = 'tattoo_studio_data_v2';
 const SESSION_KEY = 'tattoo_studio_session_v2';
@@ -571,6 +577,7 @@ function renderDashboard() {
     mobList.innerHTML = `<p style="text-align: center; color: var(--text-muted); padding: 14px; font-size: 0.85rem;">No hay sesiones programadas para hoy.</p>`;
   } else {
     todayApps.forEach(app => {
+      const isPaid = isAppointmentPaid(app);
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td><b>${formatTime12h(app.time)} - ${formatTime12h(app.endTime || calculateEndTime(app.time, app.durationMinutes || 60))}</b></td>
@@ -579,7 +586,9 @@ function renderDashboard() {
         <td>${escapeHtml(app.booth || 'Cabina Principal')}</td>
         <td>${renderStatusBadge(app.status)}</td>
         <td>
-          <button class="btn btn-primary btn-sm" onclick="directPayAppointment('${app.id}')" title="Cobrar sesión">Cobrar</button>
+          ${isPaid
+            ? '<span class="badge badge-paid" title="Esta sesión ya fue cobrada y realizada"><svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg> Cobrada</span>'
+            : `<button class="btn btn-primary btn-sm" onclick="directPayAppointment('${app.id}')" title="Cobrar sesión">Cobrar</button>`}
         </td>
       `;
       tbody.appendChild(tr);
@@ -596,9 +605,12 @@ function renderDashboard() {
           <span><b>Trabajo:</b> ${escapeHtml(app.serviceName)} (${app.durationLabel || '1h'})</span>
           <span><b>Cabina:</b> ${escapeHtml(app.booth || 'Cabina Principal')}</span>
           ${app.depositDeducted ? `<span style="color:var(--color-success); font-weight:600;">Depósito acreditado: -$${app.depositDeducted} MXN</span>` : ''}
+          ${isPaid ? `<span style="color:var(--color-success); font-weight:700;">Sesión ya cobrada y liquidada</span>` : ''}
         </div>
         <div class="mobile-app-actions">
-          <button class="btn btn-primary btn-sm" style="flex:1;" onclick="directPayAppointment('${app.id}')">Cobrar en POS</button>
+          ${isPaid
+            ? '<span class="badge badge-paid" style="flex:1; justify-content:center; padding:6px 0;">Cobrada y Liquidada</span>'
+            : `<button class="btn btn-primary btn-sm" style="flex:1;" onclick="directPayAppointment('${app.id}')">Cobrar en POS</button>`}
           <button class="btn btn-secondary btn-sm" onclick="sendWhatsAppReminder('${app.id}')">WhatsApp</button>
         </div>
       `;
@@ -1066,6 +1078,7 @@ function renderAppointments() {
   }
 
   apps.forEach(app => {
+    const isPaid = isAppointmentPaid(app);
     const endTimeStr = app.endTime || calculateEndTime(app.time, app.durationMinutes || 60);
 
     const tr = document.createElement('tr');
@@ -1079,14 +1092,16 @@ function renderAppointments() {
         <select class="form-select" style="font-size:0.75rem; padding:3px 6px;" onchange="updateAppointmentStatus('${app.id}', this.value)">
           <option value="agendada" ${app.status === 'agendada' ? 'selected' : ''}>Agendada</option>
           <option value="en_proceso" ${app.status === 'en_proceso' ? 'selected' : ''}>En Cabina</option>
-          <option value="realizada" ${app.status === 'realizada' ? 'selected' : ''}>Realizada</option>
+          <option value="realizada" ${app.status === 'realizada' ? 'selected' : ''}>Realizada ${isPaid ? '(Cobrada)' : ''}</option>
           <option value="retoque" ${app.status === 'retoque' ? 'selected' : ''}>Retoque</option>
           <option value="cancelada" ${app.status === 'cancelada' ? 'selected' : ''}>Cancelada</option>
         </select>
       </td>
       <td>
-        <div style="display: flex; gap: 4px;">
-          <button class="btn btn-primary btn-sm" onclick="directPayAppointment('${app.id}')" title="Cobrar sesión">Cobrar</button>
+        <div style="display: flex; gap: 4px; align-items: center;">
+          ${isPaid
+            ? '<span class="badge badge-paid" title="Esta sesión ya fue cobrada y realizada"><svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg> Cobrada</span>'
+            : `<button class="btn btn-primary btn-sm" onclick="directPayAppointment('${app.id}')" title="Cobrar sesión en POS">Cobrar</button>`}
           <button class="btn btn-secondary btn-sm" onclick="sendWhatsAppReminder('${app.id}')" title="Enviar WhatsApp">WA</button>
           <button class="btn btn-danger btn-sm" onclick="deleteAppointment('${app.id}')" title="Eliminar">&times;</button>
         </div>
@@ -1106,10 +1121,13 @@ function renderAppointments() {
         <span><b>Servicio:</b> ${escapeHtml(app.serviceName)} (${app.durationLabel || '1h'})</span>
         <span><b>Cabina:</b> ${escapeHtml(app.booth || 'Cabina Principal')}</span>
         ${app.depositDeducted ? `<span style="color:var(--color-success); font-weight:700;">Anticipo acreditado: -${formatMoney(app.depositDeducted)}</span>` : ''}
+        ${isPaid ? `<span style="color:var(--color-success); font-weight:700;">Estado: Cobrada y Liquidada</span>` : ''}
         ${app.notes ? `<span style="color:var(--text-muted); font-size:0.75rem;">Nota: ${escapeHtml(app.notes)}</span>` : ''}
       </div>
       <div class="mobile-app-actions">
-        <button class="btn btn-primary btn-sm" style="flex:1;" onclick="directPayAppointment('${app.id}')">Cobrar en POS</button>
+        ${isPaid
+          ? '<span class="badge badge-paid" style="flex:1; justify-content:center; padding:6px 0;">Cobrada y Liquidada</span>'
+          : `<button class="btn btn-primary btn-sm" style="flex:1;" onclick="directPayAppointment('${app.id}')">Cobrar en POS</button>`}
         <button class="btn btn-secondary btn-sm" onclick="sendWhatsAppReminder('${app.id}')">Recordar WA</button>
       </div>
     `;
@@ -1557,12 +1575,22 @@ function renderPOS() {
 function populatePosAppointmentSelector() {
   const sel = document.getElementById('pos-select-appointment');
   if (!sel) return;
-  sel.innerHTML = '<option value="">-- Seleccionar cita de la agenda para cobrar --</option>';
+  sel.innerHTML = '<option value="">-- Seleccionar cita pendiente para cobrar --</option>';
 
   const todayStr = new Date().toISOString().split('T')[0];
-  const apps = store.appointments.filter(a => a.date === todayStr && a.status !== 'cancelada');
+  // Bloqueo de citas ya realizadas o cobradas: solo muestra citas pendientes activas
+  const pendingApps = store.appointments.filter(a => a.date === todayStr && a.status !== 'cancelada' && !isAppointmentPaid(a));
 
-  apps.forEach(app => {
+  if (pendingApps.length === 0) {
+    const opt = document.createElement('option');
+    opt.value = '';
+    opt.disabled = true;
+    opt.textContent = 'No hay sesiones pendientes de cobro para hoy';
+    sel.appendChild(opt);
+    return;
+  }
+
+  pendingApps.forEach(app => {
     const opt = document.createElement('option');
     opt.value = app.id;
     opt.textContent = `${formatTime12h(app.time)} | ${app.clientName} - ${app.serviceName} (${formatMoney(app.price)})`;
@@ -1648,6 +1676,13 @@ function loadAppointmentToPos(appId) {
   const app = store.appointments.find(a => a.id === appId);
   if (!app) return;
 
+  // Bloqueo estricto: no permitir cargar citas ya realizadas o cobradas
+  if (isAppointmentPaid(app)) {
+    showToast(`La sesión de ${app.clientName} ya fue cobrada y realizada previamente. No es posible cobrarla dos veces.`, "error");
+    clearPosCart();
+    return;
+  }
+
   posCart = [];
   posActiveAppointment = app;
 
@@ -1677,6 +1712,15 @@ function loadAppointmentToPos(appId) {
 }
 
 function directPayAppointment(appId) {
+  const app = store.appointments.find(a => a.id === appId);
+  if (!app) return;
+
+  // Bloqueo estricto contra doble cobro
+  if (isAppointmentPaid(app)) {
+    showToast(`Esta sesión ya fue cobrada y realizada. Está protegida contra doble cobro.`, "error");
+    return;
+  }
+
   switchView('pos');
   const sel = document.getElementById('pos-select-appointment');
   if (sel) {
@@ -1739,6 +1783,13 @@ function openCheckoutModal() {
     return;
   }
 
+  // Verificación estricta contra doble cobro antes de abrir modal
+  if (posActiveAppointment && isAppointmentPaid(posActiveAppointment)) {
+    showToast("Error de seguridad: La cita vinculada ya fue liquidada. Doble cobro bloqueado.", "error");
+    clearPosCart();
+    return;
+  }
+
   const subtotal = posCart.reduce((a, b) => a + (b.price * b.qty), 0);
   const total = Math.max(0, subtotal - posDeductedDeposit);
 
@@ -1775,16 +1826,27 @@ function calculateChange(val) {
 }
 
 function confirmCheckout() {
+  // Validación final infalible antes de procesar el pago
+  if (posActiveAppointment && isAppointmentPaid(posActiveAppointment)) {
+    showToast("Error: Esta cita ya cuenta con cobro registrado en el sistema. Doble cobro rechazado.", "error");
+    closeModal('modal-checkout');
+    clearPosCart();
+    renderAppointments();
+    renderDashboard();
+    return;
+  }
+
   const subtotal = posCart.reduce((a, b) => a + (b.price * b.qty), 0);
   const total = Math.max(0, subtotal - posDeductedDeposit);
   const method = document.getElementById('checkout-method').value;
 
+  const movId = 'mov-' + Date.now();
   const concept = posActiveAppointment
     ? `Liquidación Sesión: ${posActiveAppointment.clientName} (${posActiveAppointment.serviceName})`
     : `Venta POS (${posCart.map(i => i.name).join(', ')})`;
 
   store.cashMovements.push({
-    id: 'mov-' + Date.now(),
+    id: movId,
     type: 'venta',
     concept: concept,
     subtotal: subtotal,
@@ -1792,11 +1854,17 @@ function confirmCheckout() {
     amount: total,
     method: method,
     artistId: 'a1',
+    appointmentId: posActiveAppointment ? posActiveAppointment.id : null,
     timestamp: new Date().toISOString()
   });
 
   if (posActiveAppointment) {
     posActiveAppointment.status = 'realizada';
+    posActiveAppointment.isPaid = true;
+    posActiveAppointment.paidAt = new Date().toISOString();
+    posActiveAppointment.paidAmount = total;
+    posActiveAppointment.paidMethod = method;
+    posActiveAppointment.paidMovementId = movId;
     if (posActiveAppointment.quoteRef) {
       const req = store.quoteRequests.find(r => r.folio === posActiveAppointment.quoteRef);
       if (req) req.status = 'realizada';
@@ -1820,7 +1888,7 @@ function confirmCheckout() {
   renderDashboard();
   renderCashRegister();
   renderCatalog();
-  showToast("Cobro procesado exitosamente", "success");
+  showToast("Cobro liquidado exitosamente. Sesión marcada como Realizada.", "success");
 }
 
 function generateReceiptModal(subtotal, deposit, total, method, artistName) {

@@ -561,6 +561,16 @@ body {
   border: 1px solid rgba(63, 166, 114, 0.3);
 }
 
+.badge-paid {
+  background-color: rgba(63, 166, 114, 0.18);
+  color: #3FA672;
+  border: 1px solid rgba(63, 166, 114, 0.4);
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .badge-cancel {
   background-color: var(--badge-red-bg);
   color: var(--badge-red-text);
